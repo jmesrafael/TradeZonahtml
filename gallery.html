@@ -1,0 +1,167 @@
+<!-- gallery.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TradeZona — Gallery</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{--bg:#0b0f0c;--panel:#111816;--accent:#00ff88;--accent2:#19c37d;--border:#1c2a25;--text:#e6f2ec;--muted:#8fa39a}
+  body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;padding:20px}
+  .page-wrap{max-width:1100px;margin:0 auto}
+
+  .page-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+  .page-hdr h2{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600}
+  .count{font-size:12px;color:var(--muted)}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
+  .gcard{background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden;cursor:pointer;transition:border-color .15s,transform .15s}
+  .gcard:hover{border-color:var(--accent2);transform:translateY(-2px)}
+  .gcard-img{width:100%;height:130px;object-fit:cover;display:block;background:var(--bg)}
+  .gcard-info{padding:10px}
+  .gcard-pair{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;margin-bottom:3px}
+  .gcard-date{font-size:11px;color:var(--muted);margin-bottom:5px}
+  .gcard-pnl{font-size:12px;font-weight:600}
+  .gcard-pnl.pos{color:var(--accent)}
+  .gcard-pnl.neg{color:#ff5f6d}
+  .gcard-notes{font-size:11px;color:var(--muted);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .gcard-trade-ref{font-size:10px;color:var(--border);margin-top:4px;font-style:italic}
+
+  .empty{color:var(--muted);font-size:14px;text-align:center;padding:60px 0;grid-column:1/-1;line-height:1.8}
+
+  /* Lightbox */
+  .lb{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:999;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto}
+  .lb.open{display:flex}
+  .lb-inner{background:var(--panel);border:1px solid var(--border);border-radius:14px;overflow:hidden;max-width:680px;width:100%;margin:auto}
+  .lb-img{width:100%;max-height:420px;object-fit:contain;background:#000;display:block}
+  .lb-body{padding:18px}
+  .lb-pair{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:600;margin-bottom:8px}
+  .lb-meta{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+  .lb-meta span{font-size:12px;color:var(--muted)}
+  .lb-pnl{font-weight:600}
+  .lb-pnl.pos{color:var(--accent)}
+  .lb-pnl.neg{color:#ff5f6d}
+  .lb-strat{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}
+  .lb-tag{background:rgba(25,195,125,.12);color:var(--accent2);border-radius:4px;padding:2px 8px;font-size:11px}
+  .lb-notes{font-size:13px;color:var(--text);line-height:1.6;white-space:pre-wrap}
+  .lb-close{position:absolute;top:16px;right:18px;background:none;border:none;color:#fff;font-size:22px;cursor:pointer}
+  .lb-close:hover{color:var(--accent)}
+</style>
+</head>
+<body>
+
+<div class="page-wrap">
+<div class="page-hdr">
+  <h2>Trade Gallery</h2>
+  <span class="count" id="imgCount">0 images</span>
+</div>
+
+<div class="grid" id="galGrid"></div>
+
+<div class="lb" id="lb" onclick="closeLb(event)">
+  <button class="lb-close" onclick="document.getElementById('lb').classList.remove('open')">✕</button>
+  <div class="lb-inner">
+    <img class="lb-img" id="lbImg" src="" alt="">
+    <div class="lb-body">
+      <div class="lb-pair" id="lbPair">—</div>
+      <div class="lb-meta">
+        <span id="lbDate">—</span>
+        <span class="lb-pnl" id="lbPnl"></span>
+        <span id="lbPos"></span>
+        <span id="lbR"></span>
+      </div>
+      <div class="lb-strat" id="lbStrat"></div>
+      <div class="lb-notes" id="lbNotes"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+function applyTheme(t){
+  const r=document.documentElement;
+  const dark=t==='dark'||(t==='system'&&!window.matchMedia('(prefers-color-scheme:light)').matches);
+  if(!dark){
+    r.style.setProperty('--bg','#f6faf8');r.style.setProperty('--panel','#ffffff');
+    r.style.setProperty('--accent','#19c37d');r.style.setProperty('--border','#d9e5df');
+    r.style.setProperty('--text','#0f1c17');r.style.setProperty('--muted','#6b8578');
+  } else {
+    r.style.setProperty('--bg','#0b0f0c');r.style.setProperty('--panel','#111816');
+    r.style.setProperty('--accent','#00ff88');r.style.setProperty('--accent2','#19c37d');
+    r.style.setProperty('--border','#1c2a25');r.style.setProperty('--text','#e6f2ec');r.style.setProperty('--muted','#8fa39a');
+  }
+}
+(function(){ applyTheme(localStorage.getItem('tl_theme')||'dark'); })();
+
+const jid=localStorage.getItem('tl_current_journal')||'default';
+
+// Gallery is always derived live from trades — no stale cache
+function buildGalleryItems(){
+  const trades=JSON.parse(localStorage.getItem('tl_trades_'+jid)||'[]');
+  const items=[];
+  trades.forEach(t=>{
+    (t.images||[]).forEach((img,imgIdx)=>{
+      items.push({ imgData:img.data, tradeId:t.id, pair:t.pair, date:t.date, pnl:t.pnl, position:t.position,
+                   notes:t.notes, strategy:t.strategy||[], timeframe:t.timeframe||[], r:t.r,
+                   tradeNum:trades.indexOf(t)+1, imgIdx });
+    });
+  });
+  return items;
+}
+
+function fmtPnl(v){ const n=parseFloat(v); if(isNaN(n)) return '—'; return (n>=0?'+':'-')+'$'+Math.abs(n).toFixed(2); }
+function escHtml(s){ const d=document.createElement('div'); d.textContent=String(s||''); return d.innerHTML; }
+
+let galleryItems=[];
+
+function render(){
+  galleryItems=buildGalleryItems();
+  const grid=document.getElementById('galGrid');
+  document.getElementById('imgCount').textContent=galleryItems.length+' image'+(galleryItems.length!==1?'s':'');
+
+  if(!galleryItems.length){
+    grid.innerHTML=`<div class="empty">No images yet.<br>Open trade notes and upload or paste images<br>to see them here.</div>`;
+    return;
+  }
+
+  grid.innerHTML=galleryItems.map((item,i)=>{
+    const pnl=parseFloat(item.pnl)||0;
+    const cls=pnl>0?'pos':pnl<0?'neg':'';
+    return `<div class="gcard" onclick="openLb(${i})">
+      <img class="gcard-img" src="${item.imgData}" alt="${escHtml(item.pair)}">
+      <div class="gcard-info">
+        <div class="gcard-pair">${escHtml(item.pair)||'—'}</div>
+        <div class="gcard-date">${item.date||'—'}</div>
+        <div class="gcard-pnl ${cls}">${item.pnl!==''&&!isNaN(pnl)?fmtPnl(item.pnl):'—'}</div>
+        ${item.notes?`<div class="gcard-notes">${escHtml(item.notes)}</div>`:''}
+        <div class="gcard-trade-ref">Trade #${item.tradeNum}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openLb(i){
+  const item=galleryItems[i];
+  const pnl=parseFloat(item.pnl)||0;
+  const pnlCls=pnl>0?'pos':pnl<0?'neg':'';
+  document.getElementById('lbImg').src=item.imgData;
+  document.getElementById('lbPair').textContent=item.pair||'—';
+  document.getElementById('lbDate').textContent=item.date||'—';
+  const pEl=document.getElementById('lbPnl');
+  pEl.textContent=item.pnl!==''&&!isNaN(pnl)?fmtPnl(item.pnl):'';
+  pEl.className='lb-pnl '+pnlCls;
+  document.getElementById('lbPos').textContent=item.position||'';
+  document.getElementById('lbR').textContent=item.r?'R: '+item.r:'';
+  document.getElementById('lbStrat').innerHTML=[...item.strategy,...item.timeframe].map(s=>`<span class="lb-tag">${escHtml(s)}</span>`).join('');
+  document.getElementById('lbNotes').textContent=item.notes||'';
+  document.getElementById('lb').classList.add('open');
+}
+
+function closeLb(e){ if(e.target===document.getElementById('lb')) document.getElementById('lb').classList.remove('open'); }
+
+render();
+</script>
+</div>
+</body>
+</html>

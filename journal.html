@@ -1,0 +1,1234 @@
+<!-- journal.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TradeLog — Journal</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{--bg:#0b0f0c;--panel:#111816;--accent:#00ff88;--accent2:#19c37d;--border:#1c2a25;--text:#e6f2ec;--muted:#8fa39a}
+  body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;display:flex;flex-direction:column}
+  header{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;border-bottom:1px solid var(--border);background:var(--panel);flex-shrink:0}
+  .hleft{display:flex;align-items:center;gap:14px}
+  .back-btn{background:none;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:7px 13px;font-size:16px;cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s;line-height:1}
+  .back-btn:hover{border-color:var(--accent2);color:var(--text)}
+  .jname{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600}
+  .hright{display:flex;align-items:center;gap:8px}
+  .icon-btn{background:none;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:7px 12px;font-size:13px;cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s;white-space:nowrap}
+  .icon-btn:hover{border-color:var(--accent2);color:var(--text)}
+  nav{display:flex;gap:2px;padding:10px 24px;border-bottom:1px solid var(--border);background:var(--panel);flex-shrink:0;align-items:center}
+  .tab{padding:8px 16px;background:none;border:none;color:var(--muted);font-size:13px;font-family:'Inter',sans-serif;cursor:pointer;border-radius:7px;transition:all .2s;white-space:nowrap}
+  .tab:hover{color:var(--text);background:rgba(255,255,255,.04)}
+  .tab.active{color:var(--accent);background:rgba(0,255,136,.08)}
+  .tab-spacer{flex:1}
+  .tab-content{display:none;flex:1;overflow:hidden}
+  .tab-content.active{display:flex;flex-direction:column}
+  iframe{flex:1;border:none;width:100%;height:100%;min-height:calc(100vh - 108px)}
+  .pin-overlay{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:300}
+  .pin-box{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:32px;width:320px}
+  .pin-box h3{font-family:'Space Grotesk',sans-serif;font-size:15px;margin-bottom:20px}
+  .pin-input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:11px 13px;color:var(--text);font-family:'Inter',sans-serif;font-size:15px;letter-spacing:4px;outline:none;margin-bottom:12px;transition:border-color .2s}
+  .pin-input:focus{border-color:var(--accent2)}
+  .btn-primary{background:var(--accent);color:#0b0f0c;border:none;border-radius:8px;padding:12px;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;cursor:pointer;width:100%;transition:opacity .2s}
+  .btn-primary:hover{opacity:.85}
+  .pin-err{font-size:12px;color:#ff5f6d;margin-top:8px;display:none}
+  .pin-err.show{display:block}
+  .settings-panel{flex:1;overflow-y:auto;padding:28px 24px;background:var(--bg)}
+  .settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:960px;margin:0 auto}
+  .settings-grid .full{grid-column:1/-1}
+  @media(max-width:640px){.settings-grid{grid-template-columns:1fr}}
+  .ssec{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:20px}
+  .ssec-title{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:16px;font-weight:600}
+  .field-row{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+  .field-label{font-size:12px;color:var(--muted)}
+  .field-input{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:'Inter',sans-serif;font-size:14px;outline:none;transition:border-color .2s;width:100%}
+  .field-input:focus{border-color:var(--accent2)}
+  .save-row{display:flex;align-items:center;gap:12px;margin-top:16px}
+  .jsave-btn{background:var(--accent);color:#0b0f0c;border:none;border-radius:8px;padding:9px 20px;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .2s}
+  .jsave-btn:hover{opacity:.85}
+  .saved-msg{font-size:12px;color:var(--accent2);display:none}
+  .saved-msg.show{display:inline}
+  .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)}
+  .toggle-row:last-child{border-bottom:none;padding-bottom:0}
+  .toggle-row:first-child{padding-top:0}
+  .toggle-info .tname{font-size:13px;font-weight:500;margin-bottom:2px}
+  .toggle-info .tdesc{font-size:11px;color:var(--muted);line-height:1.4}
+  .tswitch{width:36px;height:20px;background:var(--border);border-radius:10px;position:relative;transition:background .2s;cursor:pointer;flex-shrink:0}
+  .tswitch.on{background:var(--accent2)}
+  .tswitch::after{content:'';position:absolute;top:3px;left:3px;width:14px;height:14px;background:#fff;border-radius:50%;transition:transform .2s}
+  .tswitch.on::after{transform:translateX(16px)}
+  .tag-list{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;min-height:28px}
+  .stag{display:flex;align-items:center;gap:3px;background:rgba(25,195,125,.12);color:var(--accent2);border-radius:20px;padding:4px 10px;font-size:12px}
+  .stag .rm{cursor:pointer;opacity:.55;font-size:13px;line-height:1}
+  .stag .rm:hover{opacity:1}
+  .tag-add-row{display:flex;gap:6px}
+  .tag-input{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:8px 11px;color:var(--text);font-family:'Inter',sans-serif;font-size:13px;outline:none;transition:border-color .2s}
+  .tag-input:focus{border-color:var(--accent2)}
+  .tag-add-btn{background:var(--accent);color:#0b0f0c;border:none;border-radius:7px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Space Grotesk',sans-serif;white-space:nowrap}
+
+  /* ── PIN section ──────────────────────────────────────── */
+  .pin-status{display:inline-flex;align-items:center;font-size:10px;font-weight:600;padding:3px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.6px}
+  .pin-active{background:rgba(25,195,125,.12);color:var(--accent2);border:1px solid rgba(25,195,125,.3)}
+  .pin-none{background:rgba(143,163,154,.1);color:var(--muted);border:1px solid var(--border)}
+  .pin-actions-row{display:flex;gap:8px;margin-top:8px}
+  .pin-action-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 12px;border-radius:8px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .18s}
+  .change-pin-btn{background:var(--bg);border:1px solid var(--border);color:var(--muted)}
+  .change-pin-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+  .cancel-pin-btn{border-color:var(--border)!important;color:var(--muted)!important;background:var(--bg)!important}
+  .remove-pin-btn{background:rgba(255,95,109,.08);border:1px solid rgba(255,95,109,.3);color:#ff5f6d}
+  .remove-pin-btn:hover{background:rgba(255,95,109,.15);border-color:#ff5f6d}
+  .remove-pin-confirm{background:rgba(255,95,109,.2)!important;border-color:#ff5f6d!important;color:#ff5f6d!important;animation:pulse-red .6s infinite alternate}
+  @keyframes pulse-red{from{opacity:.8}to{opacity:1}}
+  .pin-hint{font-size:11px;margin-top:5px;line-height:1.5}
+  .pin-hint.pin-err{color:#ff5f6d}
+
+  /* ── Export / Import section ──────────────────────────── */
+  .io-row{display:flex;gap:10px;margin-bottom:14px}
+  .io-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;padding:16px 12px;background:var(--bg);border:1px solid var(--border);border-radius:10px;cursor:pointer;font-family:'Inter',sans-serif;transition:all .18s}
+  .io-btn:hover{border-color:var(--accent2);background:rgba(25,195,125,.04)}
+  .io-btn.export-io{border-color:rgba(25,195,125,.3)}
+  .io-btn.export-io:hover{border-color:var(--accent2)}
+  .io-btn .io-icon{font-size:26px;line-height:1;color:var(--muted)}
+  .io-btn.export-io .io-icon{color:var(--accent2)}
+  .io-btn .io-label{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;color:var(--text)}
+  .io-btn.export-io .io-label{color:var(--accent2)}
+  .io-btn .io-desc{font-size:11px;color:var(--muted);text-align:center;line-height:1.4}
+  .io-note{font-size:11px;color:var(--muted);line-height:1.6;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px}
+
+  /* ── Overlay / Modals ─────────────────────────────────── */
+  .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:600;align-items:center;justify-content:center}
+  .overlay.open{display:flex}
+  .import-modal{background:var(--panel);border:1px solid var(--border);border-radius:14px;width:100%;max-width:480px;margin:20px;max-height:90vh;overflow-y:auto}
+  .import-modal h3{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;padding:20px 22px 0;margin-bottom:6px}
+  .import-modal .im-sub{font-size:12px;color:var(--muted);padding:0 22px 16px;line-height:1.6;border-bottom:1px solid var(--border)}
+  .import-body{padding:20px 22px}
+  .import-dropzone{border:2px dashed var(--border);border-radius:10px;padding:32px 20px;text-align:center;cursor:pointer;transition:all .2s;position:relative;margin-bottom:16px}
+  .import-dropzone:hover,.import-dropzone.dragover{border-color:var(--accent2);background:rgba(25,195,125,.04)}
+  .import-dropzone .dz-icon{font-size:28px;margin-bottom:8px;display:block;color:var(--muted)}
+  .import-dropzone .dz-label{font-size:13px;color:var(--muted)}
+  .import-dropzone .dz-label strong{color:var(--accent2)}
+  .import-dropzone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
+  .import-file-info{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:16px;display:none}
+  .import-file-info.show{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .ifi-name{font-size:13px;font-weight:500;color:var(--accent2);word-break:break-all}
+  .ifi-clear{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;flex-shrink:0;padding:2px 5px;border-radius:4px;transition:color .15s}
+  .ifi-clear:hover{color:#ff5f6d}
+  .import-mode{margin-bottom:18px}
+  .import-mode .im-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px}
+  .mode-opts{display:flex;gap:8px}
+  .mode-opt{flex:1;padding:10px 8px;background:var(--bg);border:1px solid var(--border);border-radius:8px;cursor:pointer;text-align:center;transition:all .15s;font-family:'Inter',sans-serif}
+  .mode-opt:hover{border-color:var(--accent2)}
+  .mode-opt.active{border-color:var(--accent2);background:rgba(25,195,125,.08)}
+  .mode-opt .mo-title{font-size:12px;font-weight:600;color:var(--text);margin-bottom:2px}
+  .mode-opt.active .mo-title{color:var(--accent2)}
+  .mode-opt .mo-desc{font-size:10px;color:var(--muted);line-height:1.4}
+  .import-preview{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:16px;display:none}
+  .import-preview.show{display:block}
+  .ip-row{display:flex;justify-content:space-between;align-items:center;font-size:12px;margin-bottom:4px}
+  .ip-row:last-child{margin-bottom:0}
+  .ip-lbl{color:var(--muted)}
+  .ip-val{font-weight:600;font-family:'Space Grotesk',sans-serif}
+  .ip-val.ok{color:var(--accent)}
+  .ip-val.warn{color:#f59e0b}
+  .import-footer{padding:14px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+  .btn-ghost{background:none;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:9px 16px;font-size:13px;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s}
+  .btn-ghost:hover{border-color:var(--muted)}
+  .btn-danger-outline{background:none;border:1px solid rgba(255,95,109,.4);color:#ff5f6d;border-radius:7px;padding:9px 16px;font-size:13px;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s}
+  .btn-danger-outline:hover{background:rgba(255,95,109,.1);border-color:#ff5f6d}
+
+  /* ── Mood tag grid ───────────────────────────────────── */
+  .mood-tag-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:4px;min-height:32px}
+  .mood-tag-item{display:flex;align-items:center;gap:6px;border-radius:20px;padding:5px 10px 5px 8px;font-size:12px;font-weight:500;border:1px solid;transition:all .15s}
+  .mood-tag-item .mtag-color{width:14px;height:14px;border-radius:50%;flex-shrink:0;cursor:pointer;border:2px solid rgba(255,255,255,.3);padding:0;-webkit-appearance:none;appearance:none;outline:none}
+  .mood-tag-item .mtag-name{flex:1;cursor:default}
+  .mood-tag-item .mtag-rm{background:none;border:none;cursor:pointer;opacity:.5;font-size:12px;line-height:1;padding:0 0 0 2px;color:inherit;transition:opacity .15s}
+  .mood-tag-item .mtag-rm:hover{opacity:1}
+
+  /* ── Export scope selector ───────────────────────────── */
+  .export-scope-opts{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+  .export-scope-opt{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:all .18s}
+  .export-scope-opt:hover{border-color:var(--accent2)}
+  .export-scope-opt.active{border-color:var(--accent2);background:rgba(25,195,125,.06)}
+  .eso-icon{font-size:20px;color:var(--muted);width:28px;text-align:center;flex-shrink:0}
+  .export-scope-opt.active .eso-icon{color:var(--accent2)}
+  .eso-info{flex:1}
+  .eso-title{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px}
+  .export-scope-opt.active .eso-title{color:var(--accent2)}
+  .eso-desc{font-size:11px;color:var(--muted);line-height:1.4}
+  .eso-check{font-size:16px;color:var(--border);flex-shrink:0;transition:color .18s}
+  .export-scope-opt.active .eso-check{color:var(--accent2)}
+  .export-summary{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:12px;line-height:1.8}
+  .export-summary .es-row{display:flex;align-items:center;gap:8px;color:var(--muted)}
+  .export-summary .es-row i{width:14px;text-align:center}
+  .export-summary .es-row.included{color:var(--text)}
+  .export-summary .es-row.included i{color:var(--accent2)}
+
+  /* ── Delete Journal section ───────────────────────────── */
+  .danger-zone{border-color:rgba(255,95,109,.25)!important}
+  .danger-zone .ssec-title{color:#ff5f6d}
+  .delete-journal-row{display:flex;align-items:center;justify-content:space-between;gap:16px}
+  .delete-journal-info{font-size:12px;color:var(--muted);line-height:1.6}
+  .delete-journal-info strong{color:var(--text);display:block;font-size:13px;margin-bottom:3px}
+
+  /* ── Toast notification ──────────────────────────────── */
+  .toast-container{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
+  .toast{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:11px 16px;font-size:13px;color:var(--text);display:flex;align-items:center;gap:12px;box-shadow:0 8px 28px rgba(0,0,0,.45);pointer-events:all;min-width:240px;max-width:340px;animation:toast-in .25s ease}
+  @keyframes toast-in{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+  .toast.leaving{animation:toast-out .25s ease forwards}
+  @keyframes toast-out{to{opacity:0;transform:translateY(12px)}}
+  .toast-icon{flex-shrink:0;font-size:14px}
+  .toast-msg{flex:1;line-height:1.4}
+  .toast-undo{background:none;border:1px solid var(--accent2);color:var(--accent2);border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Space Grotesk',sans-serif;white-space:nowrap;transition:all .15s;flex-shrink:0}
+  .toast-undo:hover{background:rgba(25,195,125,.15)}
+  .toast-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;line-height:1;padding:0 2px;flex-shrink:0;transition:color .15s}
+  .toast-close:hover{color:var(--text)}
+
+  /* ── Toast notification ──────────────────────────────── */
+  .tl-toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(80px);
+    background:var(--panel);border:1px solid var(--border);border-radius:10px;
+    padding:11px 16px;display:flex;align-items:center;gap:10px;
+    box-shadow:0 8px 32px rgba(0,0,0,.45);z-index:9999;
+    font-size:13px;color:var(--text);white-space:nowrap;
+    transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .3s;opacity:0;pointer-events:none}
+  .tl-toast.show{transform:translateX(-50%) translateY(0);opacity:1;pointer-events:auto}
+  .tl-toast .toast-msg{flex:1}
+  .tl-toast .toast-undo{background:none;border:1px solid var(--accent2);color:var(--accent2);
+    border-radius:6px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer;
+    font-family:'Space Grotesk',sans-serif;transition:all .15s;white-space:nowrap}
+  .tl-toast .toast-undo:hover{background:var(--accent2);color:#0b0f0c}
+
+  /* ── Danger zone (Delete Journal) ───────────────────── */
+  .danger-zone{border-color:rgba(255,95,109,.25)!important}
+  .danger-zone .ssec-title{color:#ff5f6d}
+  .del-journal-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;
+    padding:11px 16px;background:rgba(255,95,109,.07);border:1px solid rgba(255,95,109,.3);
+    border-radius:8px;color:#ff5f6d;font-family:'Space Grotesk',sans-serif;font-size:13px;
+    font-weight:600;cursor:pointer;transition:all .2s;margin-bottom:10px}
+  .del-journal-btn:hover{background:rgba(255,95,109,.15);border-color:#ff5f6d}
+  .del-journal-warning{font-size:11px;color:var(--muted);line-height:1.6;
+    padding:9px 12px;background:var(--bg);border:1px solid var(--border);border-radius:7px}
+
+  /* ── Toast ───────────────────────────────────────────── */
+  #tlToast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:var(--panel);border:1px solid var(--border);border-radius:10px;
+    padding:11px 16px;display:flex;align-items:center;gap:10px;
+    box-shadow:0 8px 28px rgba(0,0,0,.45);z-index:1200;
+    opacity:0;pointer-events:none;transition:all .25s;white-space:nowrap;max-width:90vw}
+  #tlToast.show{opacity:1;pointer-events:all;transform:translateX(-50%) translateY(0)}
+  #tlToast .toast-icon{font-size:15px;flex-shrink:0}
+  #tlToast .toast-msg{font-size:13px;color:var(--text);flex:1}
+  #tlToast .toast-undo{background:none;border:1px solid var(--accent2);color:var(--accent2);
+    border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;
+    font-family:'Inter',sans-serif;white-space:nowrap;flex-shrink:0;transition:all .15s}
+  #tlToast .toast-undo:hover{background:rgba(25,195,125,.15)}
+  #tlToast .toast-close{background:none;border:none;color:var(--muted);cursor:pointer;
+    font-size:14px;padding:0 2px;line-height:1;flex-shrink:0;transition:color .15s}
+  #tlToast .toast-close:hover{color:var(--text)}
+
+  /* ── Danger Zone ─────────────────────────────────────── */
+  .danger-zone{border-color:rgba(255,95,109,.25)!important}
+  .danger-zone .ssec-title{color:#ff5f6d}
+  .delete-journal-row{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  .delete-journal-info{font-size:13px;color:var(--muted);line-height:1.6;flex:1}
+  .delete-journal-info strong{display:block;font-size:14px;color:var(--text);margin-bottom:3px}
+  .btn-danger-outline{display:flex;align-items:center;background:none;border:1px solid rgba(255,95,109,.4);
+    color:#ff5f6d;border-radius:8px;padding:9px 16px;font-family:'Inter',sans-serif;
+    font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .18s;flex-shrink:0}
+  .btn-danger-outline:hover{background:rgba(255,95,109,.1);border-color:#ff5f6d}
+
+  /* ── Delete Journal Modal ────────────────────────────── */
+  .del-modal{background:var(--panel);border:1px solid var(--border);border-radius:14px;width:100%;max-width:420px;margin:20px;padding:28px}
+  .del-modal h3{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;color:#ff5f6d;margin-bottom:10px}
+  .del-modal p{font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:18px}
+  .del-modal .del-confirm-label{font-size:12px;color:var(--muted);margin-bottom:7px}
+  .del-modal .del-confirm-label strong{color:var(--text)}
+  .del-modal .del-input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;
+    padding:10px 13px;color:var(--text);font-family:'Inter',sans-serif;font-size:14px;outline:none;
+    transition:border-color .2s;margin-bottom:18px}
+  .del-modal .del-input:focus{border-color:#ff5f6d}
+  .del-modal .del-actions{display:flex;gap:8px}
+  .btn-danger-solid{flex:1;background:#ff5f6d;color:#fff;border:none;border-radius:8px;
+    padding:11px;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .2s}
+  .btn-danger-solid:hover{opacity:.85}
+  .btn-danger-solid:disabled{opacity:.4;cursor:not-allowed}
+
+  /* Unsaved overlay */
+  #unsavedOverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:900;align-items:center;justify-content:center}
+</style>
+</head>
+<body>
+
+<!-- Toast container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- PIN overlay -->
+<div class="pin-overlay" id="pinOverlay" style="display:none">
+  <div class="pin-box">
+    <h3>Journal PIN Required</h3>
+    <input type="password" class="pin-input" id="jPin" placeholder="••••" maxlength="6">
+    <button class="btn-primary" onclick="checkPin()">Unlock</button>
+    <div class="pin-err" id="pinErr">Incorrect PIN.</div>
+  </div>
+</div>
+
+<header>
+  <div class="hleft">
+    <button class="back-btn" onclick="window.location.href='dashboard.html'" title="Back to Dashboard">‹</button>
+    <span class="jname" id="jnameHdr">Journal</span>
+  </div>
+  <div class="hright">
+    <button class="icon-btn" id="themeBtn" onclick="cycleTheme()">☀ Light</button>
+  </div>
+</header>
+
+<nav id="mainNav">
+  <button class="tab active" data-tab="logs"      onclick="guardedSwitchTab('logs')">Logs</button>
+  <button class="tab"        data-tab="calendar"  onclick="guardedSwitchTab('calendar')">Calendar</button>
+  <button class="tab"        data-tab="gallery"   onclick="guardedSwitchTab('gallery')">Gallery</button>
+  <button class="tab"        data-tab="analytics" onclick="guardedSwitchTab('analytics')">Analytics</button>
+  <div class="tab-spacer"></div>
+  <button class="tab"        data-tab="settings"  onclick="switchTab('settings')">⚙ Settings</button>
+</nav>
+
+<div class="tab-content active" id="tab-logs">
+  <iframe src="logs.html" id="logsFrame" onload="frameReady('logs')"></iframe>
+</div>
+<div class="tab-content" id="tab-calendar">
+  <iframe src="calendar.html" id="calFrame" onload="frameReady('calendar')"></iframe>
+</div>
+<div class="tab-content" id="tab-gallery">
+  <iframe src="gallery.html" id="galFrame" onload="frameReady('gallery')"></iframe>
+</div>
+<div class="tab-content" id="tab-analytics">
+  <iframe src="analytics.html" id="analyticsFrame" onload="frameReady('analytics')"></iframe>
+</div>
+
+<!-- Settings tab -->
+<div class="tab-content" id="tab-settings">
+  <div class="settings-panel">
+    <div class="settings-grid">
+
+      <!-- Journal Info -->
+      <div class="ssec">
+        <div class="ssec-title">Journal Info</div>
+        <div class="field-row">
+          <div class="field-label">Journal Name</div>
+          <input type="text" class="field-input" id="js-name" placeholder="e.g. Forex 2025" maxlength="48" oninput="DirtyTracker.markDirty()">
+        </div>
+        <div class="field-row">
+          <div class="field-label">Account Capital</div>
+          <input type="number" class="field-input" id="js-capital" placeholder="e.g. 10000" oninput="DirtyTracker.markDirty()">
+        </div>
+        <div id="js-pin-section"></div>
+        <div class="save-row">
+          <button class="jsave-btn" onclick="saveJournalSettings()">Save Changes</button>
+          <span class="saved-msg" id="jsSavedMsg">✓ Saved</span>
+        </div>
+      </div>
+
+      <!-- Display Options -->
+      <div class="ssec">
+        <div class="ssec-title">Display Options</div>
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <div class="tname">Show PNL on Dashboard</div>
+            <div class="tdesc">When off, PNL is hidden on the dashboard card</div>
+          </div>
+          <div class="tswitch on" id="showPnlToggle" onclick="toggleFlag('showPnl')"></div>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <div class="tname">Show Capital on Dashboard</div>
+            <div class="tdesc">When off, capital is hidden on the dashboard card</div>
+          </div>
+          <div class="tswitch on" id="showCapitalToggle" onclick="toggleFlag('showCapital')"></div>
+        </div>
+      </div>
+
+      <!-- Strategy Tags -->
+      <div class="ssec">
+        <div class="ssec-title">Strategy Tags</div>
+        <div class="tag-list" id="stratTagList"></div>
+        <div class="tag-add-row">
+          <input type="text" class="tag-input" id="stratInput" placeholder="Add strategy tag…">
+          <button class="tag-add-btn" onclick="addDefaultTag('strategy')">Add</button>
+        </div>
+      </div>
+
+      <!-- Timeframe Tags -->
+      <div class="ssec">
+        <div class="ssec-title">Timeframe Tags</div>
+        <div class="tag-list" id="tfTagList"></div>
+        <div class="tag-add-row">
+          <input type="text" class="tag-input" id="tfInput" placeholder="Add timeframe tag…">
+          <button class="tag-add-btn" onclick="addDefaultTag('timeframe')">Add</button>
+        </div>
+      </div>
+
+      <!-- Mood Tags & Colors -->
+      <div class="ssec full">
+        <div class="ssec-title">Mood Tags &amp; Colors</div>
+        <div class="mood-tag-grid" id="moodTagGrid"></div>
+        <div class="tag-add-row" style="margin-top:10px">
+          <input type="color" id="moodColorPicker" value="#8fa39a" title="Pick color for new mood" style="width:36px;height:36px;border:1px solid var(--border);border-radius:7px;background:none;cursor:pointer;padding:2px;flex-shrink:0">
+          <input type="text" class="tag-input" id="moodInput" placeholder="New mood name (e.g. Focused)…">
+          <button class="tag-add-btn" onclick="addMoodTag()"><i class="fa-solid fa-plus" style="margin-right:4px"></i>Add</button>
+        </div>
+      </div>
+
+      <!-- Pair Suggestions -->
+      <div class="ssec">
+        <div class="ssec-title">Pair Suggestions</div>
+        <div class="tag-list" id="pairTagList"></div>
+        <div class="tag-add-row">
+          <input type="text" class="tag-input" id="pairInput" placeholder="Add pair…">
+          <button class="tag-add-btn" onclick="addDefaultTag('pair')">Add</button>
+        </div>
+      </div>
+
+      <!-- Export & Import -->
+      <div class="ssec full">
+        <div class="ssec-title">Export &amp; Import Journal</div>
+        <div class="io-row">
+          <button class="io-btn export-io" onclick="openExport()">
+            <span class="io-icon"><i class="fa-solid fa-file-arrow-down"></i></span>
+            <span class="io-label">Export Journal</span>
+            <span class="io-desc">Download trades and/or settings as a .json backup file</span>
+          </button>
+          <button class="io-btn" onclick="openImport()">
+            <span class="io-icon"><i class="fa-solid fa-file-arrow-up"></i></span>
+            <span class="io-label">Import Journal</span>
+            <span class="io-desc">Restore trades from a previously exported .json file</span>
+          </button>
+        </div>
+        <div class="io-note">
+          <i class="fa-solid fa-circle-info" style="color:var(--accent2);margin-right:5px"></i>
+          Export regularly to back up your trades. Import supports <strong>Replace</strong> (overwrite) or <strong>Merge</strong> (append new trades only) modes.
+        </div>
+      </div>
+
+      <!-- Delete Journal — Danger Zone -->
+      <div class="ssec full danger-zone">
+        <div class="ssec-title"><i class="fa-solid fa-triangle-exclamation" style="margin-right:6px"></i>Danger Zone</div>
+        <div class="delete-journal-row">
+          <div class="delete-journal-info">
+            <strong>Delete This Journal</strong>
+            Permanently removes this journal, all its trades, notes, and images. This cannot be undone.
+          </div>
+          <button class="btn-danger-outline" onclick="openDeleteJournal()">
+            <i class="fa-solid fa-trash-can" style="margin-right:6px"></i>Delete Journal
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Export Modal -->
+<div class="overlay" id="exportOverlay">
+  <div class="import-modal" style="max-width:440px">
+    <h3><i class="fa-solid fa-file-arrow-down" style="color:var(--accent2);margin-right:8px"></i>Export Journal</h3>
+    <p class="im-sub">Choose what to include in your export file.</p>
+    <div class="import-body">
+      <div class="export-scope-opts">
+        <div class="export-scope-opt active" id="scopeAll" onclick="setExportScope('all')">
+          <div class="eso-icon"><i class="fa-solid fa-database"></i></div>
+          <div class="eso-info">
+            <div class="eso-title">Full Backup</div>
+            <div class="eso-desc">Trades + all settings (tags, moods, colors, capital)</div>
+          </div>
+          <div class="eso-check"><i class="fa-solid fa-circle-check"></i></div>
+        </div>
+        <div class="export-scope-opt" id="scopeTrades" onclick="setExportScope('trades')">
+          <div class="eso-icon"><i class="fa-solid fa-table-list"></i></div>
+          <div class="eso-info">
+            <div class="eso-title">Trades Only</div>
+            <div class="eso-desc">Only the trade log table data (notes &amp; images included)</div>
+          </div>
+          <div class="eso-check"><i class="fa-solid fa-circle-check"></i></div>
+        </div>
+      </div>
+      <div class="export-summary" id="exportSummary"></div>
+    </div>
+    <div class="import-footer">
+      <button class="btn-ghost" onclick="closeExport()">Cancel</button>
+      <button class="btn-primary" onclick="confirmExport()" style="width:auto;padding:9px 20px">
+        <i class="fa-solid fa-download" style="margin-right:6px"></i>Download
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Import Modal -->
+<div class="overlay" id="importOverlay">
+  <div class="import-modal">
+    <h3><i class="fa-solid fa-file-arrow-up" style="color:var(--accent2);margin-right:8px"></i>Import Journal</h3>
+    <p class="im-sub">Restore trades from a previously exported TradeLog <code style="background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 5px;font-size:11px">.json</code> file.</p>
+    <div class="import-body">
+      <div class="import-dropzone" id="importDropzone"
+        ondragover="dzDragOver(event)" ondragleave="dzDragLeave()" ondrop="dzDrop(event)">
+        <span class="dz-icon"><i class="fa-solid fa-folder-open"></i></span>
+        <div class="dz-label">Drop your file here or <strong>click to browse</strong></div>
+        <input type="file" id="importFileInput" accept=".json,application/json" onchange="handleImportFile(event)">
+      </div>
+      <div class="import-file-info" id="importFileInfo">
+        <span class="ifi-name" id="importFileName">—</span>
+        <button class="ifi-clear" onclick="clearImportFile()" title="Remove file">✕</button>
+      </div>
+      <div class="import-mode">
+        <div class="im-label">Import Mode</div>
+        <div class="mode-opts">
+          <div class="mode-opt active" id="modeReplace" onclick="setImportMode('replace')">
+            <div class="mo-title">Replace</div>
+            <div class="mo-desc">Overwrite all current trades with the imported data</div>
+          </div>
+          <div class="mode-opt" id="modeMerge" onclick="setImportMode('merge')">
+            <div class="mo-title">Merge</div>
+            <div class="mo-desc">Append imported trades, skipping duplicates by ID</div>
+          </div>
+        </div>
+      </div>
+      <div class="import-preview" id="importPreview">
+        <div class="ip-row"><span class="ip-lbl">Trades in file</span><span class="ip-val ok" id="ipTotal">0</span></div>
+        <div class="ip-row" id="ipDupRow" style="display:none"><span class="ip-lbl">Already exist (will skip)</span><span class="ip-val warn" id="ipDups">0</span></div>
+        <div class="ip-row" id="ipNewRow" style="display:none"><span class="ip-lbl">New trades to add</span><span class="ip-val ok" id="ipNew">0</span></div>
+        <div class="ip-row" id="ipReplaceRow"><span class="ip-lbl">Current trades (will be replaced)</span><span class="ip-val warn" id="ipCurrent">0</span></div>
+        <div class="ip-row"><span class="ip-lbl">Journal name in file</span><span class="ip-val" id="ipJournal" style="color:var(--muted)">—</span></div>
+        <div class="ip-row"><span class="ip-lbl">Exported on</span><span class="ip-val" id="ipDate" style="color:var(--muted)">—</span></div>
+      </div>
+      <div id="importSettingsRow" style="display:none;margin-bottom:4px">
+        <div class="import-mode" style="margin-bottom:0">
+          <div class="im-label" style="margin-bottom:8px"><i class="fa-solid fa-sliders" style="margin-right:4px;color:var(--accent2)"></i>This file also contains settings</div>
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px">
+            <input type="checkbox" id="importSettingsChk" checked style="accent-color:var(--accent2);width:15px;height:15px;cursor:pointer">
+            <span style="font-size:12px;color:var(--text)">Also restore settings <span style="color:var(--muted)">(tags, moods, colors, capital)</span></span>
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="import-footer">
+      <button class="btn-ghost" onclick="closeImport()">Cancel</button>
+      <button class="btn-primary" id="importConfirmBtn" onclick="confirmImport()" disabled style="opacity:.45;cursor:not-allowed;width:auto;padding:9px 20px">Import</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Journal Confirm Modal -->
+<div class="overlay" id="deleteJournalOverlay">
+  <div class="import-modal" style="max-width:400px">
+    <h3 style="color:#ff5f6d"><i class="fa-solid fa-triangle-exclamation" style="margin-right:8px"></i>Delete Journal</h3>
+    <p class="im-sub">This will permanently delete <strong id="deleteJournalName">this journal</strong> and all its trades, notes, and images. This action <strong>cannot be undone</strong>.</p>
+    <div class="import-body">
+      <div style="background:rgba(255,95,109,.06);border:1px solid rgba(255,95,109,.25);border-radius:8px;padding:12px 14px;font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:14px">
+        <i class="fa-solid fa-circle-info" style="color:#ff5f6d;margin-right:5px"></i>
+        Type the journal name to confirm deletion.
+      </div>
+      <input type="text" class="field-input" id="deleteJournalConfirmInput" placeholder="Type journal name here…" oninput="checkDeleteConfirm()">
+    </div>
+    <div class="import-footer">
+      <button class="btn-ghost" onclick="closeDeleteJournal()">Cancel</button>
+      <button id="deleteJournalConfirmBtn" class="btn-primary" onclick="confirmDeleteJournal()" disabled
+        style="width:auto;padding:9px 20px;background:#ff5f6d;opacity:.45;cursor:not-allowed">
+        <i class="fa-solid fa-trash-can" style="margin-right:6px"></i>Delete Forever
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Toast ──────────────────────────────────────────────────────────────── -->
+<div id="tlToast">
+  <span class="toast-icon" id="toastIcon"></span>
+  <span class="toast-msg" id="toastMsg"></span>
+  <button class="toast-undo" id="toastUndoBtn" onclick="toastUndo()" style="display:none">
+    <i class="fa-solid fa-rotate-left" style="margin-right:4px"></i>Undo
+  </button>
+  <button class="toast-close" onclick="document.getElementById('tlToast').classList.remove('show')" title="Dismiss">
+    <i class="fa-solid fa-xmark"></i>
+  </button>
+</div>
+
+<!-- ── Delete Journal Modal ────────────────────────────────────────────────── -->
+<div class="overlay" id="delJournalOverlay">
+  <div class="del-modal">
+    <h3><i class="fa-solid fa-trash-can" style="margin-right:8px"></i>Delete Journal</h3>
+    <p>
+      You are about to permanently delete <strong id="delJournalName">this journal</strong> and all of its trades, notes, and images.<br>
+      <span style="color:#ff5f6d;font-weight:600">This action cannot be undone.</span>
+    </p>
+    <div class="del-confirm-label">
+      Type <strong id="delJournalNameHint">the journal name</strong> to confirm:
+    </div>
+    <input type="text" class="del-input" id="delJournalConfirmInput"
+      placeholder="Type journal name here…" autocomplete="off"
+      oninput="checkDelJournalInput()">
+    <div class="del-actions">
+      <button class="btn-ghost" onclick="closeDeleteJournal()" style="flex:1">Cancel</button>
+      <button class="btn-danger-solid" id="delJournalConfirmBtn" disabled onclick="executeDeleteJournal()">
+        <i class="fa-solid fa-trash-can" style="margin-right:6px"></i>Delete Forever
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Unsaved Settings Warning -->
+<div id="unsavedOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:900;align-items:center;justify-content:center">
+  <div style="background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:28px;width:100%;max-width:360px;margin:20px">
+    <h4 style="font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;margin-bottom:8px">Unsaved Changes</h4>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.6">You have unsaved changes in Journal Info.</p>
+    <div style="display:flex;gap:8px">
+      <button onclick="discardAndLeave()" style="flex:1;background:none;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:10px;font-family:'Inter',sans-serif;font-size:13px;cursor:pointer">Discard &amp; Leave</button>
+      <button onclick="closeUnsaved()" style="flex:1;background:var(--accent);color:#0b0f0c;border:none;border-radius:7px;padding:10px;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;cursor:pointer">Stay</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Toast ────────────────────────────────────────────────────────────── -->
+<div class="tl-toast" id="tlToast">
+  <span class="toast-msg" id="toastMsg"></span>
+  <button class="toast-undo" id="toastUndoBtn" onclick="toastUndo()" style="display:none">Undo</button>
+</div>
+
+<!-- ── Delete Journal Confirm Modal ─────────────────────────────────────── -->
+<div class="overlay" id="delJournalOverlay">
+  <div style="background:var(--panel);border:1px solid rgba(255,95,109,.3);border-radius:14px;width:100%;max-width:400px;margin:20px;padding:28px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <i class="fa-solid fa-trash" style="font-size:18px;color:#ff5f6d"></i>
+      <h3 style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600">Delete Journal?</h3>
+    </div>
+    <p style="font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:8px">
+      You are about to permanently delete <strong id="delJournalName" style="color:var(--text)">this journal</strong> and all of its data.
+    </p>
+    <p style="font-size:12px;color:#ff5f6d;margin-bottom:20px;line-height:1.5">
+      <i class="fa-solid fa-triangle-exclamation" style="margin-right:4px"></i>This will erase all trades, notes, images and settings. There is no undo.
+    </p>
+    <div style="margin-bottom:16px">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Type the journal name to confirm:</div>
+      <input type="text" id="delJournalConfirmInput" class="field-input" placeholder="Journal name…" oninput="checkDelJournalInput()">
+    </div>
+    <div style="display:flex;gap:8px">
+      <button onclick="closeDeleteJournal()" style="flex:1;background:none;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:10px;font-family:'Inter',sans-serif;font-size:13px;cursor:pointer">Cancel</button>
+      <button id="delJournalConfirmBtn" onclick="executeDeleteJournal()" disabled style="flex:1;background:#ff5f6d;color:#fff;border:none;border-radius:7px;padding:10px;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;cursor:not-allowed;opacity:.45;transition:all .2s">Delete Forever</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── DirtyTracker ────────────────────────────────────────────────────────────
+const DirtyTracker=(function(){
+  let _dirty=false;
+  return{markDirty(){_dirty=true;},markClean(){_dirty=false;},isDirty(){return _dirty;}};
+})();
+
+// ── Theme ──────────────────────────────────────────────────────────────────
+let curTheme=localStorage.getItem('tl_theme')||'dark';
+function applyTheme(t){
+  const r=document.documentElement;
+  const dark=t==='dark'||(t==='system'&&!window.matchMedia('(prefers-color-scheme:light)').matches);
+  if(!dark){
+    r.style.setProperty('--bg','#f6faf8');r.style.setProperty('--panel','#ffffff');
+    r.style.setProperty('--accent','#19c37d');r.style.setProperty('--accent2','#0fa86a');
+    r.style.setProperty('--border','#d9e5df');r.style.setProperty('--text','#0f1c17');r.style.setProperty('--muted','#6b8578');
+    document.getElementById('themeBtn').textContent='☾ Dark';
+  } else {
+    r.style.setProperty('--bg','#0b0f0c');r.style.setProperty('--panel','#111816');
+    r.style.setProperty('--accent','#00ff88');r.style.setProperty('--accent2','#19c37d');
+    r.style.setProperty('--border','#1c2a25');r.style.setProperty('--text','#e6f2ec');r.style.setProperty('--muted','#8fa39a');
+    document.getElementById('themeBtn').textContent='☀ Light';
+  }
+  ['logsFrame','calFrame','galFrame','analyticsFrame'].forEach(fid=>{
+    const f=document.getElementById(fid);
+    try{if(f&&f.contentWindow&&f.contentWindow.applyTheme)f.contentWindow.applyTheme(t);}catch(e){}
+  });
+}
+function cycleTheme(){curTheme=curTheme==='dark'?'light':'dark';localStorage.setItem('tl_theme',curTheme);applyTheme(curTheme);}
+applyTheme(curTheme);
+
+// ── Journal load ───────────────────────────────────────────────────────────
+const jid=localStorage.getItem('tl_current_journal');
+const journal=(JSON.parse(localStorage.getItem('tl_journals')||'[]')).find(j=>j.id===jid);
+if(journal){
+  document.getElementById('jnameHdr').textContent=journal.name;
+  document.title='TradeLog — '+journal.name;
+  if(journal.pin) document.getElementById('pinOverlay').style.display='flex';
+}
+function checkPin(){
+  const v=document.getElementById('jPin').value;
+  if(v===journal.pin) document.getElementById('pinOverlay').style.display='none';
+  else{document.getElementById('pinErr').classList.add('show');document.getElementById('jPin').value='';}
+}
+document.getElementById('jPin')?.addEventListener('keydown',e=>{if(e.key==='Enter')checkPin();});
+
+// ── Tab switching ──────────────────────────────────────────────────────────
+let activeTab='logs';
+let pendingTabTarget=null;
+const tabNames=['logs','calendar','gallery','analytics','settings'];
+function switchTab(name){
+  tabNames.forEach(t=>{
+    document.getElementById('tab-'+t).classList.toggle('active',t===name);
+    document.querySelector(`[data-tab="${t}"]`)?.classList.toggle('active',t===name);
+  });
+  activeTab=name;
+  if(name==='calendar')  reloadFrame('calFrame','calendar.html');
+  if(name==='gallery')   reloadFrame('galFrame','gallery.html');
+  if(name==='analytics') reloadFrame('analyticsFrame','analytics.html');
+  if(name==='settings')  onSettingsOpen();
+}
+function reloadFrame(fid,src){const f=document.getElementById(fid);if(f)f.src=src+'?t='+Date.now();}
+function frameReady(name){
+  const fid={logs:'logsFrame',calendar:'calFrame',gallery:'galFrame',analytics:'analyticsFrame'}[name];
+  if(fid){const f=document.getElementById(fid);try{if(f&&f.contentWindow&&f.contentWindow.applyTheme)f.contentWindow.applyTheme(curTheme);}catch(e){}}
+}
+function guardedSwitchTab(name){
+  if(activeTab==='settings'&&DirtyTracker.isDirty()&&name!=='settings'){
+    pendingTabTarget=name;
+    document.getElementById('unsavedOverlay').style.display='flex';return;
+  }
+  switchTab(name);
+}
+function closeUnsaved(){document.getElementById('unsavedOverlay').style.display='none';pendingTabTarget=null;document.querySelector('.jsave-btn')?.focus();}
+function discardAndLeave(){
+  document.getElementById('unsavedOverlay').style.display='none';
+  DirtyTracker.markClean();populateJournalSettings();
+  const target=pendingTabTarget||'logs';pendingTabTarget=null;switchTab(target);
+}
+window.addEventListener('beforeunload',function(e){if(DirtyTracker.isDirty()&&activeTab==='settings'){e.preventDefault();e.returnValue='';}});
+
+// ── Toast system ────────────────────────────────────────────────────────────
+function showToast(msg, opts={}){
+  const {icon='fa-solid fa-check-circle', iconColor='var(--accent2)', undoFn=null, duration=4000}=opts;
+  const container=document.getElementById('toastContainer');
+  const el=document.createElement('div');
+  el.className='toast';
+  el.innerHTML=`
+    <i class="${icon} toast-icon" style="color:${iconColor}"></i>
+    <span class="toast-msg">${msg}</span>
+    ${undoFn?`<button class="toast-undo" onclick="toastUndo(this)">Undo</button>`:''}
+    <button class="toast-close" onclick="dismissToast(this.closest('.toast'))"><i class="fa-solid fa-xmark"></i></button>`;
+  if(undoFn) el.dataset.undoFn='__undoFn_'+Date.now();
+  container.appendChild(el);
+  if(undoFn) window[el.dataset.undoFn]=undoFn;
+  const timer=setTimeout(()=>dismissToast(el),duration);
+  el._timer=timer;
+  return el;
+}
+function toastUndo(btn){
+  const el=btn.closest('.toast');
+  clearTimeout(el._timer);
+  if(el.dataset.undoFn&&window[el.dataset.undoFn]) window[el.dataset.undoFn]();
+  dismissToast(el);
+}
+function dismissToast(el){
+  if(!el||!el.parentNode) return;
+  clearTimeout(el._timer);
+  el.classList.add('leaving');
+  setTimeout(()=>el.parentNode&&el.parentNode.removeChild(el),260);
+}
+
+// ── Settings ───────────────────────────────────────────────────────────────
+function onSettingsOpen(){populateJournalSettings();renderSettingsTags();renderMoodTagGrid();DirtyTracker.markClean();}
+function getJournals(){return JSON.parse(localStorage.getItem('tl_journals')||'[]');}
+
+function renderPinSection(){
+  const j=getJournals().find(x=>x.id===jid);if(!j) return;
+  const hasPIN=!!(j.pin&&j.pin.trim());
+  const box=document.getElementById('js-pin-section');
+  if(hasPIN){
+    box.innerHTML=`
+      <div class="field-row">
+        <div class="field-label" style="display:flex;align-items:center;justify-content:space-between">
+          <span>Journal PIN</span>
+          <span class="pin-status pin-active"><i class="fa-solid fa-lock" style="margin-right:4px;font-size:10px"></i>PIN Active</span>
+        </div>
+        <div class="pin-actions-row">
+          <button class="pin-action-btn change-pin-btn" onclick="showChangePinFields()" id="changePinBtn">
+            <i class="fa-solid fa-key"></i> Change PIN
+          </button>
+          <button class="pin-action-btn remove-pin-btn" onclick="confirmRemovePin()">
+            <i class="fa-solid fa-lock-open"></i> Remove PIN
+          </button>
+        </div>
+        <div id="changePinFields" style="display:none;margin-top:10px">
+          <input type="password" class="field-input" id="js-pin-new" placeholder="Enter new PIN (4–6 digits)" maxlength="6" autocomplete="new-password" oninput="DirtyTracker.markDirty()" style="margin-bottom:6px">
+          <input type="password" class="field-input" id="js-pin-confirm" placeholder="Confirm new PIN" maxlength="6" autocomplete="new-password" oninput="DirtyTracker.markDirty()">
+          <div class="pin-hint" id="pinMatchHint" style="display:none"></div>
+        </div>
+      </div>`;
+  } else {
+    box.innerHTML=`
+      <div class="field-row">
+        <div class="field-label" style="display:flex;align-items:center;justify-content:space-between">
+          <span>Journal PIN</span>
+          <span class="pin-status pin-none"><i class="fa-solid fa-lock-open" style="margin-right:4px;font-size:10px"></i>No PIN</span>
+        </div>
+        <input type="password" class="field-input" id="js-pin-set" placeholder="Set a PIN to protect this journal" maxlength="6" autocomplete="new-password" oninput="DirtyTracker.markDirty()">
+        <div class="pin-hint" style="margin-top:5px;font-size:11px;color:var(--muted)"><i class="fa-solid fa-circle-info" style="margin-right:3px"></i>Leave blank to keep no PIN. Min 4 digits.</div>
+      </div>`;
+  }
+}
+
+function showChangePinFields(){
+  const fields=document.getElementById('changePinFields');
+  const btn=document.getElementById('changePinBtn');
+  if(fields.style.display==='none'){
+    fields.style.display='block';
+    btn.innerHTML='<i class="fa-solid fa-xmark"></i> Cancel';
+    btn.classList.add('cancel-pin-btn');
+    document.getElementById('js-pin-new')?.focus();
+  } else {
+    fields.style.display='none';
+    btn.innerHTML='<i class="fa-solid fa-key"></i> Change PIN';
+    btn.classList.remove('cancel-pin-btn');
+    document.getElementById('pinMatchHint').style.display='none';
+  }
+}
+
+function confirmRemovePin(){
+  const btn=document.querySelector('.remove-pin-btn');
+  if(btn.dataset.confirming==='1'){
+    const list=getJournals();const idx=list.findIndex(x=>x.id===jid);if(idx<0) return;
+    list[idx].pin='';
+    localStorage.setItem('tl_journals',JSON.stringify(list));
+    DirtyTracker.markClean();renderPinSection();showSavedMsg();
+    showToast('Journal PIN removed',{icon:'fa-solid fa-lock-open',iconColor:'var(--muted)'});
+  } else {
+    btn.dataset.confirming='1';
+    btn.innerHTML='<i class="fa-solid fa-triangle-exclamation"></i> Tap again to confirm';
+    btn.classList.add('remove-pin-confirm');
+    setTimeout(()=>{
+      if(btn.dataset.confirming==='1'){
+        btn.dataset.confirming='';
+        btn.innerHTML='<i class="fa-solid fa-lock-open"></i> Remove PIN';
+        btn.classList.remove('remove-pin-confirm');
+      }
+    },3000);
+  }
+}
+
+function showSavedMsg(){
+  const msg=document.getElementById('jsSavedMsg');msg.classList.add('show');setTimeout(()=>msg.classList.remove('show'),2000);
+}
+
+function populateJournalSettings(){
+  const j=getJournals().find(x=>x.id===jid);if(!j) return;
+  document.getElementById('js-name').value=j.name||'';
+  document.getElementById('js-capital').value=j.capital||'';
+  renderPinSection();
+  document.getElementById('showPnlToggle').classList.toggle('on',j.showPnl!==false);
+  document.getElementById('showCapitalToggle').classList.toggle('on',j.showCapital!==false);
+}
+
+function saveJournalSettings(){
+  const list=getJournals();const idx=list.findIndex(x=>x.id===jid);if(idx<0) return;
+  const newName=document.getElementById('js-name').value.trim();
+  if(newName){
+    list[idx].name=newName;
+    document.getElementById('jnameHdr').textContent=newName;
+    document.title='TradeLog — '+newName;
+  }
+  list[idx].capital=document.getElementById('js-capital').value.trim();
+  const hasPIN=!!(list[idx].pin&&list[idx].pin.trim());
+  if(hasPIN){
+    const fields=document.getElementById('changePinFields');
+    if(fields&&fields.style.display!=='none'){
+      const newPin=document.getElementById('js-pin-new')?.value.trim()||'';
+      const confirmPin=document.getElementById('js-pin-confirm')?.value.trim()||'';
+      const hint=document.getElementById('pinMatchHint');
+      if(newPin){
+        if(newPin.length<4){hint.textContent='PIN must be at least 4 digits.';hint.className='pin-hint pin-err';hint.style.display='block';return;}
+        if(newPin!==confirmPin){hint.textContent="PINs don't match — please try again.";hint.className='pin-hint pin-err';hint.style.display='block';return;}
+        list[idx].pin=newPin;hint.style.display='none';
+      }
+    }
+  } else {
+    const setPinEl=document.getElementById('js-pin-set');
+    if(setPinEl){
+      const val=setPinEl.value.trim();
+      if(val){if(val.length<4){alert('PIN must be at least 4 digits.');return;}list[idx].pin=val;}
+    }
+  }
+  localStorage.setItem('tl_journals',JSON.stringify(list));
+  DirtyTracker.markClean();renderPinSection();showSavedMsg();
+}
+
+function toggleFlag(flag){
+  const list=getJournals();const idx=list.findIndex(x=>x.id===jid);if(idx<0) return;
+  const cur=list[idx][flag]!==false;list[idx][flag]=!cur;
+  localStorage.setItem('tl_journals',JSON.stringify(list));
+  const toggleId=flag==='showPnl'?'showPnlToggle':'showCapitalToggle';
+  document.getElementById(toggleId).classList.toggle('on',!cur);
+}
+
+// ── Tag Management ─────────────────────────────────────────────────────────
+const DEFAULTS={
+  strategy:['Breakout','Reversal','Trend Continuation','Liquidity Sweep','Scalp','Swing'],
+  timeframe:['M1','M5','M15','H1','H4','D1','W1'],
+  pair:['EURUSD','GBPUSD','BTCUSD','XAUUSD','USDJPY','GBPJPY'],
+  mood:['Euphoric','Confident','Neutral','Doubtful','Anxious','Fearful','Revenge']
+};
+function getTagList(type){
+  const keys={strategy:'tl_strategies',timeframe:'tl_timeframes',pair:'tl_pairs',mood:'tl_moods'};
+  if(!localStorage.getItem(keys[type])) localStorage.setItem(keys[type],JSON.stringify(DEFAULTS[type]||[]));
+  return JSON.parse(localStorage.getItem(keys[type])||'[]');
+}
+function saveTagList(type,list){const keys={strategy:'tl_strategies',timeframe:'tl_timeframes',pair:'tl_pairs',mood:'tl_moods'};localStorage.setItem(keys[type],JSON.stringify(list));}
+
+function renderSettingsTags(){
+  const map={strategy:'stratTagList',timeframe:'tfTagList',pair:'pairTagList'};
+  Object.entries(map).forEach(([type,elId])=>{
+    const el=document.getElementById(elId);if(!el) return;
+    el.innerHTML=getTagList(type).map(t=>`<span class="stag">${escHtml(t)}<span class="rm" onclick="removeDefaultTag('${type}','${escHtml(t)}')">×</span></span>`).join('');
+  });
+}
+
+function addDefaultTag(type){
+  const inputs={strategy:'stratInput',timeframe:'tfInput',pair:'pairInput'};
+  const inp=document.getElementById(inputs[type]);if(!inp) return;
+  const val=inp.value.trim();if(!val) return;
+  const v=type==='pair'?val.toUpperCase():val;
+  const list=getTagList(type);
+  if(!list.includes(v)){list.push(v);saveTagList(type,list);}
+  inp.value='';renderSettingsTags();
+}
+
+function removeDefaultTag(type,val){
+  const prev=[...getTagList(type)];
+  saveTagList(type,prev.filter(t=>t!==val));
+  renderSettingsTags();
+  const typeLabel={strategy:'Strategy',timeframe:'Timeframe',pair:'Pair'}[type]||type;
+  showToast(`<strong>${escHtml(val)}</strong> ${typeLabel} tag removed`,{
+    icon:'fa-solid fa-tag',iconColor:'var(--muted)',
+    undoFn:()=>{saveTagList(type,prev);renderSettingsTags();showToast(`<strong>${escHtml(val)}</strong> restored`,{icon:'fa-solid fa-rotate-left',iconColor:'var(--accent2)'});}
+  });
+}
+
+['stratInput','tfInput','pairInput'].forEach((id,i)=>{
+  const types=['strategy','timeframe','pair'];
+  document.getElementById(id)?.addEventListener('keydown',e=>{if(e.key==='Enter')addDefaultTag(types[i]);});
+});
+document.getElementById('moodInput')?.addEventListener('keydown',e=>{if(e.key==='Enter')addMoodTag();});
+function escHtml(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+
+// ── Mood Tag Manager ──────────────────────────────────────────────────────────
+const DEFAULT_MOOD_COLORS={'Euphoric':'#f59e0b','Confident':'#22c55e','Neutral':'#64748b','Doubtful':'#f97316','Anxious':'#ef4444','Fearful':'#dc2626','Revenge':'#a855f7'};
+function getMoodColors(){return JSON.parse(localStorage.getItem('tl_mood_colors')||JSON.stringify(DEFAULT_MOOD_COLORS));}
+
+function renderMoodTagGrid(){
+  const moods=getTagList('mood');
+  const colors=getMoodColors();
+  const grid=document.getElementById('moodTagGrid');
+  if(!grid) return;
+  if(!moods.length){grid.innerHTML='<span style="font-size:12px;color:var(--muted);padding:4px 0">No moods yet. Add one below.</span>';return;}
+  grid.innerHTML=moods.map(m=>{
+    const col=colors[m]||'#8fa39a';
+    const r=parseInt(col.slice(1,3),16),g=parseInt(col.slice(3,5),16),b=parseInt(col.slice(5,7),16);
+    const style=`background:rgba(${r},${g},${b},.15);color:${col};border-color:rgba(${r},${g},${b},.35)`;
+    return `<div class="mood-tag-item" style="${style}">
+      <input type="color" class="mtag-color" value="${col}" title="Change color for ${escHtml(m)}"
+        oninput="updateMoodColor('${escHtml(m)}',this.value)" style="background:${col};width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,.3);cursor:pointer;padding:0;-webkit-appearance:none;appearance:none;flex-shrink:0">
+      <span class="mtag-name">${escHtml(m)}</span>
+      <button class="mtag-rm" onclick="removeMoodTag('${escHtml(m)}')" title="Remove mood"><i class="fa-solid fa-xmark"></i></button>
+    </div>`;
+  }).join('');
+}
+
+function addMoodTag(){
+  const inp=document.getElementById('moodInput');
+  const picker=document.getElementById('moodColorPicker');
+  const val=inp.value.trim();if(!val) return;
+  const list=getTagList('mood');
+  if(list.find(t=>t.toLowerCase()===val.toLowerCase())){inp.focus();return;}
+  list.push(val);saveTagList('mood',list);
+  const colors=getMoodColors();colors[val]=picker.value;
+  localStorage.setItem('tl_mood_colors',JSON.stringify(colors));
+  inp.value='';picker.value='#8fa39a';
+  renderMoodTagGrid();
+  broadcastMoodColors();
+  showToast(`Mood <strong>${escHtml(val)}</strong> added`,{icon:'fa-solid fa-face-smile',iconColor:picker.value});
+}
+
+function removeMoodTag(val){
+  const prevList=[...getTagList('mood')];
+  const prevColors={...getMoodColors()};
+  saveTagList('mood',prevList.filter(t=>t!==val));
+  renderMoodTagGrid();
+  broadcastMoodColors();
+  showToast(`Mood <strong>${escHtml(val)}</strong> removed`,{
+    icon:'fa-solid fa-face-meh',iconColor:'var(--muted)',
+    undoFn:()=>{
+      saveTagList('mood',prevList);
+      localStorage.setItem('tl_mood_colors',JSON.stringify(prevColors));
+      renderMoodTagGrid();
+      broadcastMoodColors();
+      showToast(`Mood <strong>${escHtml(val)}</strong> restored`,{icon:'fa-solid fa-rotate-left',iconColor:'var(--accent2)'});
+    }
+  });
+}
+
+function updateMoodColor(mood,color){
+  const colors=getMoodColors();colors[mood]=color;
+  localStorage.setItem('tl_mood_colors',JSON.stringify(colors));
+  renderMoodTagGrid();
+  broadcastMoodColors();
+}
+
+// Broadcast updated mood colors to all iframes so they re-render immediately
+function broadcastMoodColors(){
+  ['logsFrame','calFrame','galFrame','analyticsFrame'].forEach(fid=>{
+    const f=document.getElementById(fid);
+    try{if(f&&f.contentWindow)f.contentWindow.postMessage({type:'tl_mood_colors_updated'},'*')}catch(e){}
+  });
+}
+
+// Keep as alias
+function renderMoodColors(){renderMoodTagGrid();}
+
+// ── Delete Journal ─────────────────────────────────────────────────────────
+function askDeleteJournal(){
+  const j=getJournals().find(x=>x.id===jid);
+  document.getElementById('deleteJournalName').textContent=j?j.name:'this journal';
+  document.getElementById('deleteJournalConfirmInput').value='';
+  const btn=document.getElementById('deleteJournalConfirmBtn');
+  btn.disabled=true;btn.style.opacity='.45';btn.style.cursor='not-allowed';
+  document.getElementById('deleteJournalOverlay').classList.add('open');
+  setTimeout(()=>document.getElementById('deleteJournalConfirmInput').focus(),100);
+}
+function closeDeleteJournal(){document.getElementById('deleteJournalOverlay').classList.remove('open');}
+function checkDeleteConfirm(){
+  const j=getJournals().find(x=>x.id===jid);
+  const val=document.getElementById('deleteJournalConfirmInput').value.trim();
+  const match=j&&val.toLowerCase()===j.name.toLowerCase();
+  const btn=document.getElementById('deleteJournalConfirmBtn');
+  btn.disabled=!match;btn.style.opacity=match?'1':'.45';btn.style.cursor=match?'pointer':'not-allowed';
+}
+function confirmDeleteJournal(){
+  // Remove journal from list
+  const list=getJournals().filter(j=>j.id!==jid);
+  localStorage.setItem('tl_journals',JSON.stringify(list));
+  // Remove all trade/gallery data
+  localStorage.removeItem('tl_trades_'+jid);
+  localStorage.removeItem('tl_gallery_'+jid);
+  localStorage.removeItem('tl_current_journal');
+  window.location.href='dashboard.html';
+}
+document.getElementById('deleteJournalOverlay').addEventListener('click',function(e){if(e.target===this)closeDeleteJournal();});
+document.getElementById('deleteJournalConfirmInput')?.addEventListener('keydown',e=>{if(e.key==='Enter')checkDeleteConfirm();});
+
+// ── Export Journal ─────────────────────────────────────────────────────────
+let exportScope='all';
+function openExport(){exportScope='all';setExportScope('all');document.getElementById('exportOverlay').classList.add('open');}
+function closeExport(){document.getElementById('exportOverlay').classList.remove('open');}
+function setExportScope(scope){
+  exportScope=scope;
+  document.getElementById('scopeAll').classList.toggle('active',scope==='all');
+  document.getElementById('scopeTrades').classList.toggle('active',scope==='trades');
+  renderExportSummary();
+}
+function renderExportSummary(){
+  const jList=getJournals();const journalObj=jList.find(j=>j.id===jid)||{};
+  const trades=JSON.parse(localStorage.getItem('tl_trades_'+jid)||'[]');
+  const moods=getTagList('mood'),strategies=getTagList('strategy'),tfs=getTagList('timeframe'),pairs=getTagList('pair');
+  const all=exportScope==='all';
+  document.getElementById('exportSummary').innerHTML=`
+    <div class="es-row included"><i class="fa-solid fa-check"></i> ${trades.length} trade${trades.length!==1?'s':''} (including notes &amp; images)</div>
+    <div class="es-row ${all?'included':''}"><i class="fa-solid fa-${all?'check':'minus'}"></i> ${strategies.length} strategy tag${strategies.length!==1?'s':''}</div>
+    <div class="es-row ${all?'included':''}"><i class="fa-solid fa-${all?'check':'minus'}"></i> ${tfs.length} timeframe tag${tfs.length!==1?'s':''}</div>
+    <div class="es-row ${all?'included':''}"><i class="fa-solid fa-${all?'check':'minus'}"></i> ${pairs.length} pair suggestion${pairs.length!==1?'s':''}</div>
+    <div class="es-row ${all?'included':''}"><i class="fa-solid fa-${all?'check':'minus'}"></i> ${moods.length} mood tag${moods.length!==1?'s':''} &amp; colors</div>
+    <div class="es-row ${all?'included':''}"><i class="fa-solid fa-${all?'check':'minus'}"></i> Capital &amp; journal name</div>`;
+}
+function confirmExport(){
+  const jList=getJournals();const journalObj=jList.find(j=>j.id===jid)||{};
+  const trades=JSON.parse(localStorage.getItem('tl_trades_'+jid)||'[]');
+  const payload={_meta:{app:'TradeLog',version:2,exportedAt:new Date().toISOString(),exportScope,journalId:jid,journalName:journalObj.name||'Journal',tradeCount:trades.length},trades};
+  if(exportScope==='all'){
+    payload.settings={strategies:getTagList('strategy'),timeframes:getTagList('timeframe'),pairs:getTagList('pair'),moods:getTagList('mood'),moodColors:getMoodColors(),capital:journalObj.capital||'',journalName:journalObj.name||''};
+  }
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const safeName=(journalObj.name||'journal').replace(/[^a-z0-9]/gi,'_').toLowerCase();
+  const scopeSuffix=exportScope==='all'?'full':'trades';
+  a.href=url;a.download=`tradelog_${safeName}_${scopeSuffix}_${new Date().toISOString().split('T')[0]}.json`;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+  closeExport();
+}
+
+// ── Import Journal ─────────────────────────────────────────────────────────
+let importMode='replace';
+let importPayload=null;
+function openImport(){
+  importPayload=null;importMode='replace';clearImportFile();setImportMode('replace');
+  document.getElementById('importPreview').classList.remove('show');
+  document.getElementById('importSettingsRow').style.display='none';
+  const btn=document.getElementById('importConfirmBtn');
+  btn.disabled=true;btn.style.opacity='.45';btn.style.cursor='not-allowed';
+  document.getElementById('importOverlay').classList.add('open');
+}
+function closeImport(){document.getElementById('importOverlay').classList.remove('open');importPayload=null;}
+function setImportMode(mode){
+  importMode=mode;
+  document.getElementById('modeReplace').classList.toggle('active',mode==='replace');
+  document.getElementById('modeMerge').classList.toggle('active',mode==='merge');
+  if(importPayload) updateImportPreview();
+}
+function dzDragOver(e){e.preventDefault();document.getElementById('importDropzone').classList.add('dragover');}
+function dzDragLeave(){document.getElementById('importDropzone').classList.remove('dragover');}
+function dzDrop(e){e.preventDefault();document.getElementById('importDropzone').classList.remove('dragover');const file=e.dataTransfer.files[0];if(file)processImportFile(file);}
+function handleImportFile(e){const file=e.target.files[0];if(file)processImportFile(file);e.target.value='';}
+function clearImportFile(){
+  importPayload=null;
+  document.getElementById('importFileInfo').classList.remove('show');
+  document.getElementById('importPreview').classList.remove('show');
+  document.getElementById('importSettingsRow').style.display='none';
+  document.getElementById('importFileName').textContent='—';
+  const btn=document.getElementById('importConfirmBtn');btn.disabled=true;btn.style.opacity='.45';btn.style.cursor='not-allowed';
+}
+function processImportFile(file){
+  if(!file.name.endsWith('.json')&&file.type!=='application/json'){alert('Please select a valid TradeLog .json export file.');return;}
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const parsed=JSON.parse(e.target.result);
+      if(Array.isArray(parsed)){importPayload={_meta:{journalName:'Unknown',exportedAt:'—',tradeCount:parsed.length,exportScope:'trades'},trades:parsed};}
+      else if(parsed.trades&&Array.isArray(parsed.trades)){importPayload=parsed;}
+      else{alert('Invalid file format.');return;}
+      document.getElementById('importFileName').textContent=file.name;
+      document.getElementById('importFileInfo').classList.add('show');
+      updateImportPreview();
+      const btn=document.getElementById('importConfirmBtn');btn.disabled=false;btn.style.opacity='1';btn.style.cursor='pointer';
+    }catch(err){alert('Could not read file. Make sure it is a valid JSON file.');}
+  };
+  reader.readAsText(file);
+}
+function updateImportPreview(){
+  if(!importPayload) return;
+  document.getElementById('importPreview').classList.add('show');
+  const incoming=importPayload.trades||[];
+  const current=JSON.parse(localStorage.getItem('tl_trades_'+jid)||'[]');
+  const currentIds=new Set(current.map(t=>t.id));
+  const dups=incoming.filter(t=>currentIds.has(t.id)).length;
+  document.getElementById('ipTotal').textContent=incoming.length;
+  document.getElementById('ipJournal').textContent=importPayload._meta?.journalName||'—';
+  const rawDate=importPayload._meta?.exportedAt;
+  document.getElementById('ipDate').textContent=rawDate&&rawDate!=='—'?new Date(rawDate).toLocaleString():'—';
+  document.getElementById('importSettingsRow').style.display=importPayload.settings?'':'none';
+  if(importMode==='merge'){
+    document.getElementById('ipDupRow').style.display='';document.getElementById('ipNewRow').style.display='';
+    document.getElementById('ipReplaceRow').style.display='none';
+    document.getElementById('ipDups').textContent=dups;document.getElementById('ipNew').textContent=incoming.length-dups;
+  } else {
+    document.getElementById('ipDupRow').style.display='none';document.getElementById('ipNewRow').style.display='none';
+    document.getElementById('ipReplaceRow').style.display='';document.getElementById('ipCurrent').textContent=current.length;
+  }
+}
+function confirmImport(){
+  if(!importPayload) return;
+  const incoming=importPayload.trades||[];
+  let finalTrades;
+  if(importMode==='replace'){finalTrades=incoming;}
+  else{
+    const current=JSON.parse(localStorage.getItem('tl_trades_'+jid)||'[]');
+    const currentIds=new Set(current.map(t=>t.id));
+    finalTrades=[...current,...incoming.filter(t=>!currentIds.has(t.id))];
+  }
+  localStorage.setItem('tl_trades_'+jid,JSON.stringify(finalTrades));
+  const gal=[];finalTrades.forEach(t=>{(t.images||[]).forEach(img=>{gal.push({tradeId:t.id,data:img.data,pair:t.pair,date:t.date,pnl:t.pnl,notes:t.notes});});});
+  localStorage.setItem('tl_gallery_'+jid,JSON.stringify(gal));
+  const settingsChk=document.getElementById('importSettingsChk');
+  if(importPayload.settings&&settingsChk&&settingsChk.checked){
+    const s=importPayload.settings;
+    if(s.strategies) localStorage.setItem('tl_strategies',JSON.stringify(s.strategies));
+    if(s.timeframes) localStorage.setItem('tl_timeframes',JSON.stringify(s.timeframes));
+    if(s.pairs) localStorage.setItem('tl_pairs',JSON.stringify(s.pairs));
+    if(s.moods) localStorage.setItem('tl_moods',JSON.stringify(s.moods));
+    if(s.moodColors) localStorage.setItem('tl_mood_colors',JSON.stringify(s.moodColors));
+    if(s.capital||s.journalName){
+      const list=getJournals();const idx=list.findIndex(x=>x.id===jid);
+      if(idx>=0){
+        if(s.capital) list[idx].capital=s.capital;
+        if(s.journalName) list[idx].name=s.journalName;
+        localStorage.setItem('tl_journals',JSON.stringify(list));
+        if(s.journalName){document.getElementById('jnameHdr').textContent=s.journalName;document.title='TradeLog — '+s.journalName;}
+      }
+    }
+  }
+  closeImport();
+  reloadFrame('logsFrame','logs.html');
+  if(activeTab==='settings') onSettingsOpen();
+  showToast(`Import complete — ${finalTrades.length} trade${finalTrades.length!==1?'s':''} loaded`,{icon:'fa-solid fa-circle-check',iconColor:'var(--accent2)'});
+}
+
+// ── Toast System ──────────────────────────────────────────────────────────────
+let _toastTimer=null, _toastUndoFn=null;
+// showToast(html, opts) — opts: { icon, iconColor, undoFn }
+// OR legacy showToast(html, undoFn) for backward compat
+function showToast(html, opts){
+  clearTimeout(_toastTimer);
+  let undoFn=null, icon='', iconColor='var(--muted)';
+  if(typeof opts==='function'){ undoFn=opts; }
+  else if(opts&&typeof opts==='object'){ undoFn=opts.undoFn||null; icon=opts.icon||''; iconColor=opts.iconColor||'var(--muted)'; }
+  _toastUndoFn=undoFn;
+  const toast=document.getElementById('tlToast');
+  const msg=document.getElementById('toastMsg');
+  const iconEl=document.getElementById('toastIcon');
+  const undoBtn=document.getElementById('toastUndoBtn');
+  msg.innerHTML=html;
+  if(iconEl){ iconEl.innerHTML=icon?`<i class="${icon}" style="color:${iconColor}"></i>`:''; }
+  undoBtn.style.display=undoFn?'inline-flex':'none';
+  toast.classList.add('show');
+  _toastTimer=setTimeout(()=>{ toast.classList.remove('show'); _toastUndoFn=null; },4500);
+}
+function toastUndo(){
+  clearTimeout(_toastTimer);
+  document.getElementById('tlToast').classList.remove('show');
+  if(_toastUndoFn){ _toastUndoFn(); _toastUndoFn=null; }
+}
+
+// ── Delete Journal ─────────────────────────────────────────────────────────────
+function openDeleteJournal(){
+  const j=getJournals().find(x=>x.id===jid);
+  const name=j?j.name:'this journal';
+  document.getElementById('delJournalName').textContent=name;
+  document.getElementById('delJournalNameHint').textContent='"'+name+'"';
+  document.getElementById('delJournalConfirmInput').value='';
+  const btn=document.getElementById('delJournalConfirmBtn');
+  btn.disabled=true; btn.style.opacity='.45'; btn.style.cursor='not-allowed';
+  document.getElementById('delJournalOverlay').classList.add('open');
+  setTimeout(()=>document.getElementById('delJournalConfirmInput').focus(),120);
+}
+function closeDeleteJournal(){
+  document.getElementById('delJournalOverlay').classList.remove('open');
+}
+function checkDelJournalInput(){
+  const j=getJournals().find(x=>x.id===jid);
+  const expected=(j?.name||'').trim().toLowerCase();
+  const typed=document.getElementById('delJournalConfirmInput').value.trim().toLowerCase();
+  const btn=document.getElementById('delJournalConfirmBtn');
+  const match=typed===expected&&expected!=='';
+  btn.disabled=!match; btn.style.opacity=match?'1':'.45'; btn.style.cursor=match?'pointer':'not-allowed';
+}
+function executeDeleteJournal(){
+  const btn=document.getElementById('delJournalConfirmBtn');
+  if(btn.disabled) return;
+  const list=getJournals().filter(j=>j.id!==jid);
+  localStorage.setItem('tl_journals',JSON.stringify(list));
+  localStorage.removeItem('tl_trades_'+jid);
+  localStorage.removeItem('tl_gallery_'+jid);
+  localStorage.removeItem('tl_current_journal');
+  window.location.href='dashboard.html';
+}
+
+// ── Also fix old askDeleteJournal alias if it exists ───────────────────────
+function askDeleteJournal(){ openDeleteJournal(); }
+
+// Backdrop closes
+document.getElementById('importOverlay').addEventListener('click',function(e){if(e.target===this)closeImport();});
+document.getElementById('exportOverlay').addEventListener('click',function(e){if(e.target===this)closeExport();});
+document.getElementById('delJournalOverlay').addEventListener('click',function(e){if(e.target===this)closeDeleteJournal();});
+</script>
+</body>
+</html>

@@ -1,0 +1,398 @@
+<!-- analytics.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analytics</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{--bg:#0b0f0c;--panel:#111816;--accent:#00ff88;--accent2:#19c37d;--border:#1c2a25;--text:#e6f2ec;--muted:#8fa39a}
+  body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;padding:20px}
+  .page-wrap{max-width:1100px;margin:0 auto}
+
+  .stats-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:20px}
+  .scard{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:14px}
+  .scard .slbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:5px}
+  .scard .sval{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:600}
+  .scard .sval.pos{color:var(--accent)}
+  .scard .sval.neg{color:#ff5f6d}
+
+  .chart-box{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:18px;margin-bottom:14px}
+  .chart-box h3{font-family:'Space Grotesk',sans-serif;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:14px}
+  .charts-2col{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+  canvas{max-height:190px}
+
+  /* Streak cards */
+  .streak-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+  .streak-card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center}
+  .streak-card .slbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px}
+  .streak-card .streak-val{font-family:'Space Grotesk',sans-serif;font-size:30px;font-weight:700}
+  .streak-card .streak-val.win{color:var(--accent)}
+  .streak-card .streak-val.loss{color:#ff5f6d}
+  .streak-card .streak-sub{font-size:11px;color:var(--muted);margin-top:3px}
+
+  /* Breakdown table */
+  .breakdown-table{width:100%;border-collapse:collapse}
+  .breakdown-table th{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;padding:8px 12px;text-align:left;border-bottom:1px solid var(--border)}
+  .breakdown-table td{padding:9px 12px;font-size:13px;border-bottom:1px solid var(--border)}
+  .breakdown-table tr:last-child td{border-bottom:none}
+
+  .empty{color:var(--muted);font-size:14px;text-align:center;padding:60px 0;line-height:1.8}
+
+  @media(max-width:600px){.charts-2col{grid-template-columns:1fr}.streak-row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+<div class="stats-row" id="statsRow"></div>
+<div class="streak-row" id="streakRow"></div>
+
+<div class="chart-box">
+  <h3>Equity Curve</h3>
+  <canvas id="eqChart"></canvas>
+</div>
+
+<div class="charts-2col">
+  <div class="chart-box"><h3>Win / Loss Distribution</h3><canvas id="wlChart"></canvas></div>
+  <div class="chart-box"><h3>Strategy Performance (PNL)</h3><canvas id="stratChart"></canvas></div>
+</div>
+
+<div class="chart-box">
+  <h3>Timeframe Breakdown</h3>
+  <table class="breakdown-table" id="tfTable">
+    <thead><tr><th>Timeframe</th><th>Trades</th><th>Wins</th><th>Win Rate</th><th>Total PNL</th></tr></thead>
+    <tbody id="tfBody"></tbody>
+  </table>
+</div>
+
+<div class="charts-2col" style="margin-bottom:14px">
+  <div class="chart-box"><h3>Mood Distribution</h3><canvas id="moodChart"></canvas></div>
+  <div class="chart-box">
+    <h3>Mood vs Performance</h3>
+    <table class="breakdown-table" id="moodTable">
+      <thead><tr><th>Mood</th><th>Trades</th><th>Win Rate</th><th>Avg PNL</th></tr></thead>
+      <tbody id="moodBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="chart-box" style="margin-top:14px">
+  <h3>Trading Hour Heatmap (Trades per Hour)</h3>
+  <canvas id="hourChart"></canvas>
+</div>
+
+<div class="charts-2col" style="margin-top:14px">
+  <div class="chart-box">
+    <h3>Best Trading Hours (Avg PNL)</h3>
+    <canvas id="hourPnlChart"></canvas>
+  </div>
+  <div class="chart-box">
+    <h3>Time of Day Breakdown</h3>
+    <table class="breakdown-table" id="timeTable">
+      <thead><tr><th>Hour</th><th>Trades</th><th>Wins</th><th>Win Rate</th><th>Avg PNL</th></tr></thead>
+      <tbody id="timeBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="charts-2col" style="margin-bottom:14px">
+  <div class="chart-box"><h3>Long vs Short Trades</h3><canvas id="lsChart"></canvas></div>
+  <div class="chart-box">
+    <h3>Most Traded Pair</h3>
+    <div id="pairBreakdown" style="margin-top:4px"></div>
+  </div>
+</div>
+
+<div class="chart-box" style="margin-bottom:14px">
+  <h3>Trades by Day of Week</h3>
+  <canvas id="dowChart"></canvas>
+</div>
+
+<script>
+function applyTheme(t){
+  const r=document.documentElement;
+  const dark=t==='dark'||(t==='system'&&!window.matchMedia('(prefers-color-scheme:light)').matches);
+  if(!dark){
+    r.style.setProperty('--bg','#f6faf8');r.style.setProperty('--panel','#ffffff');
+    r.style.setProperty('--accent','#19c37d');r.style.setProperty('--border','#d9e5df');
+    r.style.setProperty('--text','#0f1c17');r.style.setProperty('--muted','#6b8578');
+  } else {
+    r.style.setProperty('--bg','#0b0f0c');r.style.setProperty('--panel','#111816');
+    r.style.setProperty('--accent','#00ff88');r.style.setProperty('--accent2','#19c37d');
+    r.style.setProperty('--border','#1c2a25');r.style.setProperty('--text','#e6f2ec');r.style.setProperty('--muted','#8fa39a');
+  }
+}
+(function(){ applyTheme(localStorage.getItem('tl_theme')||'dark'); })();
+
+const jid=localStorage.getItem('tl_current_journal')||'default';
+// Always read fresh from storage — never stale
+const trades=JSON.parse(localStorage.getItem('tl_trades_'+jid)||'[]');
+const isLight=localStorage.getItem('tl_theme')==='light';
+const accent=isLight?'#19c37d':'#00ff88';
+const textColor=isLight?'#6b8578':'#8fa39a';
+const gridColor=isLight?'#d9e5df':'#1c2a25';
+
+Chart.defaults.color=textColor;
+Chart.defaults.borderColor=gridColor;
+
+function fmtPnl(v){ const n=parseFloat(v); if(isNaN(n)) return '—'; return (n>=0?'+':'-')+'$'+Math.abs(n).toFixed(2); }
+function fmtPct(v){ return '%'+parseFloat(v).toFixed(1); }
+
+if(!trades.length){
+  document.body.innerHTML='<div class="empty">No trades yet.<br>Add trades in Logs to see analytics.</div>';
+} else {
+  const valid=trades.filter(t=>t.pnl!==''&&!isNaN(parseFloat(t.pnl)));
+  const wins=valid.filter(t=>parseFloat(t.pnl)>0);
+  const losses=valid.filter(t=>parseFloat(t.pnl)<0);
+  const be=valid.filter(t=>parseFloat(t.pnl)===0);
+  const total=valid.reduce((s,t)=>s+parseFloat(t.pnl),0);
+  const rVals=trades.filter(t=>t.r&&!isNaN(parseFloat(t.r))).map(t=>parseFloat(t.r));
+  const avgR=rVals.length?(rVals.reduce((a,b)=>a+b,0)/rVals.length):0;
+  const wr=valid.length?(wins.length/valid.length*100):0;
+
+  // Streak calculation
+  let maxW=0,maxL=0,curW=0,curL=0,curActiveW=0,curActiveL=0;
+  valid.forEach((t,i)=>{
+    const p=parseFloat(t.pnl);
+    if(p>0){ curW++; curL=0; if(curW>maxW) maxW=curW; }
+    else if(p<0){ curL++; curW=0; if(curL>maxL) maxL=curL; }
+    else { curW=0; curL=0; }
+    if(i===valid.length-1){ curActiveW=p>0?curW:0; curActiveL=p<0?curL:0; }
+  });
+
+  // Stats cards
+  const stats=[
+    {lbl:'Total PNL', val:fmtPnl(total), cls:total>=0?'pos':'neg'},
+    {lbl:'Win Rate', val:fmtPct(wr), cls:''},
+    {lbl:'Wins', val:wins.length, cls:'pos'},
+    {lbl:'Losses', val:losses.length, cls:'neg'},
+    {lbl:'Total Trades', val:trades.length, cls:''},
+    {lbl:'Avg R', val:(avgR>=0?'+':'')+avgR.toFixed(2)+'R', cls:avgR>=0?'pos':'neg'},
+    {lbl:'Best Trade', val:valid.length?fmtPnl(Math.max(...valid.map(t=>parseFloat(t.pnl)))):'—', cls:'pos'},
+    {lbl:'Worst Trade', val:valid.length?fmtPnl(Math.min(...valid.map(t=>parseFloat(t.pnl)))):'—', cls:'neg'},
+  ];
+  document.getElementById('statsRow').innerHTML=stats.map(s=>`
+    <div class="scard"><div class="slbl">${s.lbl}</div><div class="sval ${s.cls}">${s.val}</div></div>`).join('');
+
+  // Streak cards — show best streak only
+  document.getElementById('streakRow').innerHTML=`
+    <div class="streak-card">
+      <div class="slbl">Best Win Streak</div>
+      <div class="streak-val win">${maxW}</div>
+      <div class="streak-sub">consecutive wins</div>
+    </div>
+    <div class="streak-card">
+      <div class="slbl">Best Loss Streak</div>
+      <div class="streak-val loss">${maxL}</div>
+      <div class="streak-sub">consecutive losses</div>
+    </div>`;
+
+  // Equity curve
+  const sorted=[...valid].sort((a,b)=>a.date.localeCompare(b.date));
+  let eq=0;
+  const eqData=sorted.map(t=>{ eq+=parseFloat(t.pnl); return parseFloat(eq.toFixed(2)); });
+  new Chart(document.getElementById('eqChart'),{
+    type:'line',
+    data:{ labels:sorted.map(t=>t.date),
+           datasets:[{data:eqData,borderColor:accent,backgroundColor:accent+'18',fill:true,tension:.35,pointRadius:3,pointBackgroundColor:accent}] },
+    options:{ responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false}},
+              scales:{ x:{ticks:{maxTicksLimit:10}}, y:{} } }
+  });
+
+  // Win/Loss doughnut
+  new Chart(document.getElementById('wlChart'),{
+    type:'doughnut',
+    data:{ labels:['Wins','Losses','Breakeven'],
+           datasets:[{data:[wins.length,losses.length,be.length],backgroundColor:[accent,'#ff5f6d','#8fa39a55'],borderWidth:0}] },
+    options:{ responsive:true,maintainAspectRatio:true,
+              plugins:{legend:{position:'bottom',labels:{padding:14,boxWidth:10}}},cutout:'62%' }
+  });
+
+  // Strategy breakdown
+  const stratMap={};
+  trades.forEach(t=>{ (t.strategy||[]).forEach(s=>{ if(!stratMap[s]) stratMap[s]={pnl:0,w:0,tot:0}; stratMap[s].tot++; const p=parseFloat(t.pnl)||0; if(p>0) stratMap[s].w++; stratMap[s].pnl+=p; }); });
+  const sLabels=Object.keys(stratMap);
+  if(sLabels.length){
+    const sPnl=sLabels.map(s=>parseFloat(stratMap[s].pnl.toFixed(2)));
+    new Chart(document.getElementById('stratChart'),{
+      type:'bar',
+      data:{ labels:sLabels, datasets:[{data:sPnl,backgroundColor:sPnl.map(v=>v>=0?accent+'cc':'#ff5f6dcc'),borderRadius:5}] },
+      options:{ responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false}},scales:{x:{},y:{}} }
+    });
+  } else {
+    document.getElementById('stratChart').closest('.chart-box').innerHTML+='<div style="color:var(--muted);font-size:12px;padding-top:8px">No strategy data yet.</div>';
+  }
+
+  // Timeframe table
+  const tfMap={};
+  trades.forEach(t=>{ (t.timeframe||[]).forEach(tf=>{ if(!tfMap[tf]) tfMap[tf]={w:0,tot:0,pnl:0}; tfMap[tf].tot++; const p=parseFloat(t.pnl)||0; if(p>0) tfMap[tf].w++; tfMap[tf].pnl+=p; }); });
+  const tfKeys=Object.keys(tfMap);
+  const tbody=document.getElementById('tfBody');
+  if(!tfKeys.length){
+    tbody.innerHTML='<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:18px">No timeframe data yet.</td></tr>';
+  } else {
+    tbody.innerHTML=tfKeys.map(tf=>{
+      const d=tfMap[tf];
+      const wr2=d.tot?(d.w/d.tot*100).toFixed(1):'0';
+      const pCls=d.pnl>=0?'color:var(--accent)':'color:#ff5f6d';
+      return `<tr><td><strong>${tf}</strong></td><td>${d.tot}</td><td>${d.w}</td><td>${fmtPct(wr2)}</td><td style="${pCls}">${fmtPnl(d.pnl)}</td></tr>`;
+    }).join('');
+  }
+
+  // ── Mood Analysis ──────────────────────────────────────────────────────────
+  const moodMap = {};
+  trades.forEach(t=>{
+    (t.mood||[]).forEach(m=>{
+      if(!moodMap[m]) moodMap[m]={tot:0,wins:0,pnl:0};
+      moodMap[m].tot++;
+      const p=parseFloat(t.pnl)||0;
+      if(p>0) moodMap[m].wins++;
+      moodMap[m].pnl+=p;
+    });
+  });
+  const moodKeys=Object.keys(moodMap);
+  const MOOD_COLORS=['#b39ddb','#81c784','#64b5f6','#ffb74d','#e57373','#f06292','#4db6ac','#aed581'];
+  if(moodKeys.length){
+    new Chart(document.getElementById('moodChart'),{
+      type:'doughnut',
+      data:{labels:moodKeys,datasets:[{data:moodKeys.map(m=>moodMap[m].tot),
+        backgroundColor:moodKeys.map((_,i)=>MOOD_COLORS[i%MOOD_COLORS.length]),borderWidth:0}]},
+      options:{responsive:true,maintainAspectRatio:true,
+        plugins:{legend:{position:'bottom',labels:{padding:12,boxWidth:10}}},cutout:'55%'}
+    });
+    document.getElementById('moodBody').innerHTML=moodKeys.map(m=>{
+      const d=moodMap[m];
+      const wr=d.tot?(d.wins/d.tot*100).toFixed(1):'0';
+      const avg=d.tot?d.pnl/d.tot:0;
+      const pCls=avg>=0?'color:var(--accent)':'color:#ff5f6d';
+      return '<tr><td><strong>'+m+'</strong></td><td>'+d.tot+'</td><td>'+fmtPct(wr)+'</td><td style="'+pCls+'">'+fmtPnl(avg)+'</td></tr>';
+    }).join('');
+  } else {
+    document.getElementById('moodChart').closest('.chart-box').innerHTML='<h3 style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:10px">Mood Distribution</h3><div style="color:var(--muted);font-size:13px;padding:20px 0">No mood data yet.</div>';
+    document.getElementById('moodBody').innerHTML='<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:18px">No mood data yet.</td></tr>';
+  }
+
+  // ── Long vs Short ──────────────────────────────────────────────────────────
+  const longs = trades.filter(t=>t.position==='Long').length;
+  const shorts = trades.filter(t=>t.position==='Short').length;
+  new Chart(document.getElementById('lsChart'),{
+    type:'doughnut',
+    data:{labels:['Long','Short'],datasets:[{data:[longs,shorts],backgroundColor:['#00ff88cc','#ff5f6dcc'],borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:true,
+      plugins:{legend:{position:'bottom',labels:{padding:14,boxWidth:10}}},cutout:'60%'}
+  });
+
+  // ── Most traded pair ───────────────────────────────────────────────────────
+  const pairCount = {};
+  trades.forEach(t=>{ if(t.pair){ pairCount[t.pair]=(pairCount[t.pair]||0)+1; } });
+  const pairEntries = Object.entries(pairCount).sort((a,b)=>b[1]-a[1]);
+  const maxPairCount = pairEntries[0]?pairEntries[0][1]:1;
+  document.getElementById('pairBreakdown').innerHTML = pairEntries.slice(0,8).map(([pair,count])=>{
+    const pct = (count/maxPairCount*100).toFixed(0);
+    return `<div style="margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">
+        <span style="font-weight:600">${pair}</span><span style="color:var(--muted)">${count} trade${count>1?'s':''}</span>
+      </div>
+      <div style="height:5px;background:var(--border);border-radius:3px">
+        <div style="height:5px;width:${pct}%;background:var(--accent);border-radius:3px;transition:width .3s"></div>
+      </div>
+    </div>`;
+  }).join('') || '<span style="color:var(--muted);font-size:13px">No pair data yet.</span>';
+
+  // ── Trades by day of week (count only) ───────────────────────────────────
+  const DOW = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  // Map JS getDay() (0=Sun) → Mon-Sun index
+  const dowCount = [0,0,0,0,0,0,0];
+  trades.forEach(t=>{
+    if(!t.date) return;
+    const d = new Date(t.date+'T12:00:00');
+    const jsDay = d.getDay(); // 0=Sun,1=Mon…6=Sat
+    const idx = jsDay === 0 ? 6 : jsDay - 1; // remap so Mon=0, Sun=6
+    dowCount[idx]++;
+  });
+  new Chart(document.getElementById('dowChart'),{
+    type:'bar',
+    data:{
+      labels:DOW,
+      datasets:[{
+        data:dowCount,
+        backgroundColor:dowCount.map(v=>v>0?accent+'cc':gridColor),
+        borderRadius:6,
+        barThickness:32
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:true,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{grid:{display:false}},
+        y:{ticks:{stepSize:1},title:{display:true,text:'Number of Trades',color:textColor}}
+      }
+    }
+  });
+
+  // ── Trading Time Analysis ──────────────────────────────────────────────────
+  const tradesWithTime = trades.filter(t=>t.time&&t.time.includes(':'));
+  const hourMap = {};
+  tradesWithTime.forEach(t=>{
+    const h=parseInt(t.time.split(':')[0],10);
+    if(!hourMap[h]) hourMap[h]={tot:0,wins:0,pnl:0};
+    hourMap[h].tot++;
+    const p=parseFloat(t.pnl)||0;
+    if(p>0) hourMap[h].wins++;
+    hourMap[h].pnl+=p;
+  });
+
+  // Convert 24h hour to simple AM/PM label e.g. 0→12 AM, 13→1 PM
+  function fmtHour(h){
+    if(h===0) return '12 AM';
+    if(h===12) return '12 PM';
+    return h<12 ? h+' AM' : (h-12)+' PM';
+  }
+  const hourLabels=Array.from({length:24},(_,i)=>fmtHour(i));
+  const hourCounts=Array.from({length:24},(_,i)=>(hourMap[i]||{tot:0}).tot);
+  const hourAvgPnl=Array.from({length:24},(_,i)=>{
+    const d=hourMap[i]; if(!d||!d.tot) return 0;
+    return parseFloat((d.pnl/d.tot).toFixed(2));
+  });
+
+  if(tradesWithTime.length){
+    new Chart(document.getElementById('hourChart'),{
+      type:'bar',
+      data:{labels:hourLabels,datasets:[{data:hourCounts,
+        backgroundColor:hourCounts.map(v=>v>0?accent+'cc':gridColor),borderRadius:4}]},
+      options:{responsive:true,maintainAspectRatio:true,maxBarThickness:28,
+        plugins:{legend:{display:false}},
+        scales:{x:{ticks:{maxTicksLimit:24,font:{size:10}}},y:{ticks:{stepSize:1}}}}
+    });
+    new Chart(document.getElementById('hourPnlChart'),{
+      type:'bar',
+      data:{labels:hourLabels,datasets:[{data:hourAvgPnl,
+        backgroundColor:hourAvgPnl.map(v=>v>0?accent+'cc':v<0?'#ff5f6dcc':gridColor),borderRadius:4}]},
+      options:{responsive:true,maintainAspectRatio:true,maxBarThickness:28,
+        plugins:{legend:{display:false}},scales:{x:{ticks:{maxTicksLimit:24,font:{size:10}}},y:{}}}
+    });
+    const activeHours=Object.keys(hourMap).map(Number).sort((a,b)=>a-b);
+    document.getElementById('timeBody').innerHTML=activeHours.map(h=>{
+      const d=hourMap[h];
+      const wr3=d.tot?(d.wins/d.tot*100).toFixed(1):'0';
+      const avgP=d.tot?d.pnl/d.tot:0;
+      const pCls=avgP>=0?'color:var(--accent)':'color:#ff5f6d';
+      const lbl=fmtHour(h)+' – '+fmtHour(h+1);
+      return '<tr><td><strong>'+lbl+'</strong></td><td>'+d.tot+'</td><td>'+d.wins+'</td><td>'+fmtPct(wr3)+'</td><td style="'+pCls+'">'+fmtPnl(avgP)+'</td></tr>';
+    }).join('');
+  } else {
+    ['hourChart','hourPnlChart'].forEach(id=>{
+      const box=document.getElementById(id).closest('.chart-box');
+      box.innerHTML='<div style="color:var(--muted);font-size:13px;padding:20px 0">No time data yet. New trades will record their time automatically.</div>';
+    });
+    document.getElementById('timeBody').innerHTML='<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:18px">No time data yet.</td></tr>';
+  }
+
+}
+</script>
