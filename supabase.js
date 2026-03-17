@@ -1,0 +1,198 @@
+// ============================================================
+//  supabase.js — Shared Supabase client for TradeZona
+//  Load this script BEFORE any other scripts on every page.
+// ============================================================
+
+const SUPABASE_URL  = 'https://oixrpuqylidbunbttftg.supabase.co';
+const SUPABASE_ANON = 'sb_publishable_0JIYopUpUp6DonOkOzWcJQ_KL0OyIho';
+
+const { createClient } = supabase;
+
+// JWT persists in localStorage; auto-refreshes before expiry
+const db = createClient(SUPABASE_URL, SUPABASE_ANON, {
+  auth: {
+    storage:            window.localStorage,
+    autoRefreshToken:   true,
+    persistSession:     true,
+    detectSessionInUrl: true,
+  }
+});
+
+// ── Auth state watcher ────────────────────────────────────
+// If the user signs out in another tab, redirect everywhere
+db.auth.onAuthStateChange((event) => {
+  if (event === 'SIGNED_OUT') {
+    if (!window.location.pathname.endsWith('auth.html') &&
+        !window.location.pathname.endsWith('index.html') &&
+        window.location.pathname !== '/') {
+      window.location.href = 'auth.html';
+    }
+  }
+});
+
+// ── requireAuth ───────────────────────────────────────────
+// Verifies JWT server-side. Call at the top of every protected page.
+async function requireAuth() {
+  // getUser() hits the Supabase server to validate the JWT — not just localStorage
+  const { data: { user }, error } = await db.auth.getUser();
+  if (error || !user) {
+    await db.auth.signOut();
+    window.location.href = 'auth.html';
+    return null;
+  }
+  return user;
+}
+
+async function getUser() {
+  const { data: { user } } = await db.auth.getUser();
+  return user;
+}
+
+// ── Profile ───────────────────────────────────────────────
+async function getProfile(userId) {
+  const { data } = await db.from('profiles').select('*').eq('id', userId).single();
+  return data;
+}
+
+// ── Journals ──────────────────────────────────────────────
+async function getJournals(userId) {
+  const { data, error } = await db
+    .from('journals').select('*').eq('user_id', userId)
+    .order('created_at', { ascending: true });
+  if (error) { console.error(error); return []; }
+  return data || [];
+}
+
+async function createJournal(userId, { name, capital, pin_hash, show_pnl=true, show_capital=true }) {
+  const { data, error } = await db.from('journals')
+    .insert({ user_id:userId, name, capital:capital||null, pin_hash:pin_hash||null, show_pnl, show_capital })
+    .select().single();
+  if (error) throw error;
+  await db.from('journal_settings').insert({
+    journal_id: data.id, user_id: userId,
+    strategies:  ['Breakout','Reversal','Trend Continuation','Liquidity Sweep','Scalp','Swing'],
+    timeframes:  ['M1','M5','M15','M30','H1','H4','D1','W1'],
+    pairs:       ['EURUSD','GBPUSD','BTCUSD','XAUUSD','USDJPY','GBPJPY','NASDAQ','US30'],
+    moods:       ['Euphoric','Confident','Neutral','Doubtful','Anxious','Fearful','Revenge','Focused'],
+    mood_colors: { Euphoric:'#f59e0b',Confident:'#22c55e',Neutral:'#64748b',Doubtful:'#f97316',Anxious:'#ef4444',Fearful:'#dc2626',Revenge:'#a855f7',Focused:'#3b82f6' }
+  });
+  return data;
+}
+
+async function updateJournal(journalId, updates) {
+  const { error } = await db.from('journals').update(updates).eq('id', journalId);
+  if (error) throw error;
+}
+
+async function deleteJournal(journalId) {
+  const { error } = await db.from('journals').delete().eq('id', journalId);
+  if (error) throw error;
+}
+
+// ── Trades ────────────────────────────────────────────────
+async function getTrades(journalId) {
+  const { data, error } = await db.from('trades')
+    .select('*, trade_images(id,data,storage_url)')
+    .eq('journal_id', journalId)
+    .order('created_at', { ascending: false });
+  if (error) { console.error(error); return []; }
+  return data || [];
+}
+
+async function createTrade(userId, journalId, trade) {
+  const { data, error } = await db.from('trades')
+    .insert({ ...tradeToDb(trade), journal_id:journalId, user_id:userId })
+    .select().single();
+  if (error) throw error;
+  return data;
+}
+
+async function updateTrade(tradeId, updates) {
+  const payload = tradeToDb(updates);
+  if (!Object.keys(payload).length) return;
+  const { error } = await db.from('trades').update(payload).eq('id', tradeId);
+  if (error) throw error;
+}
+
+async function deleteTrade(tradeId) {
+  const { error } = await db.from('trades').delete().eq('id', tradeId);
+  if (error) throw error;
+}
+
+function tradeToDb(t) {
+  const o = {};
+  if ('date'       in t) o.trade_date  = t.date || null;
+  if ('time'       in t) o.trade_time  = t.time || null;
+  if ('pair'       in t) o.pair        = t.pair || null;
+  if ('position'   in t) o.position    = t.position || null;
+  if ('strategy'   in t) o.strategy    = t.strategy  || [];
+  if ('timeframe'  in t) o.timeframe   = t.timeframe || [];
+  if ('pnl'        in t) { const n=parseFloat(t.pnl);  o.pnl      = (!isNaN(n)&&t.pnl!=null&&t.pnl!=='') ? n : null; }
+  if ('r'          in t) { const n=parseFloat(t.r);    o.r_factor = (!isNaN(n)&&t.r!=null&&t.r!=='')   ? n : null; }
+  if ('confidence' in t) o.confidence = t.confidence || null;
+  if ('mood'       in t) o.mood        = t.mood || [];
+  if ('notes'      in t) o.notes       = t.notes || null;
+  return o;
+}
+
+function dbToTrade(row) {
+  return {
+    id:         row.id,
+    date:       row.trade_date  || '',
+    time:       row.trade_time  ? String(row.trade_time).slice(0,5) : '',
+    pair:       row.pair        || '',
+    position:   row.position    || 'Long',
+    strategy:   row.strategy    || [],
+    timeframe:  row.timeframe   || [],
+    pnl:        row.pnl   != null ? String(row.pnl)      : '',
+    r:          row.r_factor != null ? String(row.r_factor) : '',
+    confidence: row.confidence  || 0,
+    mood:       row.mood        || [],
+    notes:      row.notes       || '',
+    images:     (row.trade_images||[]).map(img=>({ id:img.id, data:img.data||img.storage_url||'' }))
+  };
+}
+
+// ── Trade Images ──────────────────────────────────────────
+async function addTradeImage(userId, tradeId, base64Data) {
+  const { data, error } = await db.from('trade_images')
+    .insert({ trade_id:tradeId, user_id:userId, data:base64Data })
+    .select().single();
+  if (error) throw error;
+  return data;
+}
+
+async function deleteTradeImage(imageId) {
+  const { error } = await db.from('trade_images').delete().eq('id', imageId);
+  if (error) throw error;
+}
+
+// ── Journal Settings ──────────────────────────────────────
+async function getJournalSettings(journalId) {
+  const { data } = await db.from('journal_settings').select('*').eq('journal_id', journalId).single();
+  return data;
+}
+
+async function updateJournalSettings(journalId, updates) {
+  const { error } = await db.from('journal_settings').update(updates).eq('journal_id', journalId);
+  if (error) throw error;
+}
+
+// ── Realtime ──────────────────────────────────────────────
+function subscribeTrades(journalId, callback) {
+  return db.channel('trades:'+journalId)
+    .on('postgres_changes',
+      { event:'*', schema:'public', table:'trades', filter:`journal_id=eq.${journalId}` },
+      callback)
+    .subscribe();
+}
+
+// ── PIN security (SHA-256) ────────────────────────────────
+async function hashPin(pin) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pin));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+async function verifyPin(pin, hash) {
+  if (!hash) return true;
+  return (await hashPin(pin)) === hash;
+}

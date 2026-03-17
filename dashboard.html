@@ -1,241 +1,289 @@
-<!-- dashboard.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TradeZona — Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="supabase.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-  :root{--bg:#0b0f0c;--panel:#111816;--accent:#00ff88;--accent2:#19c37d;--border:#1c2a25;--text:#e6f2ec;--muted:#8fa39a}
-  body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh}
-  header{display:flex;align-items:center;justify-content:space-between;padding:18px 32px;border-bottom:1px solid var(--border);background:var(--panel)}
-  .logo{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:600}
-  .logo span{color:var(--accent)}
-  .hactions{display:flex;gap:10px;align-items:center}
-  .btn-ghost{background:none;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:8px 14px;font-family:'Inter',sans-serif;font-size:13px;cursor:pointer;transition:all .2s}
-  .btn-ghost:hover{border-color:var(--accent2);color:var(--text)}
-  main{padding:32px;max-width:1100px;margin:0 auto}
-  .sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
-  .sec-hdr h2{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600}
-  .btn-primary{background:var(--accent);color:#0b0f0c;border:none;border-radius:8px;padding:10px 18px;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .2s}
-  .btn-primary:hover{opacity:.85}
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
-  .jcard{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:24px;transition:border-color .2s;position:relative}
-  .jcard:hover{border-color:var(--accent2)}
-  .jcard h3{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;margin-bottom:12px;padding-right:28px}
-  .jcard .cap{font-size:12px;color:var(--muted);margin-bottom:6px}
-  .jcard .pnl-row{display:flex;align-items:baseline;gap:6px;margin-bottom:16px}
-  .jcard .pnl-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
-  .jcard .pnl-val{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700}
-  .jcard .pnl-val.pos{color:var(--accent)}
-  .jcard .pnl-val.neg{color:#ff5f6d}
-  .jcard .open-btn{display:inline-block;font-size:12px;color:var(--accent);border:1px solid var(--accent);border-radius:6px;padding:6px 12px;background:none;cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s}
-  .jcard .open-btn:hover{background:var(--accent);color:#0b0f0c}
-  .lock-icon{position:absolute;top:16px;right:16px;font-size:14px;color:var(--muted);line-height:1;opacity:.7}
-  .empty{color:var(--muted);font-size:14px;padding:48px 0;text-align:center;grid-column:1/-1}
-  /* Modal */
-  .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;align-items:center;justify-content:center}
-  .overlay.open{display:flex}
-  .modal{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:32px;width:100%;max-width:420px;margin:20px;max-height:90vh;overflow-y:auto}
-  .modal h3{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;margin-bottom:24px}
-  .field{margin-bottom:16px}
-  .field label{display:block;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:7px}
-  .field input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:11px 13px;color:var(--text);font-family:'Inter',sans-serif;font-size:14px;outline:none;transition:border-color .2s}
-  .field input:focus{border-color:var(--accent2)}
-  .mactions{display:flex;gap:10px;margin-top:24px}
-  .btn-cancel{flex:1;background:none;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:11px;font-family:'Inter',sans-serif;font-size:13px;cursor:pointer}
-  .btn-cancel:hover{border-color:var(--muted)}
-  .mactions .btn-primary{flex:1;padding:11px}
-  /* Settings */
-  .ssec{margin-bottom:24px}
-  .ssec h4{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px}
-  .theme-opts{display:flex;gap:8px}
-  .theme-btn{flex:1;padding:9px;background:var(--bg);border:1px solid var(--border);border-radius:7px;color:var(--muted);font-size:13px;cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s}
-  .theme-btn.active{border-color:var(--accent);color:var(--accent)}
-  .theme-btn:hover{border-color:var(--accent2)}
-  .divider{border:none;border-top:1px solid var(--border);margin:16px 0}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0b0f0c;--panel:#111816;--accent:#00ff88;--accent2:#19c37d;--border:#1c2a25;--text:#e6f2ec;--muted:#8fa39a}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh}
+header{display:flex;align-items:center;justify-content:space-between;padding:16px 32px;border-bottom:1px solid var(--border);background:var(--panel)}
+.logo{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:600}.logo span{color:var(--accent)}
+.huser{display:flex;align-items:center;gap:10px}
+.uname{font-size:13px;color:var(--muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.plan-badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.5px}
+.badge-pro{background:rgba(0,255,136,.15);color:var(--accent2);border:1px solid rgba(0,255,136,.3)}
+.badge-free{background:rgba(143,163,154,.1);color:var(--muted);border:1px solid var(--border)}
+.hactions{display:flex;gap:8px;align-items:center}
+.btn-ghost{background:none;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:8px 14px;font-family:'Inter',sans-serif;font-size:13px;cursor:pointer;transition:all .2s}
+.btn-ghost:hover{border-color:var(--accent2);color:var(--text)}
+main{padding:32px;max-width:1100px;margin:0 auto}
+.sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+.sec-hdr h2{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600}
+.btn-primary{background:var(--accent);color:#0b0f0c;border:none;border-radius:8px;padding:10px 18px;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .2s}
+.btn-primary:hover{opacity:.85}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(265px,1fr));gap:16px}
+.jcard{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:24px;transition:border-color .2s;position:relative}
+.jcard:hover{border-color:var(--accent2)}
+.jcard h3{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;margin-bottom:8px;padding-right:28px}
+.jcard .cap{font-size:12px;color:var(--muted);margin-bottom:6px}
+.jcard .pnl-row{display:flex;align-items:baseline;gap:6px;margin-bottom:16px}
+.jcard .pnl-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+.jcard .pnl-val{font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700}
+.pnl-pos{color:var(--accent)!important}.pnl-neg{color:#ff5f6d!important}
+.open-btn{display:inline-block;font-size:12px;color:var(--accent);border:1px solid var(--accent);border-radius:6px;padding:6px 12px;background:none;cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s}
+.open-btn:hover{background:var(--accent);color:#0b0f0c}
+.lock-ic{position:absolute;top:16px;right:16px;font-size:13px;color:var(--muted);opacity:.7}
+.empty-state{color:var(--muted);font-size:14px;padding:48px 0;text-align:center;grid-column:1/-1;line-height:1.8}
+.loading-wrap{display:flex;align-items:center;justify-content:center;min-height:220px;font-size:14px;color:var(--muted)}
+/* overlay / modal */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:100;align-items:center;justify-content:center}
+.overlay.open{display:flex}
+.modal{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:32px;width:100%;max-width:420px;margin:20px}
+.modal h3{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;margin-bottom:22px}
+.field{margin-bottom:15px}
+.field label{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:7px}
+.field input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:11px 13px;color:var(--text);font-family:'Inter',sans-serif;font-size:14px;outline:none;transition:border-color .2s}
+.field input:focus{border-color:var(--accent2)}
+.mactions{display:flex;gap:10px;margin-top:22px}
+.btn-cancel{flex:1;background:none;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:11px;font-family:'Inter',sans-serif;font-size:13px;cursor:pointer}
+.mactions .btn-primary{flex:1;padding:11px}
+/* PIN overlay */
+.pin-overlay{display:none;position:fixed;inset:0;background:rgba(7,10,8,.95);z-index:300;align-items:center;justify-content:center}
+.pin-overlay.open{display:flex}
+.pin-box{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:32px;width:300px;text-align:center}
+.pin-box h3{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;margin-bottom:8px}
+.pin-box p{font-size:12px;color:var(--muted);margin-bottom:18px}
+.pin-input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 13px;color:var(--text);font-family:'Space Grotesk',sans-serif;font-size:22px;letter-spacing:8px;text-align:center;outline:none;margin-bottom:12px;transition:border-color .2s}
+.pin-input:focus{border-color:var(--accent2)}
+.pin-err{font-size:12px;color:#ff5f6d;margin-top:8px;display:none;text-align:center}
+.pin-err.show{display:block}
+/* toast */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:11px 20px;font-size:13px;color:var(--text);box-shadow:0 8px 28px rgba(0,0,0,.4);z-index:999;opacity:0;pointer-events:none;transition:all .25s;white-space:nowrap}
+#toast.show{opacity:1;pointer-events:all;transform:translateX(-50%) translateY(0)}
 </style>
 </head>
 <body>
 <header>
   <div class="logo">Trade<span>Zona</span></div>
+  <div class="huser">
+    <span class="uname" id="uName">—</span>
+    <span class="plan-badge badge-free" id="planBadge">Free</span>
+  </div>
   <div class="hactions">
-    <button class="btn-ghost" onclick="openSettings()">Settings</button>
-    <button class="btn-ghost" onclick="logout()">Logout</button>
+    <button class="btn-ghost" onclick="logout()"><i class="fa-solid fa-right-from-bracket" style="margin-right:5px"></i>Logout</button>
   </div>
 </header>
+
 <main>
   <div class="sec-hdr">
-    <h2>Journals</h2>
-    <button class="btn-primary" onclick="openCreate()">+ Create Journal</button>
+    <h2>My Journals</h2>
+    <button class="btn-primary" onclick="openCreate()">+ New Journal</button>
   </div>
-  <div class="grid" id="grid"></div>
+  <div id="loadingWrap" class="loading-wrap">Loading your journals…</div>
+  <div class="grid" id="grid" style="display:none"></div>
 </main>
 
 <!-- Create Journal Modal -->
 <div class="overlay" id="createModal">
   <div class="modal">
     <h3>New Journal</h3>
-    <div class="field"><label>Journal Name *</label><input type="text" id="jName" placeholder="e.g. Forex 2025"></div>
-    <div class="field"><label>Journal PIN (optional)</label><input type="password" id="jPin" placeholder="Leave blank for no PIN" maxlength="6"></div>
-    <div class="field"><label>Account Capital (optional)</label><input type="number" id="jCapital" placeholder="e.g. 10000"></div>
+    <div class="field"><label>Journal Name *</label><input type="text" id="jName" placeholder="e.g. Forex 2025" maxlength="60"></div>
+    <div class="field"><label>Account Capital (optional)</label><input type="number" id="jCapital" placeholder="e.g. 10000" min="0"></div>
+    <div class="field"><label>Journal PIN (optional — 4-6 digits)</label><input type="password" id="jPin" placeholder="Leave blank for no PIN" maxlength="6"></div>
     <div class="mactions">
       <button class="btn-cancel" onclick="closeCreate()">Cancel</button>
-      <button class="btn-primary" onclick="createJournal()">Create</button>
+      <button class="btn-primary" id="createBtn" onclick="createJournalAction()">Create Journal</button>
     </div>
   </div>
 </div>
 
-<!-- Settings Modal -->
-<div class="overlay" id="settingsModal">
-  <div class="modal">
-    <h3>Settings</h3>
-    <div class="ssec">
-      <h4>Theme</h4>
-      <div class="theme-opts">
-        <button class="theme-btn" data-theme="system" onclick="setTheme('system')">System</button>
-        <button class="theme-btn" data-theme="dark" onclick="setTheme('dark')">Dark</button>
-        <button class="theme-btn" data-theme="light" onclick="setTheme('light')">Light</button>
-      </div>
-    </div>
-    <hr class="divider">
-    <div class="ssec">
-      <h4>Change App PIN</h4>
-      <div class="field" style="margin-bottom:8px"><input type="password" id="newPin" placeholder="New PIN (min 4 digits)"></div>
-      <button class="btn-primary" style="width:100%" onclick="changePin()">Update PIN</button>
-    </div>
-    <button class="btn-cancel" style="width:100%;margin-top:8px" onclick="closeSettings()">Close</button>
+<!-- PIN check overlay -->
+<div class="pin-overlay" id="pinOverlay">
+  <div class="pin-box">
+    <h3 id="pinTitle">🔒 Journal Locked</h3>
+    <p id="pinSubtitle">Enter the PIN to unlock this journal.</p>
+    <input type="password" class="pin-input" id="pinInput" placeholder="••••" maxlength="6" oninput="clearPinErr()">
+    <button class="btn-primary" style="width:100%;padding:12px" onclick="checkJournalPin()">Unlock</button>
+    <div class="pin-err" id="pinErr">Incorrect PIN. Please try again.</div>
   </div>
 </div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<div id="toast"></div>
 
 <script>
-  // ── Theme ──────────────────────────────────────────────
-  function applyTheme(t){
-    const r=document.documentElement;
-    const dark=t==='dark'||(t==='system'&&!window.matchMedia('(prefers-color-scheme:light)').matches);
-    if(!dark){
-      r.style.setProperty('--bg','#f6faf8');r.style.setProperty('--panel','#ffffff');
-      r.style.setProperty('--accent','#19c37d');r.style.setProperty('--accent2','#0fa86a');
-      r.style.setProperty('--border','#d9e5df');r.style.setProperty('--text','#0f1c17');r.style.setProperty('--muted','#6b8578');
-    } else {
-      r.style.setProperty('--bg','#0b0f0c');r.style.setProperty('--panel','#111816');
-      r.style.setProperty('--accent','#00ff88');r.style.setProperty('--accent2','#19c37d');
-      r.style.setProperty('--border','#1c2a25');r.style.setProperty('--text','#e6f2ec');r.style.setProperty('--muted','#8fa39a');
+let currentUser = null;
+let journals    = [];
+let pnlMap      = {};
+let pendingJournalId = null;
+
+// ── Boot ──────────────────────────────────────────────────
+(async () => {
+  currentUser = await requireAuth();
+  if (!currentUser) return;
+
+  const profile = await getProfile(currentUser.id);
+  document.getElementById('uName').textContent = profile?.name || currentUser.email;
+  const badge = document.getElementById('planBadge');
+  if (profile?.plan === 'pro') {
+    badge.textContent = 'Pro';
+    badge.className = 'plan-badge badge-pro';
+  }
+
+  await loadJournals();
+})();
+
+// ── Load & render journals ────────────────────────────────
+async function loadJournals() {
+  document.getElementById('loadingWrap').style.display = 'flex';
+  document.getElementById('grid').style.display = 'none';
+
+  journals = await getJournals(currentUser.id);
+
+  // Load PNL for each journal in parallel
+  pnlMap = {};
+  await Promise.all(journals.map(async j => {
+    const trades = await getTrades(j.id);
+    const valid  = trades.filter(t => t.pnl != null);
+    if (valid.length) {
+      pnlMap[j.id] = valid.reduce((s, t) => s + parseFloat(t.pnl), 0);
     }
-  }
-  function setTheme(t){
-    localStorage.setItem('tl_theme',t);
-    applyTheme(t);
-    document.querySelectorAll('.theme-btn').forEach(b=>b.classList.toggle('active',b.dataset.theme===t));
-  }
-  applyTheme(localStorage.getItem('tl_theme')||'dark');
+  }));
 
-  // ── Auth ───────────────────────────────────────────────
-  function logout(){ localStorage.removeItem('tz_logged_in'); localStorage.removeItem('tz_current_user'); window.location.href='auth.html'; }
+  renderJournals();
+}
 
-  // ── Create modal ───────────────────────────────────────
-  function openCreate(){ document.getElementById('createModal').classList.add('open'); setTimeout(()=>document.getElementById('jName').focus(),100); }
-  function closeCreate(){
-    document.getElementById('createModal').classList.remove('open');
-    ['jName','jPin','jCapital'].forEach(id=>document.getElementById(id).value='');
+function renderJournals() {
+  document.getElementById('loadingWrap').style.display = 'none';
+  const grid = document.getElementById('grid');
+  grid.style.display = '';
+
+  if (!journals.length) {
+    grid.innerHTML = '<div class="empty-state">No journals yet.<br>Click <strong>+ New Journal</strong> to get started.</div>';
+    return;
   }
 
-  // ── Settings modal ─────────────────────────────────────
-  function openSettings(){
-    const t=localStorage.getItem('tl_theme')||'dark';
-    document.querySelectorAll('.theme-btn').forEach(b=>b.classList.toggle('active',b.dataset.theme===t));
-    document.getElementById('settingsModal').classList.add('open');
-  }
-  function closeSettings(){ document.getElementById('settingsModal').classList.remove('open'); }
-  function changePin(){
-    const v=document.getElementById('newPin').value.trim();
-    if(v.length<4){ alert('PIN must be at least 4 digits.'); return; }
-    localStorage.setItem('tl_pin',v);
-    document.getElementById('newPin').value='';
-    alert('PIN updated successfully.');
-  }
+  grid.innerHTML = journals.map(j => {
+    const pnl = pnlMap[j.id];
+    const capHtml = (j.show_capital !== false && j.capital)
+      ? `<div class="cap">Capital: $${Number(j.capital).toLocaleString()}</div>` : '';
+    let pnlHtml = '';
+    if (j.show_pnl !== false && pnl != null) {
+      const cls = pnl >= 0 ? 'pnl-pos' : 'pnl-neg';
+      const fmt = (pnl >= 0 ? '+' : '-') + '$' + Math.abs(pnl).toFixed(2);
+      pnlHtml = `<div class="pnl-row"><span class="pnl-lbl">PNL</span><span class="pnl-val ${cls}">${fmt}</span></div>`;
+    }
+    const lockHtml = j.pin_hash ? `<span class="lock-ic" title="PIN protected">🔒</span>` : '';
+    return `<div class="jcard">
+      ${lockHtml}
+      <h3>${esc(j.name)}</h3>
+      ${capHtml}${pnlHtml}
+      <button class="open-btn" onclick="openJournal('${j.id}',${!!j.pin_hash})">Open Journal →</button>
+    </div>`;
+  }).join('');
+}
 
-  // ── Journals CRUD ──────────────────────────────────────
-  function getJournals(){ return JSON.parse(localStorage.getItem('tl_journals')||'[]'); }
-  function saveJournals(j){ localStorage.setItem('tl_journals',JSON.stringify(j)); }
+// ── Open journal (with PIN check if needed) ───────────────
+function openJournal(id, hasPin) {
+  if (hasPin) {
+    pendingJournalId = id;
+    const j = journals.find(x => x.id === id);
+    document.getElementById('pinTitle').textContent    = `🔒 ${j ? j.name : 'Journal'} — Locked`;
+    document.getElementById('pinSubtitle').textContent = 'Enter the PIN to unlock this journal.';
+    document.getElementById('pinInput').value = '';
+    clearPinErr();
+    document.getElementById('pinOverlay').classList.add('open');
+    setTimeout(() => document.getElementById('pinInput').focus(), 120);
+    return;
+  }
+  goToJournal(id);
+}
 
-  function createJournal(){
-    const name=document.getElementById('jName').value.trim();
-    if(!name){ document.getElementById('jName').focus(); return; }
-    const pin=document.getElementById('jPin').value.trim();
-    const capital=document.getElementById('jCapital').value.trim();
-    const journals=getJournals();
-    journals.push({ id:'j_'+Date.now(), name, pin, capital });
-    saveJournals(journals);
+async function checkJournalPin() {
+  const pin = document.getElementById('pinInput').value;
+  const j   = journals.find(x => x.id === pendingJournalId);
+  if (!j) return;
+  const ok = await verifyPin(pin, j.pin_hash);
+  if (ok) {
+    document.getElementById('pinOverlay').classList.remove('open');
+    goToJournal(pendingJournalId);
+  } else {
+    document.getElementById('pinErr').classList.add('show');
+    document.getElementById('pinInput').value = '';
+    document.getElementById('pinInput').focus();
+  }
+}
+
+function clearPinErr() { document.getElementById('pinErr').classList.remove('show'); }
+
+document.getElementById('pinInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') checkJournalPin();
+  if (e.key === 'Escape') document.getElementById('pinOverlay').classList.remove('open');
+});
+
+function goToJournal(id) {
+  sessionStorage.setItem('tz_current_journal', id);
+  window.location.href = 'journal.html';
+}
+
+// ── Create Journal ────────────────────────────────────────
+function openCreate() {
+  document.getElementById('createModal').classList.add('open');
+  setTimeout(() => document.getElementById('jName').focus(), 100);
+}
+function closeCreate() {
+  document.getElementById('createModal').classList.remove('open');
+  ['jName','jCapital','jPin'].forEach(id => document.getElementById(id).value = '');
+}
+
+async function createJournalAction() {
+  const name    = document.getElementById('jName').value.trim();
+  const capital = document.getElementById('jCapital').value.trim();
+  const pinVal  = document.getElementById('jPin').value.trim();
+  if (!name) { document.getElementById('jName').focus(); return; }
+  if (pinVal && pinVal.length < 4) { showToast('PIN must be at least 4 digits.'); return; }
+
+  const btn = document.getElementById('createBtn');
+  btn.disabled = true; btn.textContent = 'Creating…';
+  try {
+    let pin_hash = null;
+    if (pinVal) pin_hash = await hashPin(pinVal);
+    await createJournal(currentUser.id, {
+      name, capital: capital ? parseFloat(capital) : null, pin_hash
+    });
     closeCreate();
-    render();
+    showToast('Journal created!');
+    await loadJournals();
+  } catch (err) {
+    showToast('Error: ' + err.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Create Journal';
   }
+}
 
-  function openJournal(id){
-    localStorage.setItem('tl_current_journal',id);
-    window.location.href='journal.html';
-  }
+document.getElementById('createModal').addEventListener('click', function(e) { if(e.target===this)closeCreate(); });
 
-  function fmtPnl(v){ const n=parseFloat(v); if(isNaN(n)) return null; return (n>=0?'+':'-')+'$'+Math.abs(n).toFixed(2); }
+// ── Logout ────────────────────────────────────────────────
+async function logout() {
+  await db.auth.signOut();
+  sessionStorage.clear();
+  window.location.href = 'auth.html';
+}
 
-  function getJournalPnl(jid){
-    const trades = JSON.parse(localStorage.getItem('tl_trades_'+jid)||'[]');
-    const total = trades.reduce((s,t)=>{ const p=parseFloat(t.pnl); return s+(isNaN(p)?0:p); },0);
-    const hasTrades = trades.some(t=>t.pnl!==''&&!isNaN(parseFloat(t.pnl)));
-    return hasTrades ? total : null;
-  }
+// ── Toast ─────────────────────────────────────────────────
+let _tt;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(_tt); _tt = setTimeout(() => t.classList.remove('show'), 3200);
+}
 
-  function render(){
-    const journals=getJournals();
-    const grid=document.getElementById('grid');
-    if(!journals.length){ grid.innerHTML='<div class="empty">No journals yet. Create one to get started.</div>'; return; }
-    grid.innerHTML=journals.map(j=>{
-      const showPnl = j.showPnl !== false;
-      const showCap = j.showCapital !== false;
-      const pnlTotal = getJournalPnl(j.id);
-      // Capital row — only show if enabled and capital is set
-      const capHtml = (showCap && j.capital)
-        ? `<div class="cap">Capital: $${Number(j.capital).toLocaleString()}</div>`
-        : '';
-      // PNL row — only show if enabled and there are trades with PNL
-      let pnlHtml = '';
-      if(showPnl && pnlTotal !== null){
-        const cls = pnlTotal >= 0 ? 'pos' : 'neg';
-        pnlHtml = `<div class="pnl-row"><span class="pnl-label">PNL</span><span class="pnl-val ${cls}">${fmtPnl(pnlTotal)}</span></div>`;
-      }
-      // Lock icon if journal has a PIN
-      const lockHtml = j.pin ? `<span class="lock-icon" title="PIN protected">🔒</span>` : '';
-      return `
-      <div class="jcard">
-        ${lockHtml}
-        <h3>${escHtml(j.name)}</h3>
-        ${capHtml}
-        ${pnlHtml}
-        <button class="open-btn" onclick="openJournal('${j.id}')">Open Journal →</button>
-      </div>`;
-    }).join('');
-  }
-
-  function escHtml(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
-
-  // Close modals on backdrop click
-  ['createModal','settingsModal'].forEach(id=>{
-    document.getElementById(id).addEventListener('click',function(e){ if(e.target===this) this.classList.remove('open'); });
-  });
-
-  render();
-
-  // Re-render whenever localStorage changes (trade added/edited/deleted in another tab)
-  window.addEventListener('storage', function(e){
-    if(e.key && e.key.startsWith('tl_trades_')) render();
-    if(e.key === 'tl_journals') render();
-  });
-
-  // Re-render when user navigates back to this page (focus or pageshow)
-  window.addEventListener('pageshow', function(){ render(); });
-  window.addEventListener('focus', function(){ render(); });
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 </script>
 </body>
 </html>

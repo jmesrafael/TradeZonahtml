@@ -1,10 +1,11 @@
-<!-- auth.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TradeZona — Sign In</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="supabase.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <style>
@@ -13,281 +14,124 @@
   --bg:#070a08;--panel:#0d1410;--panel2:#111e17;
   --accent:#00ff88;--accent2:#19c37d;
   --border:rgba(0,255,136,.12);--border2:rgba(255,255,255,.07);
-  --text:#e8f5ee;--text2:#b0c8bc;--muted:#6a8a7a;
-  --red:#ff5f6d;--gold:#f5c518;
+  --text:#e8f5ee;--text2:#b0c8bc;--muted:#6a8a7a;--red:#ff5f6d;
 }
-html,body{height:100%}
-body{
-  background:var(--bg);color:var(--text);
-  font-family:'Inter',sans-serif;
-  min-height:100vh;display:flex;flex-direction:column;
-}
-
-/* ── NOISE ── */
-body::before{
-  content:'';position:fixed;inset:0;
-  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
-  opacity:.022;pointer-events:none;z-index:0;
-}
-
-/* ── GLOW ORBS ── */
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;display:flex;flex-direction:column;}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");opacity:.022;pointer-events:none;z-index:0;}
 .orb{position:fixed;border-radius:50%;filter:blur(110px);pointer-events:none;z-index:0}
-.orb1{width:500px;height:500px;background:rgba(0,255,136,.06);top:-80px;left:-80px}
-.orb2{width:400px;height:400px;background:rgba(25,195,125,.05);bottom:-60px;right:-60px}
-
-/* ── NAV ── */
-.top-nav{
-  position:relative;z-index:10;
-  display:flex;align-items:center;justify-content:space-between;
-  padding:18px 32px;border-bottom:1px solid var(--border2);
-}
-.logo{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;
-  color:var(--text);text-decoration:none}
+.orb1{width:520px;height:520px;background:rgba(0,255,136,.07);top:-100px;left:-100px}
+.orb2{width:420px;height:420px;background:rgba(25,195,125,.05);bottom:-80px;right:-80px}
+.top-nav{position:relative;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:18px 32px;border-bottom:1px solid var(--border2);}
+.logo{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;color:var(--text);text-decoration:none}
 .logo span{color:var(--accent)}
-.back-link{font-size:13px;color:var(--muted);text-decoration:none;
-  display:flex;align-items:center;gap:6px;transition:color .18s}
+.back-link{font-size:13px;color:var(--muted);text-decoration:none;display:flex;align-items:center;gap:6px;transition:color .18s}
 .back-link:hover{color:var(--accent2)}
+.auth-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 24px;position:relative;z-index:1;}
+.auth-box{width:100%;max-width:420px;}
 
-/* ── MAIN LAYOUT ── */
-.auth-wrap{
-  flex:1;display:flex;align-items:center;justify-content:center;
-  padding:40px 24px;position:relative;z-index:1;
-}
-.auth-box{
-  width:100%;max-width:420px;
-}
+/* Tabs */
+.auth-tabs{display:flex;background:var(--panel2);border:1px solid var(--border2);border-radius:12px;padding:4px;margin-bottom:24px;}
+.auth-tab{flex:1;text-align:center;padding:10px;border-radius:9px;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;color:var(--muted);border:none;background:none;}
+.auth-tab.active{background:var(--accent);color:#070a08;box-shadow:0 2px 12px rgba(0,255,136,.25);}
 
-/* ── TABS ── */
-.auth-tabs{
-  display:flex;background:var(--panel2);
-  border:1px solid var(--border2);border-radius:12px;
-  padding:4px;margin-bottom:24px;
-}
-.auth-tab{
-  flex:1;text-align:center;padding:10px;border-radius:9px;
-  font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;
-  cursor:pointer;transition:all .2s;color:var(--muted);border:none;background:none;
-}
-.auth-tab.active{
-  background:var(--accent);color:#070a08;
-  box-shadow:0 2px 12px rgba(0,255,136,.25);
-}
+/* Card */
+.auth-card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:32px;}
+.auth-title{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;margin-bottom:6px;}
+.auth-subtitle{font-size:13px;color:var(--muted);margin-bottom:28px;line-height:1.5}
 
-/* ── CARD ── */
-.auth-card{
-  background:var(--panel);border:1px solid var(--border);border-radius:14px;
-  padding:32px;
-}
-.auth-title{
-  font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;
-  margin-bottom:6px;
-}
-.auth-subtitle{font-size:13px;color:var(--muted);margin-bottom:28px;line-height:1.45}
-
-/* ── PLAN PICKER (signup only) ── */
+/* Plan picker */
 .plan-pick{display:flex;gap:10px;margin-bottom:22px}
-.plan-opt{
-  flex:1;padding:12px 10px;background:var(--panel2);
-  border:1px solid var(--border2);border-radius:10px;
-  cursor:pointer;transition:all .18s;text-align:center;
-}
-.plan-opt:hover{border-color:rgba(0,255,136,.25)}
+.plan-opt{flex:1;padding:13px 10px;background:var(--panel2);border:1px solid var(--border2);border-radius:10px;cursor:pointer;transition:all .18s;text-align:center;}
+.plan-opt:hover{border-color:rgba(0,255,136,.3)}
 .plan-opt.selected{border-color:var(--accent2);background:rgba(0,255,136,.06)}
-.plan-opt .po-name{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;
-  margin-bottom:2px}
+.plan-opt .po-name{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;margin-bottom:2px}
 .plan-opt.selected .po-name{color:var(--accent2)}
 .plan-opt .po-price{font-size:12px;color:var(--muted)}
-.plan-opt .po-badge{
-  display:inline-block;background:var(--accent);color:#070a08;
-  font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;
-  text-transform:uppercase;letter-spacing:.5px;margin-top:4px;
-}
+.plan-opt .po-badge{display:inline-block;background:var(--accent);color:#070a08;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;text-transform:uppercase;letter-spacing:.5px;margin-top:4px;}
 
-/* ── FORM ── */
+/* Fields */
 .field{margin-bottom:16px}
-.field label{
-  display:block;font-size:11px;color:var(--muted);
-  text-transform:uppercase;letter-spacing:.8px;font-weight:500;margin-bottom:7px;
-}
+.field label{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;font-weight:500;margin-bottom:7px;}
 .field-inner{position:relative}
-.field-inner i{
-  position:absolute;left:13px;top:50%;transform:translateY(-50%);
-  font-size:13px;color:var(--muted);pointer-events:none;
-}
-.field input{
-  width:100%;background:rgba(0,0,0,.2);
-  border:1px solid var(--border2);border-radius:9px;
-  padding:12px 13px 12px 38px;color:var(--text);
-  font-family:'Inter',sans-serif;font-size:14px;
-  outline:none;transition:border-color .2s,box-shadow .2s;
-}
-.field input:focus{
-  border-color:rgba(0,255,136,.35);
-  box-shadow:0 0 0 3px rgba(0,255,136,.08);
-}
-.field input::placeholder{color:var(--muted);opacity:.6}
-.field .toggle-pw{
-  position:absolute;right:12px;top:50%;transform:translateY(-50%);
-  background:none;border:none;color:var(--muted);cursor:pointer;
-  font-size:13px;padding:2px;transition:color .15s;
-}
-.field .toggle-pw:hover{color:var(--text2)}
+.field-inner .fi{position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--muted);pointer-events:none;}
+.field input{width:100%;background:rgba(0,0,0,.25);border:1px solid var(--border2);border-radius:9px;padding:12px 40px 12px 38px;color:var(--text);font-family:'Inter',sans-serif;font-size:14px;outline:none;transition:border-color .2s,box-shadow .2s;}
+.field input:focus{border-color:rgba(0,255,136,.4);box-shadow:0 0 0 3px rgba(0,255,136,.09);}
+.field input::placeholder{color:var(--muted);opacity:.55}
+.toggle-pw{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:2px;transition:color .15s;}
+.toggle-pw:hover{color:var(--text2)}
 
-/* ── STRENGTH BAR ── */
+/* Strength bar */
 .pw-strength{margin-top:6px;height:3px;border-radius:2px;background:var(--border2);overflow:hidden}
 .pw-strength-bar{height:100%;width:0;border-radius:2px;transition:width .3s,background .3s}
 .pw-hint{font-size:11px;color:var(--muted);margin-top:4px}
 
-/* ── DIVIDER ── */
-.or-divider{
-  display:flex;align-items:center;gap:12px;
-  margin:20px 0;font-size:12px;color:var(--muted);
-}
-.or-divider::before,.or-divider::after{
-  content:'';flex:1;height:1px;background:var(--border2);
-}
+/* Submit */
+.btn-submit{width:100%;padding:13px;border:none;border-radius:10px;background:var(--accent);color:#070a08;font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:all .22s;letter-spacing:.3px;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:6px;}
+.btn-submit:hover:not(:disabled){background:#00e67a;box-shadow:0 0 24px rgba(0,255,136,.35)}
+.btn-submit:disabled{opacity:.5;cursor:not-allowed}
 
-/* ── SUBMIT BTN ── */
-.btn-submit{
-  width:100%;padding:13px;border:none;border-radius:10px;
-  background:var(--accent);color:#070a08;
-  font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;
-  cursor:pointer;transition:all .22s;letter-spacing:.2px;
-  display:flex;align-items:center;justify-content:center;gap:8px;
-  margin-top:6px;
-}
-.btn-submit:hover{background:#00e67a;box-shadow:0 0 24px rgba(0,255,136,.3)}
-.btn-submit:disabled{opacity:.5;cursor:not-allowed;box-shadow:none}
-
-/* ── SOCIAL BTNS ── */
-.social-btns{display:flex;flex-direction:column;gap:10px;margin-bottom:4px}
-.btn-social{
-  width:100%;padding:11px;border-radius:9px;
-  background:rgba(255,255,255,.04);border:1px solid var(--border2);
-  color:var(--text2);font-family:'Inter',sans-serif;font-size:13px;font-weight:500;
-  cursor:pointer;transition:all .18s;
-  display:flex;align-items:center;justify-content:center;gap:10px;
-}
-.btn-social:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.15)}
-.btn-social i{font-size:15px}
-.btn-social.google i{color:#ea4335}
-.btn-social.github i{color:#e8f5ee}
-
-/* ── ERROR / SUCCESS ── */
-.auth-alert{
-  border-radius:8px;padding:10px 13px;font-size:13px;
-  margin-bottom:14px;display:none;align-items:center;gap:8px;line-height:1.4;
-}
+/* Alerts */
+.auth-alert{border-radius:8px;padding:11px 13px;font-size:13px;margin-bottom:14px;display:none;align-items:center;gap:9px;line-height:1.4;}
 .auth-alert.show{display:flex}
-.auth-alert.error{background:rgba(255,95,109,.1);border:1px solid rgba(255,95,109,.25);color:#ff5f6d}
-.auth-alert.success{background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2);color:var(--accent2)}
+.auth-alert.error{background:rgba(255,95,109,.1);border:1px solid rgba(255,95,109,.3);color:#ff5f6d}
+.auth-alert.success{background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.22);color:var(--accent2)}
 
-/* ── FOOTER NOTE ── */
-.auth-footer-note{
-  text-align:center;margin-top:20px;font-size:12px;color:var(--muted);line-height:1.5;
-}
+/* Misc */
+.forgot-link{display:block;text-align:right;font-size:12px;color:var(--muted);text-decoration:none;margin-top:-8px;margin-bottom:18px;transition:color .15s;}
+.forgot-link:hover{color:var(--accent2)}
+.auth-footer-note{text-align:center;margin-top:18px;font-size:12px;color:var(--muted);line-height:1.5;}
 .auth-footer-note a{color:var(--accent2);text-decoration:none}
 .auth-footer-note a:hover{text-decoration:underline}
-
-/* ── PLAN PERKS (signup) ── */
-.plan-perks{
-  background:rgba(0,255,136,.04);border:1px solid var(--border);
-  border-radius:9px;padding:12px 14px;margin-bottom:20px;
-  font-size:12px;color:var(--text2);line-height:1.7;display:none;
-}
-.plan-perks.show{display:block}
-.plan-perks ul{list-style:none;display:flex;flex-direction:column;gap:3px}
-.plan-perks li{display:flex;align-items:flex-start;gap:7px}
-.plan-perks li i{color:var(--accent2);font-size:11px;margin-top:2px;flex-shrink:0}
-.plan-perks .perk-limit{color:var(--muted);font-size:11px}
-
-/* ── FORGOT PASSWORD ── */
-.forgot-link{
-  display:block;text-align:right;font-size:12px;
-  color:var(--muted);text-decoration:none;margin-top:-8px;margin-bottom:18px;
-  transition:color .15s;
-}
-.forgot-link:hover{color:var(--accent2)}
-
-/* ── TERMS ── */
 .terms-note{font-size:11px;color:var(--muted);text-align:center;margin-top:14px;line-height:1.5}
 .terms-note a{color:var(--muted);text-decoration:underline}
-.terms-note a:hover{color:var(--accent2)}
 
-/* ── LOADING SPINNER ── */
+/* Spinner */
 @keyframes spin{to{transform:rotate(360deg)}}
-.spinner{
-  width:16px;height:16px;border:2px solid rgba(7,10,8,.3);
-  border-top-color:#070a08;border-radius:50%;
-  animation:spin .6s linear infinite;display:none;flex-shrink:0;
-}
+.spinner{width:16px;height:16px;border:2px solid rgba(7,10,8,.3);border-top-color:#070a08;border-radius:50%;animation:spin .6s linear infinite;display:none;flex-shrink:0}
 .btn-submit.loading .spinner{display:block}
 .btn-submit.loading .btn-text{opacity:.7}
 </style>
 </head>
 <body>
-
 <div class="orb orb1"></div>
 <div class="orb orb2"></div>
 
-<!-- Nav -->
 <nav class="top-nav">
   <a href="index.html" class="logo">Trade<span>Zona</span></a>
   <a href="index.html" class="back-link"><i class="fa-solid fa-arrow-left"></i> Back to Home</a>
 </nav>
 
-<!-- Auth Box -->
 <div class="auth-wrap">
   <div class="auth-box">
 
-    <!-- Tabs -->
     <div class="auth-tabs">
-      <button class="auth-tab active" id="tabLogin" onclick="switchTab('login')">Sign In</button>
-      <button class="auth-tab" id="tabSignup" onclick="switchTab('signup')">Create Account</button>
+      <button class="auth-tab active" id="tabLogin"  onclick="switchTab('login')">Sign In</button>
+      <button class="auth-tab"        id="tabSignup" onclick="switchTab('signup')">Create Account</button>
     </div>
 
-    <!-- Alert -->
-    <div class="auth-alert error" id="authError">
-      <i class="fa-solid fa-circle-exclamation"></i>
-      <span id="authErrorMsg">Something went wrong.</span>
-    </div>
-    <div class="auth-alert success" id="authSuccess">
-      <i class="fa-solid fa-circle-check"></i>
-      <span id="authSuccessMsg">Success!</span>
-    </div>
+    <div class="auth-alert error"   id="authError">  <i class="fa-solid fa-circle-exclamation"></i><span id="authErrorMsg"></span></div>
+    <div class="auth-alert success" id="authSuccess"><i class="fa-solid fa-circle-check"></i>       <span id="authSuccessMsg"></span></div>
 
-    <!-- ── LOGIN PANEL ─────────────────────────────── -->
+    <!-- ── LOGIN ─────────────────────────────────────── -->
     <div id="loginPanel" class="auth-card">
       <div class="auth-title">Welcome back</div>
-      <p class="auth-subtitle">Sign in to your TradeZona account to continue trading.</p>
-
-      <div class="social-btns">
-        <button class="btn-social google" onclick="socialAuth('Google')">
-          <i class="fa-brands fa-google"></i> Continue with Google
-        </button>
-        <button class="btn-social github" onclick="socialAuth('GitHub')">
-          <i class="fa-brands fa-github"></i> Continue with GitHub
-        </button>
-      </div>
-
-      <div class="or-divider">or sign in with email</div>
+      <p class="auth-subtitle">Sign in with your email and password.</p>
 
       <div class="field">
         <label>Email Address</label>
         <div class="field-inner">
-          <i class="fa-solid fa-envelope"></i>
-          <input type="email" id="loginEmail" placeholder="you@example.com" autocomplete="email">
+          <i class="fa-solid fa-envelope fi"></i>
+          <input type="email" id="loginEmail" placeholder="you@example.com" autocomplete="email" oninput="clearAlerts()">
         </div>
       </div>
 
       <div class="field">
         <label>Password</label>
         <div class="field-inner">
-          <i class="fa-solid fa-lock"></i>
+          <i class="fa-solid fa-lock fi"></i>
           <input type="password" id="loginPassword" placeholder="Your password" autocomplete="current-password" oninput="clearAlerts()">
-          <button class="toggle-pw" type="button" onclick="togglePw('loginPassword',this)" tabindex="-1">
-            <i class="fa-solid fa-eye"></i>
-          </button>
+          <button class="toggle-pw" type="button" onclick="togglePw('loginPassword',this)" tabindex="-1"><i class="fa-solid fa-eye"></i></button>
         </div>
       </div>
 
@@ -295,20 +139,17 @@ body::before{
 
       <button class="btn-submit" id="loginBtn" onclick="doLogin()">
         <div class="spinner"></div>
-        <span class="btn-text"><i class="fa-solid fa-arrow-right-to-bracket"></i> Sign In</span>
+        <span class="btn-text"><i class="fa-solid fa-arrow-right-to-bracket"></i>&nbsp; Sign In</span>
       </button>
 
-      <p class="auth-footer-note">
-        Don't have an account? <a href="#" onclick="switchTab('signup');return false">Create one free →</a>
-      </p>
+      <p class="auth-footer-note">No account? <a href="#" onclick="switchTab('signup');return false">Create one free →</a></p>
     </div>
 
-    <!-- ── SIGNUP PANEL ────────────────────────────── -->
+    <!-- ── SIGN UP ────────────────────────────────────── -->
     <div id="signupPanel" class="auth-card" style="display:none">
       <div class="auth-title">Create your account</div>
-      <p class="auth-subtitle">Start free. Upgrade anytime. No credit card required.</p>
+      <p class="auth-subtitle">Start journaling in seconds. No credit card needed.</p>
 
-      <!-- Plan picker -->
       <div class="plan-pick">
         <div class="plan-opt selected" id="planFree" onclick="selectPlan('free')">
           <div class="po-name">Free</div>
@@ -321,60 +162,28 @@ body::before{
         </div>
       </div>
 
-      <!-- Plan perks -->
-      <div class="plan-perks show" id="perks-free">
-        <ul>
-          <li><i class="fa-solid fa-check"></i><span>1 journal &nbsp;<span class="perk-limit">· 5 tags/category</span></span></li>
-          <li><i class="fa-solid fa-check"></i><span>Unlimited trades &nbsp;<span class="perk-limit">· 1 image/note</span></span></li>
-          <li><i class="fa-solid fa-check"></i><span>Basic analytics (PNL, Win Rate, Streaks, Equity Curve)</span></li>
-          <li><i class="fa-solid fa-xmark" style="color:var(--muted)"></i><span class="perk-limit">No calculator · No export · No theme change</span></li>
-        </ul>
-      </div>
-      <div class="plan-perks" id="perks-pro">
-        <ul>
-          <li><i class="fa-solid fa-check"></i><span>Unlimited journals &nbsp;<span class="perk-limit">· 10 tags/category</span></span></li>
-          <li><i class="fa-solid fa-check"></i><span>3 images per note · Full analytics suite</span></li>
-          <li><i class="fa-solid fa-check"></i><span>Risk calculator · Export/Import · Theme switching</span></li>
-          <li><i class="fa-solid fa-check"></i><span>PIN-protected journals · Priority support</span></li>
-        </ul>
-      </div>
-
-      <div class="social-btns">
-        <button class="btn-social google" onclick="socialAuth('Google')">
-          <i class="fa-brands fa-google"></i> Continue with Google
-        </button>
-        <button class="btn-social github" onclick="socialAuth('GitHub')">
-          <i class="fa-brands fa-github"></i> Continue with GitHub
-        </button>
-      </div>
-
-      <div class="or-divider">or sign up with email</div>
-
       <div class="field">
         <label>Full Name</label>
         <div class="field-inner">
-          <i class="fa-solid fa-user"></i>
-          <input type="text" id="signupName" placeholder="Your name" autocomplete="name">
+          <i class="fa-solid fa-user fi"></i>
+          <input type="text" id="signupName" placeholder="Your name" autocomplete="name" oninput="clearAlerts()">
         </div>
       </div>
 
       <div class="field">
         <label>Email Address</label>
         <div class="field-inner">
-          <i class="fa-solid fa-envelope"></i>
-          <input type="email" id="signupEmail" placeholder="you@example.com" autocomplete="email">
+          <i class="fa-solid fa-envelope fi"></i>
+          <input type="email" id="signupEmail" placeholder="you@example.com" autocomplete="email" oninput="clearAlerts()">
         </div>
       </div>
 
       <div class="field">
         <label>Password</label>
         <div class="field-inner">
-          <i class="fa-solid fa-lock"></i>
-          <input type="password" id="signupPassword" placeholder="Min. 8 characters"
-            autocomplete="new-password" oninput="checkStrength(this.value);clearAlerts()">
-          <button class="toggle-pw" type="button" onclick="togglePw('signupPassword',this)" tabindex="-1">
-            <i class="fa-solid fa-eye"></i>
-          </button>
+          <i class="fa-solid fa-lock fi"></i>
+          <input type="password" id="signupPassword" placeholder="Minimum 8 characters" autocomplete="new-password" oninput="checkStrength(this.value);clearAlerts()">
+          <button class="toggle-pw" type="button" onclick="togglePw('signupPassword',this)" tabindex="-1"><i class="fa-solid fa-eye"></i></button>
         </div>
         <div class="pw-strength"><div class="pw-strength-bar" id="pwBar"></div></div>
         <div class="pw-hint" id="pwHint"></div>
@@ -382,222 +191,165 @@ body::before{
 
       <button class="btn-submit" id="signupBtn" onclick="doSignup()">
         <div class="spinner"></div>
-        <span class="btn-text" id="signupBtnText"><i class="fa-solid fa-user-plus"></i> Create Free Account</span>
+        <span class="btn-text" id="signupBtnText"><i class="fa-solid fa-user-plus"></i>&nbsp; Create Free Account</span>
       </button>
 
-      <p class="terms-note">By creating an account you agree to our <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.</p>
-
-      <p class="auth-footer-note" style="margin-top:14px">
-        Already have an account? <a href="#" onclick="switchTab('login');return false">Sign in →</a>
-      </p>
+      <p class="terms-note">By signing up you agree to our <a href="#">Terms</a> &amp; <a href="#">Privacy Policy</a>.</p>
+      <p class="auth-footer-note" style="margin-top:12px">Already have an account? <a href="#" onclick="switchTab('login');return false">Sign in →</a></p>
     </div>
 
   </div>
 </div>
 
 <script>
-// ── State ─────────────────────────────────────────────────
 let selectedPlan = 'free';
 
-// ── Tab switching ─────────────────────────────────────────
-function switchTab(tab){
+// ── Redirect if already logged in ────────────────────────
+(async () => {
+  const user = await getUser();
+  if (user) window.location.href = 'dashboard.html';
+})();
+
+// ── URL params ────────────────────────────────────────────
+const _p = new URLSearchParams(window.location.search);
+if (_p.get('signup') === '1') switchTab('signup');
+if (_p.get('plan')   === 'pro') { switchTab('signup'); selectPlan('pro'); }
+
+// ── Tabs ──────────────────────────────────────────────────
+function switchTab(tab) {
   const isLogin = tab === 'login';
-  document.getElementById('loginPanel').style.display = isLogin ? 'block' : 'none';
-  document.getElementById('signupPanel').style.display = isLogin ? 'none' : 'block';
-  document.getElementById('tabLogin').classList.toggle('active', isLogin);
+  document.getElementById('loginPanel').style.display  = isLogin ? 'block' : 'none';
+  document.getElementById('signupPanel').style.display = isLogin ? 'none'  : 'block';
+  document.getElementById('tabLogin').classList.toggle('active',  isLogin);
   document.getElementById('tabSignup').classList.toggle('active', !isLogin);
   clearAlerts();
 }
 
-// ── Plan picker ────────────────────────────────────────────
-function selectPlan(plan){
+// ── Plan ──────────────────────────────────────────────────
+function selectPlan(plan) {
   selectedPlan = plan;
   document.getElementById('planFree').classList.toggle('selected', plan === 'free');
-  document.getElementById('planPro').classList.toggle('selected', plan === 'pro');
-  document.getElementById('perks-free').classList.toggle('show', plan === 'free');
-  document.getElementById('perks-pro').classList.toggle('show', plan === 'pro');
-  const btn = document.getElementById('signupBtn');
-  const txt = document.getElementById('signupBtnText');
-  if(plan === 'pro'){
-    txt.innerHTML = '<i class="fa-solid fa-rocket"></i> Start Pro — $5/mo';
-  } else {
-    txt.innerHTML = '<i class="fa-solid fa-user-plus"></i> Create Free Account';
-  }
+  document.getElementById('planPro').classList.toggle('selected',  plan === 'pro');
+  document.getElementById('signupBtnText').innerHTML = plan === 'pro'
+    ? '<i class="fa-solid fa-rocket"></i>&nbsp; Start Pro — $5/mo'
+    : '<i class="fa-solid fa-user-plus"></i>&nbsp; Create Free Account';
 }
 
-// ── Password visibility toggle ─────────────────────────────
-function togglePw(id, btn){
+// ── Helpers ───────────────────────────────────────────────
+function togglePw(id, btn) {
   const inp = document.getElementById(id);
-  const isText = inp.type === 'text';
-  inp.type = isText ? 'password' : 'text';
-  btn.querySelector('i').className = isText ? 'fa-solid fa-eye' : 'fa-solid fa-eye-slash';
+  const show = inp.type === 'password';
+  inp.type = show ? 'text' : 'password';
+  btn.querySelector('i').className = show ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye';
 }
 
-// ── Password strength ──────────────────────────────────────
-function checkStrength(val){
+function checkStrength(val) {
   const bar = document.getElementById('pwBar');
   const hint = document.getElementById('pwHint');
-  if(!val){ bar.style.width='0'; hint.textContent=''; return; }
-  let score = 0;
-  if(val.length >= 8) score++;
-  if(val.length >= 12) score++;
-  if(/[A-Z]/.test(val)) score++;
-  if(/[0-9]/.test(val)) score++;
-  if(/[^A-Za-z0-9]/.test(val)) score++;
-  const levels = [
-    {w:'20%', bg:'#ff5f6d', txt:'Too short'},
-    {w:'40%', bg:'#f59e0b', txt:'Weak'},
-    {w:'60%', bg:'#f59e0b', txt:'Fair'},
-    {w:'80%', bg:'var(--accent2)', txt:'Good'},
-    {w:'100%',bg:'var(--accent)', txt:'Strong'},
-  ];
-  const l = levels[Math.min(score, 4)];
-  bar.style.width = l.w;
-  bar.style.background = l.bg;
-  hint.textContent = l.txt;
-  hint.style.color = l.bg;
+  if (!val) { bar.style.width = '0'; hint.textContent = ''; return; }
+  let s = 0;
+  if (val.length >= 8)  s++;
+  if (val.length >= 12) s++;
+  if (/[A-Z]/.test(val)) s++;
+  if (/[0-9]/.test(val)) s++;
+  if (/[^A-Za-z0-9]/.test(val)) s++;
+  const lvl = [
+    { w:'20%', bg:'#ff5f6d', t:'Too short' },
+    { w:'40%', bg:'#f59e0b', t:'Weak' },
+    { w:'60%', bg:'#f59e0b', t:'Fair' },
+    { w:'80%', bg:'var(--accent2)', t:'Good' },
+    { w:'100%',bg:'var(--accent)',  t:'Strong' },
+  ][Math.min(s, 4)];
+  bar.style.width = lvl.w; bar.style.background = lvl.bg;
+  hint.textContent = lvl.t; hint.style.color = lvl.bg;
 }
 
-// ── Alerts ────────────────────────────────────────────────
-function showError(msg){ 
-  document.getElementById('authErrorMsg').textContent = msg;
-  document.getElementById('authError').classList.add('show');
-  document.getElementById('authSuccess').classList.remove('show');
-}
-function showSuccess(msg){ 
-  document.getElementById('authSuccessMsg').textContent = msg;
-  document.getElementById('authSuccess').classList.add('show');
-  document.getElementById('authError').classList.remove('show');
-}
-function clearAlerts(){
-  document.getElementById('authError').classList.remove('show');
-  document.getElementById('authSuccess').classList.remove('show');
-}
+function showError(msg)   { document.getElementById('authErrorMsg').textContent = msg;   document.getElementById('authError').classList.add('show');   document.getElementById('authSuccess').classList.remove('show'); }
+function showSuccess(msg) { document.getElementById('authSuccessMsg').textContent = msg; document.getElementById('authSuccess').classList.add('show'); document.getElementById('authError').classList.remove('show'); }
+function clearAlerts()    { document.getElementById('authError').classList.remove('show'); document.getElementById('authSuccess').classList.remove('show'); }
 
-// ── Loading state ──────────────────────────────────────────
-function setLoading(btnId, on){
+function setLoading(btnId, on) {
   const btn = document.getElementById(btnId);
   btn.classList.toggle('loading', on);
   btn.disabled = on;
 }
 
-// ── Social auth placeholder ────────────────────────────────
-function socialAuth(provider){
-  showSuccess(`Redirecting to ${provider}… (demo)`);
-  setTimeout(()=>{ clearAlerts(); }, 2500);
-}
-
-// ── Forgot password ────────────────────────────────────────
-function showForgot(e){
-  e.preventDefault();
-  const email = document.getElementById('loginEmail').value.trim();
-  if(!email){ showError('Enter your email address first.'); return; }
-  showSuccess(`Password reset link sent to ${email} (demo)`);
-}
-
-// ── Validate email ─────────────────────────────────────────
-function isValidEmail(e){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
+function isValidEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
 
 // ── LOGIN ─────────────────────────────────────────────────
-function doLogin(){
+async function doLogin() {
   clearAlerts();
   const email = document.getElementById('loginEmail').value.trim();
   const pass  = document.getElementById('loginPassword').value;
-  if(!email || !isValidEmail(email)){ showError('Enter a valid email address.'); return; }
-  if(!pass){ showError('Enter your password.'); return; }
+  if (!email || !isValidEmail(email)) { showError('Please enter a valid email address.'); return; }
+  if (!pass) { showError('Please enter your password.'); return; }
   setLoading('loginBtn', true);
-  // Simulate auth — check localStorage for registered users
-  setTimeout(()=>{
+  try {
+    const { data, error } = await db.auth.signInWithPassword({ email, password: pass });
+    if (error) throw error;
+    // JWT is now stored automatically in localStorage
+    showSuccess('Signed in! Redirecting…');
+    setTimeout(() => window.location.href = 'dashboard.html', 700);
+  } catch (err) {
+    showError(err.message === 'Invalid login credentials'
+      ? 'Incorrect email or password.'
+      : (err.message || 'Login failed. Please try again.'));
+  } finally {
     setLoading('loginBtn', false);
-    const users = JSON.parse(localStorage.getItem('tz_users')||'[]');
-    const user = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === pass);
-    if(user){
-      localStorage.setItem('tz_current_user', JSON.stringify({email:user.email, name:user.name, plan:user.plan}));
-      localStorage.setItem('tz_logged_in','1');
-      // Apply plan limits
-      applyPlanLimits(user.plan);
-      showSuccess('Welcome back! Redirecting…');
-      setTimeout(()=>{ window.location.href = 'dashboard.html'; }, 900);
-    } else {
-      showError('Incorrect email or password.');
-    }
-  }, 800);
+  }
 }
 
-// ── SIGNUP ────────────────────────────────────────────────
-function doSignup(){
+// ── SIGN UP ───────────────────────────────────────────────
+async function doSignup() {
   clearAlerts();
   const name  = document.getElementById('signupName').value.trim();
   const email = document.getElementById('signupEmail').value.trim();
   const pass  = document.getElementById('signupPassword').value;
-  if(!name){ showError('Enter your full name.'); return; }
-  if(!email || !isValidEmail(email)){ showError('Enter a valid email address.'); return; }
-  if(pass.length < 8){ showError('Password must be at least 8 characters.'); return; }
+  if (!name)                          { showError('Please enter your full name.'); return; }
+  if (!email || !isValidEmail(email)) { showError('Please enter a valid email address.'); return; }
+  if (pass.length < 8)               { showError('Password must be at least 8 characters.'); return; }
   setLoading('signupBtn', true);
-  setTimeout(()=>{
-    setLoading('signupBtn', false);
-    const users = JSON.parse(localStorage.getItem('tz_users')||'[]');
-    if(users.find(u=>u.email.toLowerCase()===email.toLowerCase())){
-      showError('An account with this email already exists.');
-      return;
+  try {
+    const { data, error } = await db.auth.signUp({
+      email,
+      password: pass,
+      options: { data: { name, plan: selectedPlan } }
+    });
+    if (error) throw error;
+    // If email confirmations are ON, session will be null
+    if (data.session) {
+      showSuccess('Account created! Redirecting…');
+      setTimeout(() => window.location.href = 'dashboard.html', 900);
+    } else {
+      showSuccess('Account created! Please check your email to confirm, then sign in.');
+      setTimeout(() => switchTab('login'), 3000);
     }
-    // Register
-    users.push({ name, email, password: pass, plan: selectedPlan, createdAt: new Date().toISOString() });
-    localStorage.setItem('tz_users', JSON.stringify(users));
-    localStorage.setItem('tz_current_user', JSON.stringify({email, name, plan:selectedPlan}));
-    localStorage.setItem('tz_logged_in','1');
-    applyPlanLimits(selectedPlan);
-    showSuccess('Account created! Redirecting…');
-    setTimeout(()=>{ window.location.href = 'dashboard.html'; }, 900);
-  }, 900);
-}
-
-// ── Apply plan limits to localStorage ─────────────────────
-function applyPlanLimits(plan){
-  localStorage.setItem('tz_plan', plan);
-  // These limits are read by the app pages to gate features
-  if(plan === 'pro'){
-    localStorage.setItem('tz_max_journals','999');
-    localStorage.setItem('tz_max_tags','10');
-    localStorage.setItem('tz_max_images','3');
-    localStorage.setItem('tz_can_export','1');
-    localStorage.setItem('tz_can_calc','1');
-    localStorage.setItem('tz_can_theme','1');
-    localStorage.setItem('tz_full_analytics','1');
-  } else {
-    localStorage.setItem('tz_max_journals','1');
-    localStorage.setItem('tz_max_tags','5');
-    localStorage.setItem('tz_max_images','1');
-    localStorage.setItem('tz_can_export','0');
-    localStorage.setItem('tz_can_calc','0');
-    localStorage.setItem('tz_can_theme','0');
-    localStorage.setItem('tz_full_analytics','0');
-    // Force light theme for free users (default white as specified)
-    localStorage.setItem('tl_theme','light');
+  } catch (err) {
+    showError(err.message || 'Could not create account. Please try again.');
+  } finally {
+    setLoading('signupBtn', false);
   }
 }
 
+// ── FORGOT PASSWORD ───────────────────────────────────────
+async function showForgot(e) {
+  e.preventDefault();
+  clearAlerts();
+  const email = document.getElementById('loginEmail').value.trim();
+  if (!email || !isValidEmail(email)) { showError('Enter your email address above first.'); return; }
+  const { error } = await db.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin + '/auth.html'
+  });
+  if (error) showError(error.message);
+  else showSuccess(`Password reset email sent to ${email}. Check your inbox.`);
+}
+
 // ── Enter key support ─────────────────────────────────────
-document.addEventListener('keydown', e=>{
-  if(e.key !== 'Enter') return;
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
   const loginVisible = document.getElementById('loginPanel').style.display !== 'none';
-  if(loginVisible) doLogin();
-  else doSignup();
+  if (loginVisible) doLogin(); else doSignup();
 });
-
-// ── Check if already logged in ───────────────────────────
-if(localStorage.getItem('tz_logged_in') === '1'){
-  window.location.href = 'dashboard.html';
-}
-
-// ── URL param: open signup tab if ?signup=1 ───────────────
-if(new URLSearchParams(window.location.search).get('signup') === '1'){
-  switchTab('signup');
-}
-if(new URLSearchParams(window.location.search).get('plan') === 'pro'){
-  switchTab('signup');
-  selectPlan('pro');
-}
 </script>
 </body>
 </html>
