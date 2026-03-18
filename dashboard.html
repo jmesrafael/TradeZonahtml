@@ -7,283 +7,455 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="supabase.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--bg:#0b0f0c;--panel:#111816;--accent:#00ff88;--accent2:#19c37d;--border:#1c2a25;--text:#e6f2ec;--muted:#8fa39a}
 body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh}
-header{display:flex;align-items:center;justify-content:space-between;padding:16px 32px;border-bottom:1px solid var(--border);background:var(--panel)}
-.logo{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:600}.logo span{color:var(--accent)}
-.huser{display:flex;align-items:center;gap:10px}
-.uname{font-size:13px;color:var(--muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.plan-badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.5px}
+/* page loader */
+@keyframes spin{to{transform:rotate(360deg)}}
+.page-loader{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9999;transition:opacity .4s}
+.page-loader.gone{opacity:0;pointer-events:none}
+.pl-logo{font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;color:var(--text);margin-bottom:20px;text-align:center}
+.pl-logo span{color:var(--accent)}
+.pl-spin{width:32px;height:32px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto}
+/* header */
+header{display:flex;align-items:center;justify-content:space-between;padding:14px 28px;border-bottom:1px solid var(--border);background:var(--panel)}
+.logo{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:600;cursor:pointer;user-select:none}
+.logo span{color:var(--accent)}
+.hright{display:flex;align-items:center;gap:8px}
+.huser{display:flex;align-items:center;gap:10px;margin-right:6px}
+.uname{font-size:13px;color:var(--muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.plan-badge{font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;transition:all .2s}
 .badge-pro{background:rgba(0,255,136,.15);color:var(--accent2);border:1px solid rgba(0,255,136,.3)}
 .badge-free{background:rgba(143,163,154,.1);color:var(--muted);border:1px solid var(--border)}
-.hactions{display:flex;gap:8px;align-items:center}
-.btn-ghost{background:none;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:8px 14px;font-family:'Inter',sans-serif;font-size:13px;cursor:pointer;transition:all .2s}
+.badge-free:hover{border-color:var(--accent2);color:var(--accent2)}
+.btn-ghost{background:none;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:8px 14px;font-family:'Inter',sans-serif;font-size:13px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:6px}
 .btn-ghost:hover{border-color:var(--accent2);color:var(--text)}
 main{padding:32px;max-width:1100px;margin:0 auto}
 .sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
 .sec-hdr h2{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600}
-.btn-primary{background:var(--accent);color:#0b0f0c;border:none;border-radius:8px;padding:10px 18px;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .2s}
+.btn-primary{background:var(--accent);color:#0b0f0c;border:none;border-radius:8px;padding:10px 18px;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .2s;display:flex;align-items:center;gap:7px}
 .btn-primary:hover{opacity:.85}
+/* skeleton loaders */
+@keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}
+.skel{background:linear-gradient(90deg,var(--panel) 25%,rgba(255,255,255,.04) 50%,var(--panel) 75%);background-size:400px 100%;animation:shimmer 1.4s infinite;border-radius:8px}
+.skel-card{height:140px;border-radius:12px;border:1px solid var(--border)}
+.skel-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(265px,1fr));gap:16px}
+/* journal grid */
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(265px,1fr));gap:16px}
-.jcard{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:24px;transition:border-color .2s;position:relative}
-.jcard:hover{border-color:var(--accent2)}
-.jcard h3{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;margin-bottom:8px;padding-right:28px}
-.jcard .cap{font-size:12px;color:var(--muted);margin-bottom:6px}
+.jcard{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:24px;transition:border-color .2s,transform .15s;position:relative;cursor:default}
+.jcard:hover{border-color:var(--accent2);transform:translateY(-1px)}
+.jcard h3{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;margin-bottom:8px}
+.jcard .cap{font-size:12px;color:var(--muted);margin-bottom:6px;display:flex;align-items:center;gap:5px}
 .jcard .pnl-row{display:flex;align-items:baseline;gap:6px;margin-bottom:16px}
 .jcard .pnl-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
-.jcard .pnl-val{font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700}
+.jcard .pnl-val{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700}
 .pnl-pos{color:var(--accent)!important}.pnl-neg{color:#ff5f6d!important}
-.open-btn{display:inline-block;font-size:12px;color:var(--accent);border:1px solid var(--accent);border-radius:6px;padding:6px 12px;background:none;cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s}
+.open-btn{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--accent);border:1px solid rgba(0,255,136,.4);border-radius:6px;padding:7px 14px;background:none;cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s}
 .open-btn:hover{background:var(--accent);color:#0b0f0c}
-.lock-ic{position:absolute;top:16px;right:16px;font-size:13px;color:var(--muted);opacity:.7}
-.empty-state{color:var(--muted);font-size:14px;padding:48px 0;text-align:center;grid-column:1/-1;line-height:1.8}
-.loading-wrap{display:flex;align-items:center;justify-content:center;min-height:220px;font-size:14px;color:var(--muted)}
-/* overlay / modal */
-.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:100;align-items:center;justify-content:center}
+.empty-state{color:var(--muted);font-size:14px;padding:56px 0;text-align:center;grid-column:1/-1;line-height:1.9}
+.empty-state i{display:block;font-size:36px;margin-bottom:12px;opacity:.3}
+/* overlay */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:center;justify-content:center}
 .overlay.open{display:flex}
-.modal{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:32px;width:100%;max-width:420px;margin:20px}
-.modal h3{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;margin-bottom:22px}
-.field{margin-bottom:15px}
+/* modal shared */
+.modal{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:0;width:100%;max-width:460px;margin:20px;overflow:hidden}
+.modal-hdr{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--border)}
+.modal-hdr h3{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600}
+.modal-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:6px;transition:all .15s}
+.modal-close:hover{background:var(--border);color:var(--text)}
+.modal-body{padding:24px}
+.modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px}
+.field{margin-bottom:16px}
 .field label{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:7px}
-.field input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:11px 13px;color:var(--text);font-family:'Inter',sans-serif;font-size:14px;outline:none;transition:border-color .2s}
-.field input:focus{border-color:var(--accent2)}
-.mactions{display:flex;gap:10px;margin-top:22px}
-.btn-cancel{flex:1;background:none;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:11px;font-family:'Inter',sans-serif;font-size:13px;cursor:pointer}
-.mactions .btn-primary{flex:1;padding:11px}
-/* PIN overlay */
-.pin-overlay{display:none;position:fixed;inset:0;background:rgba(7,10,8,.95);z-index:300;align-items:center;justify-content:center}
-.pin-overlay.open{display:flex}
-.pin-box{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:32px;width:300px;text-align:center}
-.pin-box h3{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;margin-bottom:8px}
-.pin-box p{font-size:12px;color:var(--muted);margin-bottom:18px}
-.pin-input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 13px;color:var(--text);font-family:'Space Grotesk',sans-serif;font-size:22px;letter-spacing:8px;text-align:center;outline:none;margin-bottom:12px;transition:border-color .2s}
-.pin-input:focus{border-color:var(--accent2)}
-.pin-err{font-size:12px;color:#ff5f6d;margin-top:8px;display:none;text-align:center}
-.pin-err.show{display:block}
+.field input,.field select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:11px 13px;color:var(--text);font-family:'Inter',sans-serif;font-size:14px;outline:none;transition:border-color .2s}
+.field input:focus,.field select:focus{border-color:var(--accent2)}
+.field select option{background:var(--panel)}
+.btn-cancel{background:none;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:10px 18px;font-family:'Inter',sans-serif;font-size:13px;cursor:pointer;transition:all .2s}
+.btn-cancel:hover{border-color:var(--muted)}
+/* settings modal */
+.settings-modal{max-width:520px}
+.set-section{margin-bottom:24px}
+.set-section:last-child{margin-bottom:0}
+.set-title{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.set-title i{color:var(--accent2)}
+.theme-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:4px}
+.theme-opt{border:1px solid var(--border);border-radius:9px;padding:12px 10px;text-align:center;cursor:pointer;transition:all .18s;font-size:13px;color:var(--muted)}
+.theme-opt:hover{border-color:var(--accent2);color:var(--text)}
+.theme-opt.active{border-color:var(--accent2);background:rgba(0,255,136,.06);color:var(--accent2);font-weight:600}
+.theme-opt i{display:block;font-size:20px;margin-bottom:6px}
+.plan-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)}
+.plan-row:last-child{border-bottom:none}
+.plan-lbl{font-size:13px;font-weight:500}
+.plan-val{font-size:12px;color:var(--muted)}
+.upgrade-btn{background:var(--accent);color:#0b0f0c;border:none;border-radius:7px;padding:7px 14px;font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:opacity .2s}
+.upgrade-btn:hover{opacity:.85}
+.links-row{display:flex;flex-direction:column;gap:4px}
+.link-item{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;cursor:pointer;transition:background .15s;font-size:13px;color:var(--text)}
+.link-item:hover{background:rgba(255,255,255,.04)}
+.link-item i.arr{color:var(--muted);font-size:11px}
 /* toast */
-#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:11px 20px;font-size:13px;color:var(--text);box-shadow:0 8px 28px rgba(0,0,0,.4);z-index:999;opacity:0;pointer-events:none;transition:all .25s;white-space:nowrap}
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(12px);background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:11px 18px;font-size:13px;color:var(--text);box-shadow:0 8px 28px rgba(0,0,0,.4);z-index:9999;opacity:0;pointer-events:none;transition:all .25s;white-space:nowrap;display:flex;align-items:center;gap:8px}
 #toast.show{opacity:1;pointer-events:all;transform:translateX(-50%) translateY(0)}
+/* ad slots */
+.ad-slot{display:none;background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden;position:relative}
+.ad-slot.visible{display:block}
+.ad-slot-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;padding:6px 12px 0;opacity:.6}
+.ad-slot-inner{min-height:90px;display:flex;align-items:center;justify-content:center}
+.ad-upgrade-nudge{margin-top:12px;padding:12px 16px;background:rgba(0,255,136,.04);border:1px solid rgba(0,255,136,.15);border-radius:10px;display:none;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.ad-upgrade-nudge.visible{display:flex}
+.ad-nudge-text{font-size:12px;color:var(--muted);line-height:1.5}
+.ad-nudge-text strong{color:var(--text);display:block;margin-bottom:2px}
+.ad-nudge-btn{background:var(--accent);color:#0b0f0c;border:none;border-radius:7px;padding:7px 14px;font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;transition:opacity .2s;flex-shrink:0}
+.ad-nudge-btn:hover{opacity:.85}
 </style>
 </head>
 <body>
+<div class="page-loader" id="pageLoader">
+  <div><div class="pl-logo">Trade<span>Zona</span></div><div class="pl-spin"></div></div>
+</div>
+
 <header>
-  <div class="logo">Trade<span>Zona</span></div>
-  <div class="huser">
-    <span class="uname" id="uName">—</span>
-    <span class="plan-badge badge-free" id="planBadge">Free</span>
-  </div>
-  <div class="hactions">
-    <button class="btn-ghost" onclick="logout()"><i class="fa-solid fa-right-from-bracket" style="margin-right:5px"></i>Logout</button>
+  <div class="logo" onclick="window.location.href='dashboard.html'">Trade<span>Zona</span></div>
+  <div class="hright">
+    <div class="huser">
+      <span class="uname" id="uName">—</span>
+      <span class="plan-badge badge-free" id="planBadge" onclick="window.location.href='subscription.html'" title="View plan">Free</span>
+    </div>
+    <button class="btn-ghost" onclick="openSettings()"><i class="fa-solid fa-gear"></i> Settings</button>
+    <button class="btn-ghost" onclick="logout()"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</button>
   </div>
 </header>
 
 <main>
   <div class="sec-hdr">
-    <h2>My Journals</h2>
-    <button class="btn-primary" onclick="openCreate()">+ New Journal</button>
+    <h2><i class="fa-solid fa-book-open" style="color:var(--accent2);margin-right:8px"></i>My Journals</h2>
+    <button class="btn-primary" onclick="openCreate()"><i class="fa-solid fa-plus"></i> New Journal</button>
   </div>
-  <div id="loadingWrap" class="loading-wrap">Loading your journals…</div>
+  <div id="loadingState" class="skel-grid">
+    <div class="skel skel-card"></div>
+    <div class="skel skel-card"></div>
+    <div class="skel skel-card"></div>
+  </div>
   <div class="grid" id="grid" style="display:none"></div>
+
+  <!-- ── Ad Slot (Free users only) ────────────────────────
+       HOW TO GO LIVE:
+       1. Sign up at https://adsense.google.com
+       2. Get approved and copy your Publisher ID (ca-pub-XXXXXX)
+       3. Create an ad unit → copy the Ad Slot ID
+       4. Replace ca-pub-XXXXXXXXXXXXXXXX and XXXXXXXXXX below
+       5. Add the AdSense <script> tag to your <head>:
+          <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"><\/script>
+       6. Remove the #dashAdPlaceholder div (it's just for dev preview)
+  ────────────────────────────────────────────────────── -->
+  <div class="ad-slot" id="dashAdSlot" style="margin-top:28px">
+    <div class="ad-slot-label">Advertisement</div>
+    <div class="ad-slot-inner">
+      <ins class="adsbygoogle"
+           style="display:block;width:100%;min-height:90px"
+           data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+           data-ad-slot="XXXXXXXXXX"
+           data-ad-format="horizontal"
+           data-full-width-responsive="true"></ins>
+      <!-- DEV PLACEHOLDER — remove once AdSense is live -->
+      <div id="dashAdPlaceholder" style="width:100%;padding:18px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+        <div>
+          <div style="font-size:13px;font-weight:600;margin-bottom:4px">Ad will appear here (Free users)</div>
+          <div style="font-size:12px;color:var(--muted)">Replace <code style="font-size:11px;background:rgba(255,255,255,.07);padding:1px 5px;border-radius:3px">ca-pub-XXXXXXXXXXXXXXXX</code> with your real AdSense publisher ID</div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);background:rgba(255,255,255,.04);border:1px dashed var(--border);border-radius:8px;padding:10px 14px;text-align:center">
+          <i class="fa-solid fa-rectangle-ad" style="display:block;font-size:22px;margin-bottom:5px;opacity:.3"></i>728×90
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Upgrade nudge below ad -->
+  <div class="ad-upgrade-nudge" id="dashUpgradeNudge">
+    <div class="ad-nudge-text">
+      <strong><i class="fa-solid fa-circle-xmark" style="color:#ff5f6d;margin-right:5px"></i>Remove ads &amp; unlock everything</strong>
+      Unlimited journals · Full analytics · Gallery · PIN journals · No ads. Ever.
+    </div>
+    <button class="ad-nudge-btn" onclick="window.location.href='subscription.html'">
+      <i class="fa-solid fa-arrow-up" style="margin-right:5px"></i>Upgrade to Pro — $5/mo
+    </button>
+  </div>
 </main>
 
 <!-- Create Journal Modal -->
 <div class="overlay" id="createModal">
   <div class="modal">
-    <h3>New Journal</h3>
-    <div class="field"><label>Journal Name *</label><input type="text" id="jName" placeholder="e.g. Forex 2025" maxlength="60"></div>
-    <div class="field"><label>Account Capital (optional)</label><input type="number" id="jCapital" placeholder="e.g. 10000" min="0"></div>
-    <div class="field"><label>Journal PIN (optional — 4-6 digits)</label><input type="password" id="jPin" placeholder="Leave blank for no PIN" maxlength="6"></div>
-    <div class="mactions">
+    <div class="modal-hdr">
+      <h3><i class="fa-solid fa-plus" style="color:var(--accent2);margin-right:8px"></i>New Journal</h3>
+      <button class="modal-close" onclick="closeCreate()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.6">Give your journal a name and optionally set a starting capital amount.</p>
+      <div class="field">
+        <label>Journal Name</label>
+        <input type="text" id="jName" placeholder="e.g. Forex, Crypto, Prop Firm…" maxlength="60" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Starting Capital <span style="color:var(--muted);font-size:11px;text-transform:none;letter-spacing:0">(optional)</span></label>
+        <div style="position:relative">
+          <span style="position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px;pointer-events:none">$</span>
+          <input type="number" id="jCapital" placeholder="0.00" min="0" step="0.01" style="padding-left:26px">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
       <button class="btn-cancel" onclick="closeCreate()">Cancel</button>
-      <button class="btn-primary" id="createBtn" onclick="createJournalAction()">Create Journal</button>
+      <button class="btn-primary" id="createBtn" onclick="createJournalAction()"><i class="fa-solid fa-check"></i> Create Journal</button>
     </div>
   </div>
 </div>
 
-<!-- PIN check overlay -->
-<div class="pin-overlay" id="pinOverlay">
-  <div class="pin-box">
-    <h3 id="pinTitle">🔒 Journal Locked</h3>
-    <p id="pinSubtitle">Enter the PIN to unlock this journal.</p>
-    <input type="password" class="pin-input" id="pinInput" placeholder="••••" maxlength="6" oninput="clearPinErr()">
-    <button class="btn-primary" style="width:100%;padding:12px" onclick="checkJournalPin()">Unlock</button>
-    <div class="pin-err" id="pinErr">Incorrect PIN. Please try again.</div>
+<!-- Settings Modal -->
+<div class="overlay" id="settingsModal">
+  <div class="modal settings-modal" style="max-height:90vh;overflow-y:auto">
+    <div class="modal-hdr">
+      <h3><i class="fa-solid fa-gear" style="color:var(--accent2);margin-right:8px"></i>Settings</h3>
+      <button class="modal-close" onclick="closeSettings()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Theme -->
+      <div class="set-section">
+        <div class="set-title"><i class="fa-solid fa-palette"></i> Appearance</div>
+        <div class="theme-grid">
+          <div class="theme-opt" id="themeSystem" onclick="setTheme('system')"><i class="fa-solid fa-circle-half-stroke"></i>System</div>
+          <div class="theme-opt" id="themeDark"   onclick="setTheme('dark')"><i class="fa-solid fa-moon"></i>Dark</div>
+          <div class="theme-opt" id="themeLight"  onclick="setTheme('light')"><i class="fa-solid fa-sun"></i>Light</div>
+        </div>
+      </div>
+
+      <!-- Account -->
+      <div class="set-section">
+        <div class="set-title"><i class="fa-solid fa-user-circle"></i> Account</div>
+        <div class="field">
+          <label>Update Email</label>
+          <input type="email" id="setEmail" placeholder="New email address" autocomplete="email">
+        </div>
+        <div class="field" style="margin-bottom:10px">
+          <label>New Password</label>
+          <input type="password" id="setPassword" placeholder="Leave blank to keep current">
+        </div>
+        <button class="btn-primary" onclick="updateAccount()" style="width:100%;justify-content:center"><i class="fa-solid fa-save"></i> Save Account Changes</button>
+      </div>
+
+      <!-- Plan -->
+      <div class="set-section">
+        <div class="set-title"><i class="fa-solid fa-star"></i> Subscription</div>
+        <div class="plan-row">
+          <div>
+            <div class="plan-lbl">Current Plan</div>
+            <div class="plan-val" id="settingsPlanLabel">Free</div>
+          </div>
+          <button class="upgrade-btn" onclick="window.location.href='subscription.html'"><i class="fa-solid fa-arrow-up"></i> Upgrade to Pro</button>
+        </div>
+        <div class="plan-row">
+          <div>
+            <div class="plan-lbl">Pro Features</div>
+            <div class="plan-val">Unlimited journals, full analytics, advanced themes</div>
+          </div>
+          <i class="fa-solid fa-lock" style="color:var(--muted);font-size:13px" id="proLockIcon"></i>
+        </div>
+      </div>
+
+      <!-- Legal -->
+      <div class="set-section">
+        <div class="set-title"><i class="fa-solid fa-file-lines"></i> Legal</div>
+        <div class="links-row">
+          <div class="link-item" onclick="window.open('terms.html')">
+            <span><i class="fa-solid fa-file-contract" style="margin-right:9px;color:var(--muted)"></i>Terms of Service</span>
+            <i class="fa-solid fa-chevron-right arr"></i>
+          </div>
+          <div class="link-item" onclick="window.open('privacy.html')">
+            <span><i class="fa-solid fa-shield-halved" style="margin-right:9px;color:var(--muted)"></i>Privacy Policy</span>
+            <i class="fa-solid fa-chevron-right arr"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Danger -->
+      <div class="set-section">
+        <div class="set-title" style="color:#ff5f6d"><i class="fa-solid fa-triangle-exclamation" style="color:#ff5f6d"></i> Danger Zone</div>
+        <button onclick="confirmDeleteAccount()" style="width:100%;background:rgba(255,95,109,.08);border:1px solid rgba(255,95,109,.3);color:#ff5f6d;border-radius:8px;padding:10px;font-family:'Inter',sans-serif;font-size:13px;cursor:pointer;transition:all .2s">
+          <i class="fa-solid fa-user-xmark" style="margin-right:7px"></i>Delete My Account
+        </button>
+      </div>
+    </div>
   </div>
 </div>
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-<div id="toast"></div>
+<div id="toast"><i class="fa-solid fa-circle-check" id="toastIcon"></i><span id="toastMsg"></span></div>
 
 <script>
-let currentUser = null;
-let journals    = [];
-let pnlMap      = {};
-let pendingJournalId = null;
+let currentUser = null, journals = [], pnlMap = {};
+let curTheme = localStorage.getItem('tl_theme') || 'dark';
+
+// ── Theme ──────────────────────────────────────────────────
+function applyTheme(t) {
+  const r = document.documentElement;
+  const dark = t === 'dark' || (t === 'system' && !window.matchMedia('(prefers-color-scheme:light)').matches);
+  if (!dark) {
+    r.style.setProperty('--bg','#f4f7f5'); r.style.setProperty('--panel','#ffffff');
+    r.style.setProperty('--accent','#19c37d'); r.style.setProperty('--accent2','#0fa86a');
+    r.style.setProperty('--border','#dde8e3'); r.style.setProperty('--text','#0f1c17'); r.style.setProperty('--muted','#6b8578');
+  } else {
+    r.style.setProperty('--bg','#0b0f0c'); r.style.setProperty('--panel','#111816');
+    r.style.setProperty('--accent','#00ff88'); r.style.setProperty('--accent2','#19c37d');
+    r.style.setProperty('--border','#1c2a25'); r.style.setProperty('--text','#e6f2ec'); r.style.setProperty('--muted','#8fa39a');
+  }
+}
+applyTheme(curTheme);
+
+function setTheme(t) {
+  curTheme = t; localStorage.setItem('tl_theme', t); applyTheme(t);
+  document.querySelectorAll('.theme-opt').forEach(el => el.classList.remove('active'));
+  document.getElementById('theme' + t.charAt(0).toUpperCase() + t.slice(1))?.classList.add('active');
+}
 
 // ── Boot ──────────────────────────────────────────────────
 (async () => {
-  currentUser = await requireAuth();
-  if (!currentUser) return;
-
+  currentUser = await requireAuth(); if (!currentUser) return;
   const profile = await getProfile(currentUser.id);
   document.getElementById('uName').textContent = profile?.name || currentUser.email;
   const badge = document.getElementById('planBadge');
-  if (profile?.plan === 'pro') {
-    badge.textContent = 'Pro';
-    badge.className = 'plan-badge badge-pro';
+  const isPro = profile?.plan === 'pro';
+  if (isPro) { badge.textContent = 'Pro'; badge.className = 'plan-badge badge-pro'; }
+  document.getElementById('settingsPlanLabel').textContent = isPro ? 'Pro' : 'Free';
+  document.getElementById('proLockIcon').style.display = isPro ? 'none' : '';
+  // Show ads + upgrade nudge only to Free users
+  if (!isPro) {
+    document.getElementById('dashAdSlot').classList.add('visible');
+    document.getElementById('dashUpgradeNudge').classList.add('visible');
+    // Push AdSense (safe to call even if not live yet)
+    try { (adsbygoogle = window.adsbygoogle || []).push({}); } catch(e) {}
   }
-
   await loadJournals();
+  document.getElementById('pageLoader').classList.add('gone');
 })();
 
-// ── Load & render journals ────────────────────────────────
+// ── Journals ──────────────────────────────────────────────
 async function loadJournals() {
-  document.getElementById('loadingWrap').style.display = 'flex';
-  document.getElementById('grid').style.display = 'none';
-
   journals = await getJournals(currentUser.id);
-
-  // Load PNL for each journal in parallel
   pnlMap = {};
   await Promise.all(journals.map(async j => {
     const trades = await getTrades(j.id);
     const valid  = trades.filter(t => t.pnl != null);
-    if (valid.length) {
-      pnlMap[j.id] = valid.reduce((s, t) => s + parseFloat(t.pnl), 0);
-    }
+    if (valid.length) pnlMap[j.id] = valid.reduce((s, t) => s + parseFloat(t.pnl), 0);
   }));
-
+  document.getElementById('loadingState').style.display = 'none';
   renderJournals();
 }
 
 function renderJournals() {
-  document.getElementById('loadingWrap').style.display = 'none';
   const grid = document.getElementById('grid');
   grid.style.display = '';
-
   if (!journals.length) {
-    grid.innerHTML = '<div class="empty-state">No journals yet.<br>Click <strong>+ New Journal</strong> to get started.</div>';
+    grid.innerHTML = `<div class="empty-state"><i class="fa-solid fa-book-open"></i>No journals yet.<br>Click <strong>+ New Journal</strong> to get started.</div>`;
     return;
   }
-
   grid.innerHTML = journals.map(j => {
     const pnl = pnlMap[j.id];
-    const capHtml = (j.show_capital !== false && j.capital)
-      ? `<div class="cap">Capital: $${Number(j.capital).toLocaleString()}</div>` : '';
+    const capHtml = j.capital ? `<div class="cap"><i class="fa-solid fa-wallet" style="font-size:10px"></i>$${Number(j.capital).toLocaleString()}</div>` : '';
     let pnlHtml = '';
-    if (j.show_pnl !== false && pnl != null) {
+    if (pnl != null) {
       const cls = pnl >= 0 ? 'pnl-pos' : 'pnl-neg';
       const fmt = (pnl >= 0 ? '+' : '-') + '$' + Math.abs(pnl).toFixed(2);
       pnlHtml = `<div class="pnl-row"><span class="pnl-lbl">PNL</span><span class="pnl-val ${cls}">${fmt}</span></div>`;
     }
-    const lockHtml = j.pin_hash ? `<span class="lock-ic" title="PIN protected">🔒</span>` : '';
     return `<div class="jcard">
-      ${lockHtml}
       <h3>${esc(j.name)}</h3>
       ${capHtml}${pnlHtml}
-      <button class="open-btn" onclick="openJournal('${j.id}',${!!j.pin_hash})">Open Journal →</button>
+      <button class="open-btn" onclick="goToJournal('${j.id}')">
+        <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Journal
+      </button>
     </div>`;
   }).join('');
 }
 
-// ── Open journal (with PIN check if needed) ───────────────
-function openJournal(id, hasPin) {
-  if (hasPin) {
-    pendingJournalId = id;
-    const j = journals.find(x => x.id === id);
-    document.getElementById('pinTitle').textContent    = `🔒 ${j ? j.name : 'Journal'} — Locked`;
-    document.getElementById('pinSubtitle').textContent = 'Enter the PIN to unlock this journal.';
-    document.getElementById('pinInput').value = '';
-    clearPinErr();
-    document.getElementById('pinOverlay').classList.add('open');
-    setTimeout(() => document.getElementById('pinInput').focus(), 120);
-    return;
-  }
-  goToJournal(id);
-}
-
-async function checkJournalPin() {
-  const pin = document.getElementById('pinInput').value;
-  const j   = journals.find(x => x.id === pendingJournalId);
-  if (!j) return;
-  const ok = await verifyPin(pin, j.pin_hash);
-  if (ok) {
-    document.getElementById('pinOverlay').classList.remove('open');
-    goToJournal(pendingJournalId);
-  } else {
-    document.getElementById('pinErr').classList.add('show');
-    document.getElementById('pinInput').value = '';
-    document.getElementById('pinInput').focus();
-  }
-}
-
-function clearPinErr() { document.getElementById('pinErr').classList.remove('show'); }
-
-document.getElementById('pinInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter') checkJournalPin();
-  if (e.key === 'Escape') document.getElementById('pinOverlay').classList.remove('open');
-});
-
-function goToJournal(id) {
-  sessionStorage.setItem('tz_current_journal', id);
-  window.location.href = 'journal.html';
-}
+function goToJournal(id) { sessionStorage.setItem('tz_current_journal', id); window.location.href = 'journal.html'; }
 
 // ── Create Journal ────────────────────────────────────────
-function openCreate() {
-  document.getElementById('createModal').classList.add('open');
-  setTimeout(() => document.getElementById('jName').focus(), 100);
-}
+function openCreate() { document.getElementById('createModal').classList.add('open'); setTimeout(() => document.getElementById('jName').focus(), 100); }
 function closeCreate() {
   document.getElementById('createModal').classList.remove('open');
-  ['jName','jCapital','jPin'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('jName').value = '';
+  document.getElementById('jCapital').value = '';
+}
+async function createJournalAction() {
+  const name = document.getElementById('jName').value.trim();
+  const capital = document.getElementById('jCapital').value.trim();
+  if (!name) {
+    document.getElementById('jName').style.borderColor = '#ff5f6d';
+    setTimeout(() => document.getElementById('jName').style.borderColor = '', 1500);
+    return;
+  }
+  const btn = document.getElementById('createBtn');
+  btn.disabled = true; btn.innerHTML = '<div class="spin-sm"></div> Creating…';
+  try {
+    await createJournal(currentUser.id, { name, capital: capital ? parseFloat(capital) : null, pin_hash: null });
+    closeCreate(); showToast('Journal created!', 'fa-solid fa-circle-check');
+    await loadJournals();
+  } catch (err) { showToast('Error: ' + err.message, 'fa-solid fa-circle-exclamation'); }
+  finally { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-check"></i> Create Journal'; }
+}
+document.getElementById('createModal').addEventListener('click', function(e) { if(e.target===this)closeCreate(); });
+
+// ── Settings ──────────────────────────────────────────────
+function openSettings() {
+  const t = localStorage.getItem('tl_theme') || 'dark';
+  document.querySelectorAll('.theme-opt').forEach(el => el.classList.remove('active'));
+  document.getElementById('theme' + t.charAt(0).toUpperCase() + t.slice(1))?.classList.add('active');
+  document.getElementById('settingsModal').classList.add('open');
+}
+function closeSettings() { document.getElementById('settingsModal').classList.remove('open'); }
+document.getElementById('settingsModal').addEventListener('click', function(e) { if(e.target===this)closeSettings(); });
+
+async function updateAccount() {
+  const email = document.getElementById('setEmail').value.trim();
+  const pass  = document.getElementById('setPassword').value;
+  if (!email && !pass) { showToast('No changes to save.', 'fa-solid fa-info-circle'); return; }
+  try {
+    const updates = {};
+    if (email) updates.email = email;
+    if (pass)  updates.password = pass;
+    const { error } = await db.auth.updateUser(updates);
+    if (error) throw error;
+    document.getElementById('setEmail').value = '';
+    document.getElementById('setPassword').value = '';
+    showToast('Account updated!', 'fa-solid fa-circle-check');
+  } catch (err) { showToast('Error: ' + err.message, 'fa-solid fa-circle-exclamation'); }
 }
 
-async function createJournalAction() {
-  const name    = document.getElementById('jName').value.trim();
-  const capital = document.getElementById('jCapital').value.trim();
-  const pinVal  = document.getElementById('jPin').value.trim();
-  if (!name) { document.getElementById('jName').focus(); return; }
-  if (pinVal && pinVal.length < 4) { showToast('PIN must be at least 4 digits.'); return; }
-
-  const btn = document.getElementById('createBtn');
-  btn.disabled = true; btn.textContent = 'Creating…';
-  try {
-    let pin_hash = null;
-    if (pinVal) pin_hash = await hashPin(pinVal);
-    await createJournal(currentUser.id, {
-      name, capital: capital ? parseFloat(capital) : null, pin_hash
-    });
-    closeCreate();
-    showToast('Journal created!');
-    await loadJournals();
-  } catch (err) {
-    showToast('Error: ' + err.message);
-  } finally {
-    btn.disabled = false; btn.textContent = 'Create Journal';
+function confirmDeleteAccount() {
+  if (confirm('Are you sure you want to delete your account? This cannot be undone.')) {
+    showToast('Contact support to delete your account.', 'fa-solid fa-info-circle');
   }
 }
 
-document.getElementById('createModal').addEventListener('click', function(e) { if(e.target===this)closeCreate(); });
-
 // ── Logout ────────────────────────────────────────────────
-async function logout() {
-  await db.auth.signOut();
-  sessionStorage.clear();
-  window.location.href = 'auth.html';
-}
+async function logout() { await db.auth.signOut(); sessionStorage.clear(); window.location.href = 'auth.html'; }
 
-// ── Toast ─────────────────────────────────────────────────
+// ── Toast ──────────────────────────────────────────────────
 let _tt;
-function showToast(msg) {
+function showToast(msg, icon='fa-solid fa-circle-check') {
   const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
+  document.getElementById('toastIcon').className = icon;
+  document.getElementById('toastMsg').textContent = msg;
+  t.classList.add('show');
   clearTimeout(_tt); _tt = setTimeout(() => t.classList.remove('show'), 3200);
 }
-
 function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+// ── Spin style for button ─────────────────────────────────
+const style = document.createElement('style');
+style.textContent = `.spin-sm{width:14px;height:14px;border:2px solid rgba(7,10,8,.3);border-top-color:#0b0f0c;border-radius:50%;animation:spin .7s linear infinite;display:inline-block}`;
+document.head.appendChild(style);
 </script>
 </body>
 </html>
