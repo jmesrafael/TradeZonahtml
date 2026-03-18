@@ -1,13 +1,19 @@
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type" } });
-  }
+Deno.serve(async (req) => {
+  const cors = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Content-Type": "application/json",
+  };
 
-  const cors = { "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" };
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: cors });
+  }
 
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: cors });
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "No auth header" }), { status: 401, headers: cors });
+    }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnon = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -16,86 +22,104 @@ serve(async (req) => {
     const priceId = Deno.env.get("STRIPE_PRICE_ID")!;
     const appUrl = Deno.env.get("APP_URL") || "https://tradezona.vercel.app";
 
-    // Get user from JWT
+    console.log("Step 1: Getting user...");
     const userRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
-      headers: { "Authorization": authHeader, "apikey": supabaseAnon }
+      headers: {
+        "Authorization": authHeader,
+        "apikey": supabaseAnon,
+      },
     });
     const userData = await userRes.json();
-    if (!userData.id) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: cors });
+    console.log("User data:", JSON.stringify({ id: userData.id, email: userData.email }));
+
+    if (!userData.id) {
+      return new Response(JSON.stringify({ error: "Invalid user: " + JSON.stringify(userData) }), { status: 401, headers: cors });
+    }
 
     const userId = userData.id;
     const userEmail = userData.email;
 
-    // Get profile
-    const profileRes = await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${userId}&select=stripe_customer_id,plan`, {
-      headers: { "Authorization": `Bearer ${serviceKey}`, "apikey": serviceKey }
-    });
+    console.log("Step 2: Getting profile...");
+    const profileRes = await fetch(
+      `${supabaseUrl}/rest/v1/profiles?id=eq.${userId}&select=stripe_customer_id,plan`,
+      {
+        headers: {
+          "Authorization": `Bearer ${serviceKey}`,
+          "apikey": serviceKey,
+        },
+      }
+    );
     const profiles = await profileRes.json();
+    console.log("Profile:", JSON.stringify(profiles));
     const profile = profiles[0];
 
     if (profile?.plan === "pro") {
       return new Response(JSON.stringify({ error: "Already on Pro" }), { status: 400, headers: cors });
     }
 
-    // Get or create Stripe customer
     let customerId = profile?.stripe_customer_id;
+
     if (!customerId) {
+      console.log("Step 3: Creating Stripe customer...");
       const customerRes = await fetch("https://api.stripe.com/v1/customers", {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${stripeKey}`,
           "Content-Type": "application/x-www-form-urlencoded",
         },
-        body: new URLSearchParams({
-          email: userEmail,
-          "metadata[supabase_user_id]": userId,
-        }),
+        body: `email=${encodeURIComponent(userEmail)}&metadata[supabase_user_id]=${userId}`,
       });
       const customer = await customerRes.json();
-      if (!customer.id) throw new Error("Failed to create Stripe customer: " + JSON.stringify(customer));
+      console.log("Stripe customer:", JSON.stringify({ id: customer.id, error: customer.error }));
+
+      if (!customer.id) {
+        throw new Error("Stripe customer error: " + JSON.stringify(customer.error));
+      }
       customerId = customer.id;
 
-      // Save customer ID
+      console.log("Step 4: Saving customer ID...");
       await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${userId}`, {
         method: "PATCH",
         headers: {
           "Authorization": `Bearer ${serviceKey}`,
           "apikey": serviceKey,
           "Content-Type": "application/json",
+          "Prefer": "return=minimal",
         },
         body: JSON.stringify({ stripe_customer_id: customerId }),
       });
     }
 
-    // Create Stripe Checkout session
+    console.log("Step 5: Creating checkout session, priceId:", priceId);
+    const body = new URLSearchParams();
+    body.append("customer", customerId);
+    body.append("mode", "subscription");
+    body.append("line_items[0][price]", priceId);
+    body.append("line_items[0][quantity]", "1");
+    body.append("success_url", `${appUrl}/subscription.html?upgraded=1`);
+    body.append("cancel_url", `${appUrl}/subscription.html?cancelled=1`);
+    body.append("metadata[supabase_user_id]", userId);
+
     const sessionRes = await fetch("https://api.stripe.com/v1/checkout/sessions", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${stripeKey}`,
         "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: new URLSearchParams({
-        customer: customerId,
-        mode: "subscription",
-        "line_items[0][price]": priceId,
-        "line_items[0][quantity]": "1",
-        success_url: `${appUrl}/subscription.html?upgraded=1`,
-        cancel_url: `${appUrl}/subscription.html?cancelled=1`,
-        "metadata[supabase_user_id]": userId,
-      }),
+      body: body.toString(),
     });
 
     const session = await sessionRes.json();
-    if (!session.url) throw new Error(session.error?.message || "No checkout URL returned");
+    console.log("Session result:", JSON.stringify({ url: session.url, error: session.error }));
+
+    if (!session.url) {
+      throw new Error("No URL: " + JSON.stringify(session.error || session));
+    }
 
     return new Response(JSON.stringify({ url: session.url }), { headers: cors });
 
   } catch (err) {
-    console.error("Error:", err.message);
+    console.error("FATAL ERROR:", err.message);
     return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: cors });
   }
 });
-
-function serve(handler: (req: Request) => Promise<Response>) {
-  Deno.serve(handler);
-}
