@@ -15,37 +15,46 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "No auth header" }), { status: 401, headers: cors });
     }
 
+    // Extract token from "Bearer <token>"
+    const token = authHeader.replace("Bearer ", "").trim();
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseAnon = Deno.env.get("SUPABASE_ANON_KEY")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY")!;
     const priceId = Deno.env.get("STRIPE_PRICE_ID")!;
     const appUrl = Deno.env.get("APP_URL") || "https://tradezona.vercel.app";
 
-    console.log("Step 1: Getting user...");
+    // Verify token using Supabase auth admin endpoint
+    console.log("Verifying token...");
     const userRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
       headers: {
-        "Authorization": authHeader,
-        "apikey": supabaseAnon,
+        "Authorization": `Bearer ${token}`,
+        "apikey": serviceKey,
       },
     });
     const userData = await userRes.json();
-    console.log("User data:", JSON.stringify({ id: userData.id, email: userData.email }));
+    console.log("User response status:", userRes.status);
+    console.log("User ID:", userData.id);
 
     if (!userData.id) {
-      return new Response(JSON.stringify({ error: "Invalid user: " + JSON.stringify(userData) }), { status: 401, headers: cors });
+      return new Response(JSON.stringify({ 
+        error: "Auth failed", 
+        detail: JSON.stringify(userData) 
+      }), { status: 401, headers: cors });
     }
 
     const userId = userData.id;
     const userEmail = userData.email;
 
-    console.log("Step 2: Getting profile...");
+    // Get profile using service key
+    console.log("Getting profile...");
     const profileRes = await fetch(
       `${supabaseUrl}/rest/v1/profiles?id=eq.${userId}&select=stripe_customer_id,plan`,
       {
         headers: {
           "Authorization": `Bearer ${serviceKey}`,
           "apikey": serviceKey,
+          "Accept": "application/json",
         },
       }
     );
@@ -60,7 +69,7 @@ Deno.serve(async (req) => {
     let customerId = profile?.stripe_customer_id;
 
     if (!customerId) {
-      console.log("Step 3: Creating Stripe customer...");
+      console.log("Creating Stripe customer...");
       const customerRes = await fetch("https://api.stripe.com/v1/customers", {
         method: "POST",
         headers: {
@@ -70,14 +79,11 @@ Deno.serve(async (req) => {
         body: `email=${encodeURIComponent(userEmail)}&metadata[supabase_user_id]=${userId}`,
       });
       const customer = await customerRes.json();
-      console.log("Stripe customer:", JSON.stringify({ id: customer.id, error: customer.error }));
+      console.log("Customer:", JSON.stringify({ id: customer.id, error: customer.error }));
 
-      if (!customer.id) {
-        throw new Error("Stripe customer error: " + JSON.stringify(customer.error));
-      }
+      if (!customer.id) throw new Error("Stripe customer error: " + JSON.stringify(customer));
       customerId = customer.id;
 
-      console.log("Step 4: Saving customer ID...");
       await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${userId}`, {
         method: "PATCH",
         headers: {
@@ -90,7 +96,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    console.log("Step 5: Creating checkout session, priceId:", priceId);
+    console.log("Creating checkout session...");
     const body = new URLSearchParams();
     body.append("customer", customerId);
     body.append("mode", "subscription");
@@ -110,16 +116,14 @@ Deno.serve(async (req) => {
     });
 
     const session = await sessionRes.json();
-    console.log("Session result:", JSON.stringify({ url: session.url, error: session.error }));
+    console.log("Session:", JSON.stringify({ url: session.url, error: session.error }));
 
-    if (!session.url) {
-      throw new Error("No URL: " + JSON.stringify(session.error || session));
-    }
+    if (!session.url) throw new Error("No URL: " + JSON.stringify(session.error || session));
 
     return new Response(JSON.stringify({ url: session.url }), { headers: cors });
 
   } catch (err) {
-    console.error("FATAL ERROR:", err.message);
+    console.error("FATAL:", err.message);
     return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: cors });
   }
 });
