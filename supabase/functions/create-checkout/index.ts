@@ -1,5 +1,6 @@
 // supabase/functions/create-checkout/index.ts
 // Deploy: supabase functions deploy create-checkout
+// Check logs: supabase functions logs create-checkout --scroll
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -7,98 +8,96 @@ const CORS = {
   "Content-Type": "application/json",
 };
 
+function ok(data) {
+  return new Response(JSON.stringify(data), { status: 200, headers: CORS });
+}
+function err(msg, status) {
+  console.error("ERROR", status, msg);
+  return new Response(JSON.stringify({ error: msg }), { status: status || 500, headers: CORS });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
 
-  try {
-    // ── 1. Authenticate ──────────────────────────────────────
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: "No auth header" }), { status: 401, headers: CORS });
-    }
+  // ── Log every request so we can see what's happening ──────
+  console.log("create-checkout invoked:", req.method);
 
-    const token = authHeader.replace("Bearer ", "").trim();
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceKey  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const stripeKey   = Deno.env.get("STRIPE_SECRET_KEY")!;
-    const priceId     = Deno.env.get("STRIPE_PRICE_ID")!;
+  try {
+    // ── Env var check (log which ones are missing) ────────────
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const serviceKey  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const stripeKey   = Deno.env.get("STRIPE_SECRET_KEY");
+    const priceId     = Deno.env.get("STRIPE_PRICE_ID");
     const appUrl      = Deno.env.get("APP_URL") || "https://tradezona.vercel.app";
 
-    // Guard: fail fast if secrets aren't configured
-    if (!stripeKey) return new Response(JSON.stringify({ error: "STRIPE_SECRET_KEY not set" }), { status: 500, headers: CORS });
-    if (!priceId)   return new Response(JSON.stringify({ error: "STRIPE_PRICE_ID not set" }), { status: 500, headers: CORS });
+    console.log("Env check — SUPABASE_URL:", !!supabaseUrl, "| SERVICE_KEY:", !!serviceKey, "| STRIPE_KEY:", !!stripeKey, "| PRICE_ID:", !!priceId, "| priceId value starts with:", priceId ? priceId.slice(0, 8) : "MISSING");
 
-    // Verify JWT
-    console.log("Verifying token...");
+    if (!supabaseUrl) return err("SUPABASE_URL not set", 500);
+    if (!serviceKey)  return err("SUPABASE_SERVICE_ROLE_KEY not set", 500);
+    if (!stripeKey)   return err("STRIPE_SECRET_KEY not set", 500);
+    if (!priceId)     return err("STRIPE_PRICE_ID not set — set it with: supabase secrets set STRIPE_PRICE_ID=price_xxx", 500);
+
+    // Price IDs must start with "price_" not "prod_"
+    if (!priceId.startsWith("price_")) {
+      return err("STRIPE_PRICE_ID looks wrong — it should start with 'price_', not 'prod_'. Find it in Stripe Dashboard → Products → your product → click the price → copy the Price ID", 500);
+    }
+
+    // ── Authenticate ──────────────────────────────────────────
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) return err("No Authorization header", 401);
+
+    const token = authHeader.replace("Bearer ", "").trim();
+    console.log("Token length:", token.length);
+
     const userRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
       headers: { "Authorization": `Bearer ${token}`, "apikey": serviceKey },
     });
     const userData = await userRes.json();
-    if (!userData?.id) {
-      console.error("Auth failed:", JSON.stringify(userData));
-      return new Response(JSON.stringify({ error: "Invalid or expired session" }), { status: 401, headers: CORS });
-    }
+    console.log("Auth status:", userRes.status, "| user id:", userData.id || "NONE");
+
+    if (!userData.id) return err("Auth failed: " + (userData.message || userData.error_description || JSON.stringify(userData)), 401);
 
     const userId    = userData.id;
     const userEmail = userData.email;
-    console.log("User:", userId, userEmail);
 
-    // ── 2. Get profile (safe — handles missing stripe columns) ──
-    console.log("Getting profile...");
+    // ── Get profile ───────────────────────────────────────────
     const profileRes = await fetch(
       `${supabaseUrl}/rest/v1/profiles?id=eq.${userId}&select=plan,stripe_customer_id`,
-      {
-        headers: {
-          "Authorization": `Bearer ${serviceKey}`,
-          "apikey": serviceKey,
-          "Accept": "application/json",
-        },
-      }
+      { headers: { "Authorization": `Bearer ${serviceKey}`, "apikey": serviceKey, "Accept": "application/json" } }
     );
+    const profileBody = await profileRes.text();
+    console.log("Profile response:", profileRes.status, profileBody.slice(0, 200));
 
-    let plan: string | null = null;
-    let customerId: string | null = null;
-
-    if (profileRes.ok) {
-      const profiles = await profileRes.json();
-      // profiles is an array — profiles[0] is the user row
-      // if stripe_customer_id column doesn't exist yet, it'll just be missing from the row
-      if (Array.isArray(profiles) && profiles.length > 0) {
-        plan       = profiles[0].plan ?? null;
-        customerId = profiles[0].stripe_customer_id ?? null;
+    let plan = null;
+    let customerId = null;
+    try {
+      const profiles = JSON.parse(profileBody);
+      if (Array.isArray(profiles) && profiles[0]) {
+        plan       = profiles[0].plan || null;
+        customerId = profiles[0].stripe_customer_id || null;
       }
-      console.log("Plan:", plan, "| Has customer ID:", !!customerId);
-    } else {
-      // Profile fetch failed — log but continue (can still create checkout without customer ID)
-      const errText = await profileRes.text();
-      console.warn("Profile fetch failed (continuing anyway):", errText);
-    }
+    } catch (_) {}
 
-    if (plan === "pro") {
-      return new Response(JSON.stringify({ error: "Already on Pro" }), { status: 400, headers: CORS });
-    }
+    console.log("Plan:", plan, "| customerId:", customerId ? customerId.slice(0, 8) + "..." : "none");
 
-    // ── 3. Create or reuse Stripe customer ───────────────────
+    if (plan === "pro") return err("Already on Pro", 400);
+
+    // ── Create Stripe customer if needed ──────────────────────
     if (!customerId) {
       console.log("Creating Stripe customer for:", userEmail);
-      const customerRes = await fetch("https://api.stripe.com/v1/customers", {
+      const custRes = await fetch("https://api.stripe.com/v1/customers", {
         method: "POST",
-        headers: {
-          "Authorization": `Bearer ${stripeKey}`,
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
+        headers: { "Authorization": `Bearer ${stripeKey}`, "Content-Type": "application/x-www-form-urlencoded" },
         body: `email=${encodeURIComponent(userEmail)}&metadata[supabase_user_id]=${userId}`,
       });
-      const customer = await customerRes.json();
-      console.log("Stripe customer result:", JSON.stringify({ id: customer.id, error: customer.error }));
+      const cust = await custRes.json();
+      console.log("Stripe customer:", custRes.status, "id:", cust.id, "error:", cust.error?.message);
 
-      if (!customer.id) {
-        throw new Error("Stripe customer creation failed: " + (customer.error?.message || JSON.stringify(customer)));
-      }
-      customerId = customer.id;
+      if (!cust.id) return err("Stripe customer error: " + (cust.error?.message || JSON.stringify(cust)), 500);
+      customerId = cust.id;
 
-      // Save customer ID back to profile (best-effort — don't fail if column doesn't exist yet)
-      const patchRes = await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${userId}`, {
+      // Save to profile (best-effort)
+      await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${userId}`, {
         method: "PATCH",
         headers: {
           "Authorization": `Bearer ${serviceKey}`,
@@ -108,48 +107,33 @@ Deno.serve(async (req) => {
         },
         body: JSON.stringify({ stripe_customer_id: customerId }),
       });
-      if (!patchRes.ok) {
-        const patchErr = await patchRes.text();
-        // This fails if migration_stripe.sql hasn't been run — warn but continue
-        console.warn("Could not save stripe_customer_id to profile (run migration_stripe.sql):", patchErr);
-      }
     }
 
-    // ── 4. Create Stripe checkout session ────────────────────
-    console.log("Creating checkout session with price:", priceId);
+    // ── Create checkout session ───────────────────────────────
+    console.log("Creating session — price:", priceId, "| customer:", customerId);
     const sessionBody = new URLSearchParams();
-    sessionBody.append("customer", customerId);
-    sessionBody.append("mode", "subscription");
-    sessionBody.append("line_items[0][price]", priceId);
-    sessionBody.append("line_items[0][quantity]", "1");
-    sessionBody.append("success_url", `${appUrl}/subscription?upgraded=1`);
-    sessionBody.append("cancel_url",  `${appUrl}/subscription?cancelled=1`);
-    sessionBody.append("metadata[supabase_user_id]", userId);
+    sessionBody.set("customer",                 customerId);
+    sessionBody.set("mode",                     "subscription");
+    sessionBody.set("line_items[0][price]",     priceId);
+    sessionBody.set("line_items[0][quantity]",  "1");
+    sessionBody.set("success_url",              `${appUrl}/subscription?upgraded=1`);
+    sessionBody.set("cancel_url",               `${appUrl}/subscription?cancelled=1`);
+    sessionBody.set("metadata[supabase_user_id]", userId);
 
-    const sessionRes = await fetch("https://api.stripe.com/v1/checkout/sessions", {
+    const sessRes = await fetch("https://api.stripe.com/v1/checkout/sessions", {
       method: "POST",
-      headers: {
-        "Authorization": `Bearer ${stripeKey}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
+      headers: { "Authorization": `Bearer ${stripeKey}`, "Content-Type": "application/x-www-form-urlencoded" },
       body: sessionBody.toString(),
     });
-    const session = await sessionRes.json();
-    console.log("Session result:", JSON.stringify({ url: session.url, error: session.error }));
+    const sess = await sessRes.json();
+    console.log("Session result:", sessRes.status, "| url:", sess.url ? "ok" : "MISSING", "| error:", sess.error?.message || "none");
 
-    if (!session.url) {
-      throw new Error(
-        "Stripe session creation failed: " +
-        (session.error?.message || session.error?.code || JSON.stringify(session))
-      );
-    }
+    if (!sess.url) return err("Stripe session failed: " + (sess.error?.message || sess.error?.code || JSON.stringify(sess)), 500);
 
-    return new Response(JSON.stringify({ url: session.url }), { status: 200, headers: CORS });
+    return ok({ url: sess.url });
 
-  } catch (err: any) {
-    console.error("FATAL:", err.message);
-    return new Response(JSON.stringify({ error: err.message || "Internal server error" }), {
-      status: 500, headers: CORS,
-    });
+  } catch (e) {
+    console.error("FATAL EXCEPTION:", e.message, e.stack);
+    return err(e.message || "Internal server error", 500);
   }
 });
