@@ -112,6 +112,18 @@ body{visibility:hidden;background:var(--bg);color:var(--text);font-family:'Inter
     <div class="dp-hdr"><h3 id="dpTitle">—</h3><button class="dp-close" onclick="closePanel()"><i class="fa-solid fa-xmark"></i></button></div>
     <div id="dpTrades"></div>
   </div>
+
+  <!-- Ad slot — free users only -->
+  <div id="calAdSlot" style="display:none;margin-top:18px;background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden">
+    <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;padding:5px 12px 0;opacity:.5">Advertisement</div>
+    <div style="min-height:72px;display:flex;align-items:center;justify-content:center;padding:10px 16px">
+      <ins class="adsbygoogle" style="display:block;width:100%;min-height:72px" data-ad-client="ca-pub-XXXXXXXXXXXXXXXX" data-ad-slot="XXXXXXXXXX" data-ad-format="horizontal" data-full-width-responsive="true"></ins>
+    </div>
+  </div>
+  <div id="calUpgradeNudge" style="display:none;margin-top:10px;padding:10px 14px;background:rgba(0,255,136,.04);border:1px solid rgba(0,255,136,.15);border-radius:9px;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+    <span style="font-size:12px;color:var(--muted)"><strong style="color:var(--text)">Remove ads + unlock full history</strong> — upgrade to Pro.</span>
+    <a href="/subscription" style="background:var(--accent);color:#0b0f0c;border:none;border-radius:6px;padding:6px 12px;font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;cursor:pointer;text-decoration:none;white-space:nowrap">Upgrade to Pro</a>
+  </div>
 </div>
 
 <script>
@@ -181,6 +193,12 @@ function isLocked(dateStr){if(userIsPro)return false;var d=new Date(dateStr+'T12
   document.getElementById('skelWrap').style.display='none';
   document.getElementById('calWrap').style.display='block';
   renderMonth();
+  // Show ad for free users
+  if(!userIsPro){
+    document.getElementById('calAdSlot').style.display='block';
+    document.getElementById('calUpgradeNudge').style.display='flex';
+    try{(adsbygoogle=window.adsbygoogle||[]).push({});}catch(e){}
+  }
   document.body.style.visibility='visible';
 })();
 
