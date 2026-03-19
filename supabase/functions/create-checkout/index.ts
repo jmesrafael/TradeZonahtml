@@ -1,6 +1,5 @@
 // supabase/functions/create-checkout/index.ts
 // Deploy: supabase functions deploy create-checkout
-// Check logs: supabase functions logs create-checkout --scroll
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -11,131 +10,116 @@ const CORS = {
 function ok(data) {
   return new Response(JSON.stringify(data), { status: 200, headers: CORS });
 }
-function err(msg, status) {
+function fail(msg, status) {
   console.error("ERROR", status, msg);
   return new Response(JSON.stringify({ error: msg }), { status: status || 500, headers: CORS });
 }
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
-
-  // ── Log every request so we can see what's happening ──────
-  console.log("create-checkout invoked:", req.method);
+  console.log("create-checkout called");
 
   try {
-    // ── Env var check (log which ones are missing) ────────────
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceKey  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    const anonKey     = Deno.env.get("SUPABASE_ANON_KEY");
     const stripeKey   = Deno.env.get("STRIPE_SECRET_KEY");
     const priceId     = Deno.env.get("STRIPE_PRICE_ID");
     const appUrl      = Deno.env.get("APP_URL") || "https://tradezona.vercel.app";
 
-    console.log("Env check — SUPABASE_URL:", !!supabaseUrl, "| SERVICE_KEY:", !!serviceKey, "| STRIPE_KEY:", !!stripeKey, "| PRICE_ID:", !!priceId, "| priceId value starts with:", priceId ? priceId.slice(0, 8) : "MISSING");
+    console.log("Env — url:", !!supabaseUrl, "svc:", !!serviceKey, "stripe:", !!stripeKey, "price:", priceId?.slice(0,10));
 
-    if (!supabaseUrl) return err("SUPABASE_URL not set", 500);
-    if (!serviceKey)  return err("SUPABASE_SERVICE_ROLE_KEY not set", 500);
-    if (!stripeKey)   return err("STRIPE_SECRET_KEY not set", 500);
-    if (!priceId)     return err("STRIPE_PRICE_ID not set — set it with: supabase secrets set STRIPE_PRICE_ID=price_xxx", 500);
+    if (!supabaseUrl) return fail("SUPABASE_URL not set", 500);
+    if (!serviceKey)  return fail("SUPABASE_SERVICE_ROLE_KEY not set", 500);
+    if (!stripeKey)   return fail("STRIPE_SECRET_KEY not set", 500);
+    if (!priceId)     return fail("STRIPE_PRICE_ID not set", 500);
+    if (!priceId.startsWith("price_")) return fail("STRIPE_PRICE_ID must start with 'price_' not '" + priceId.slice(0,6) + "'", 500);
 
-    // Price IDs must start with "price_" not "prod_"
-    if (!priceId.startsWith("price_")) {
-      return err("STRIPE_PRICE_ID looks wrong — it should start with 'price_', not 'prod_'. Find it in Stripe Dashboard → Products → your product → click the price → copy the Price ID", 500);
-    }
-
-    // ── Authenticate ──────────────────────────────────────────
+    // ── Auth: use service role key as apikey — this always works ──
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return err("No Authorization header", 401);
+    if (!authHeader) return fail("No Authorization header", 401);
 
     const token = authHeader.replace("Bearer ", "").trim();
-    console.log("Token length:", token.length);
+    console.log("Verifying token, length:", token.length);
 
-    // /auth/v1/user requires the anon key as apikey, NOT the service role key
     const userRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
-      headers: { "Authorization": `Bearer ${token}`, "apikey": anonKey },
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "apikey": serviceKey,   // service role key works for admin JWT verification
+      },
     });
     const userData = await userRes.json();
-    console.log("Auth status:", userRes.status, "| user id:", userData.id || "NONE");
+    console.log("Auth result:", userRes.status, "id:", userData.id || "NONE", "err:", userData.message || "none");
 
-    if (!userData.id) return err("Auth failed: " + (userData.message || userData.error_description || JSON.stringify(userData)), 401);
+    if (!userData.id) return fail("Auth failed: " + (userData.message || userData.error_description || "invalid token"), 401);
 
     const userId    = userData.id;
     const userEmail = userData.email;
+    console.log("User:", userEmail);
 
-    // ── Get profile ───────────────────────────────────────────
-    const profileRes = await fetch(
+    // ── Profile ───────────────────────────────────────────────
+    const profRes = await fetch(
       `${supabaseUrl}/rest/v1/profiles?id=eq.${userId}&select=plan,stripe_customer_id`,
-      { headers: { "Authorization": `Bearer ${serviceKey}`, "apikey": serviceKey, "Accept": "application/json" } }
+      { headers: { "Authorization": `Bearer ${serviceKey}`, "apikey": serviceKey } }
     );
-    const profileBody = await profileRes.text();
-    console.log("Profile response:", profileRes.status, profileBody.slice(0, 200));
+    const profText = await profRes.text();
+    console.log("Profile:", profRes.status, profText.slice(0, 150));
 
-    let plan = null;
-    let customerId = null;
+    let plan = null, customerId = null;
     try {
-      const profiles = JSON.parse(profileBody);
-      if (Array.isArray(profiles) && profiles[0]) {
-        plan       = profiles[0].plan || null;
-        customerId = profiles[0].stripe_customer_id || null;
+      const rows = JSON.parse(profText);
+      if (Array.isArray(rows) && rows[0]) {
+        plan       = rows[0].plan || null;
+        customerId = rows[0].stripe_customer_id || null;
       }
-    } catch (_) {}
+    } catch(_) {}
 
-    console.log("Plan:", plan, "| customerId:", customerId ? customerId.slice(0, 8) + "..." : "none");
+    if (plan === "pro") return fail("Already on Pro", 400);
 
-    if (plan === "pro") return err("Already on Pro", 400);
-
-    // ── Create Stripe customer if needed ──────────────────────
+    // ── Stripe customer ───────────────────────────────────────
     if (!customerId) {
-      console.log("Creating Stripe customer for:", userEmail);
       const custRes = await fetch("https://api.stripe.com/v1/customers", {
         method: "POST",
         headers: { "Authorization": `Bearer ${stripeKey}`, "Content-Type": "application/x-www-form-urlencoded" },
         body: `email=${encodeURIComponent(userEmail)}&metadata[supabase_user_id]=${userId}`,
       });
       const cust = await custRes.json();
-      console.log("Stripe customer:", custRes.status, "id:", cust.id, "error:", cust.error?.message);
-
-      if (!cust.id) return err("Stripe customer error: " + (cust.error?.message || JSON.stringify(cust)), 500);
+      console.log("Stripe customer:", custRes.status, cust.id || cust.error?.message);
+      if (!cust.id) return fail("Stripe customer error: " + (cust.error?.message || JSON.stringify(cust)), 500);
       customerId = cust.id;
 
-      // Save to profile (best-effort)
       await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${userId}`, {
         method: "PATCH",
-        headers: {
-          "Authorization": `Bearer ${serviceKey}`,
-          "apikey": serviceKey,
-          "Content-Type": "application/json",
-          "Prefer": "return=minimal",
-        },
+        headers: { "Authorization": `Bearer ${serviceKey}`, "apikey": serviceKey, "Content-Type": "application/json", "Prefer": "return=minimal" },
         body: JSON.stringify({ stripe_customer_id: customerId }),
       });
     }
 
-    // ── Create checkout session ───────────────────────────────
-    console.log("Creating session — price:", priceId, "| customer:", customerId);
-    const sessionBody = new URLSearchParams();
-    sessionBody.set("customer",                 customerId);
-    sessionBody.set("mode",                     "subscription");
-    sessionBody.set("line_items[0][price]",     priceId);
-    sessionBody.set("line_items[0][quantity]",  "1");
-    sessionBody.set("success_url",              `${appUrl}/subscription?upgraded=1`);
-    sessionBody.set("cancel_url",               `${appUrl}/subscription?cancelled=1`);
-    sessionBody.set("metadata[supabase_user_id]", userId);
+    // ── Checkout session ──────────────────────────────────────
+    console.log("Creating session, price:", priceId);
+    const body = new URLSearchParams({
+      "customer":                   customerId,
+      "mode":                       "subscription",
+      "line_items[0][price]":       priceId,
+      "line_items[0][quantity]":    "1",
+      "success_url":                `${appUrl}/subscription?upgraded=1`,
+      "cancel_url":                 `${appUrl}/subscription?cancelled=1`,
+      "metadata[supabase_user_id]": userId,
+    });
 
     const sessRes = await fetch("https://api.stripe.com/v1/checkout/sessions", {
       method: "POST",
       headers: { "Authorization": `Bearer ${stripeKey}`, "Content-Type": "application/x-www-form-urlencoded" },
-      body: sessionBody.toString(),
+      body: body.toString(),
     });
     const sess = await sessRes.json();
-    console.log("Session result:", sessRes.status, "| url:", sess.url ? "ok" : "MISSING", "| error:", sess.error?.message || "none");
+    console.log("Session:", sessRes.status, sess.url ? "url:ok" : "url:MISSING", sess.error?.message || "");
 
-    if (!sess.url) return err("Stripe session failed: " + (sess.error?.message || sess.error?.code || JSON.stringify(sess)), 500);
+    if (!sess.url) return fail("Stripe session failed: " + (sess.error?.message || sess.error?.code || JSON.stringify(sess)), 500);
 
     return ok({ url: sess.url });
 
   } catch (e) {
-    console.error("FATAL EXCEPTION:", e.message, e.stack);
-    return err(e.message || "Internal server error", 500);
+    console.error("EXCEPTION:", e.message);
+    return fail(e.message || "Internal server error", 500);
   }
 });
