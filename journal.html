@@ -571,9 +571,9 @@ applyTheme(localStorage.getItem('tl_theme')||'dark');
 
 // ── Navigation ──────────────────────────────────────
 function goBack(){
-  if(isDirty){
-    // Red toast at top — do NOT navigate
-    showToast('You have unsaved changes! Save or discard first.','fa-solid fa-triangle-exclamation','red');
+  // Only block navigation if we're on the settings tab with unsaved changes
+  if(activeTab==='settings'&&isDirty){
+    showToast('Save or discard your settings changes first.','fa-solid fa-triangle-exclamation','red');
     return;
   }
   location.href='/dashboard';
@@ -885,7 +885,7 @@ function esc(s){const d=document.createElement('div');d.textContent=s;return d.i
 
 // Enter keys for tag inputs
 document.addEventListener('keydown',e=>{if(e.key!=='Enter')return;const a=document.activeElement;if(a.id==='stratInput')addTag('strategies','stratInput');if(a.id==='tfInput')addTag('timeframes','tfInput');if(a.id==='pairInput')addTag('pairs','pairInput');if(a.id==='moodInput')addMoodTag();});
-window.addEventListener('beforeunload',e=>{if(isDirty){e.preventDefault();e.returnValue='';}});
+window.addEventListener('beforeunload',e=>{if(activeTab==='settings'&&isDirty){e.preventDefault();e.returnValue='';}});
 </script>
 </body>
 </html>

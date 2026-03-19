@@ -85,6 +85,12 @@ main{padding:32px;max-width:1100px;margin:0 auto}
 .fi input.no-icon{padding-right:13px}
 .eye-btn{position:absolute;right:11px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:2px;transition:color .15s;line-height:1}
 .eye-btn:hover{color:var(--text)}
+.acct-edit-btn{background:none;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:6px 12px;font-family:'Inter',sans-serif;font-size:12px;font-weight:500;cursor:pointer;transition:all .2s;display:flex;align-items:center;flex-shrink:0}
+.acct-edit-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+.acct-save-btn{flex:1;background:var(--accent);color:#0b0f0c;border:none;border-radius:7px;padding:9px 14px;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .2s;display:flex;align-items:center;justify-content:center}
+.acct-save-btn:hover{opacity:.85}
+.acct-cancel-btn{background:none;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:9px 14px;font-family:'Inter',sans-serif;font-size:13px;cursor:pointer;transition:all .15s}
+.acct-cancel-btn:hover{border-color:var(--muted);color:var(--text)}
 .field input.plain{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:11px 13px;color:var(--text);font-family:'Inter',sans-serif;font-size:14px;outline:none;transition:border-color .2s}
 .field input.plain:focus{border-color:var(--accent2)}
 .btn-cancel{background:none;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:10px 18px;font-family:'Inter',sans-serif;font-size:13px;cursor:pointer;transition:all .2s}
@@ -237,25 +243,49 @@ main{padding:32px;max-width:1100px;margin:0 auto}
       <!-- Account -->
       <div class="set-sec">
         <div class="set-title"><i class="fa-solid fa-user-circle"></i>Account</div>
-        <div class="field">
-          <label>Update Email</label>
-          <div class="fi"><input type="email" id="setEmail" class="no-icon" placeholder="New email address" autocomplete="email" style="padding-right:13px"></div>
-        </div>
-        <div class="field">
-          <label>New Password</label>
-          <div class="fi">
-            <input type="password" id="setPassword" placeholder="Leave blank to keep current" autocomplete="new-password">
-            <button class="eye-btn" type="button" onclick="toggleEye('setPassword',this)"><i class="fa-solid fa-eye"></i></button>
+
+        <!-- Email row — button reveals input -->
+        <div style="margin-bottom:12px">
+          <div id="emailBtnRow" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px">
+            <div>
+              <div style="font-size:13px;font-weight:500">Email Address</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:2px" id="emailCurrentDisplay">—</div>
+            </div>
+            <button class="acct-edit-btn" onclick="toggleAcctSection('email')"><i class="fa-solid fa-pen" style="margin-right:5px"></i>Change</button>
+          </div>
+          <div id="emailSection" style="display:none;margin-top:8px">
+            <div class="fi"><input type="email" id="setEmail" class="no-icon" placeholder="New email address" autocomplete="email" style="padding-right:13px;width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:11px 13px;color:var(--text);font-family:'Inter',sans-serif;font-size:14px;outline:none;transition:border-color .2s"></div>
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <button class="acct-cancel-btn" onclick="toggleAcctSection('email')">Cancel</button>
+              <button class="acct-save-btn" onclick="saveEmail()"><i class="fa-solid fa-save" style="margin-right:5px"></i>Save Email</button>
+            </div>
           </div>
         </div>
-        <div class="field" style="margin-bottom:14px">
-          <label>Confirm New Password</label>
-          <div class="fi">
-            <input type="password" id="setPasswordConfirm" placeholder="Re-enter new password" autocomplete="new-password">
-            <button class="eye-btn" type="button" onclick="toggleEye('setPasswordConfirm',this)"><i class="fa-solid fa-eye"></i></button>
+
+        <!-- Password row — button reveals inputs -->
+        <div>
+          <div id="passBtnRow" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px">
+            <div>
+              <div style="font-size:13px;font-weight:500">Password</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:2px">••••••••••</div>
+            </div>
+            <button class="acct-edit-btn" onclick="toggleAcctSection('pass')"><i class="fa-solid fa-pen" style="margin-right:5px"></i>Change</button>
+          </div>
+          <div id="passSection" style="display:none;margin-top:8px;display:none;flex-direction:column;gap:8px">
+            <div class="fi" style="position:relative">
+              <input type="password" id="setPassword" placeholder="New password (min 8 chars)" autocomplete="new-password" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:11px 40px 11px 13px;color:var(--text);font-family:'Inter',sans-serif;font-size:14px;outline:none;transition:border-color .2s">
+              <button class="eye-btn" type="button" onclick="toggleEye('setPassword',this)"><i class="fa-solid fa-eye"></i></button>
+            </div>
+            <div class="fi" style="position:relative">
+              <input type="password" id="setPasswordConfirm" placeholder="Confirm new password" autocomplete="new-password" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:11px 40px 11px 13px;color:var(--text);font-family:'Inter',sans-serif;font-size:14px;outline:none;transition:border-color .2s">
+              <button class="eye-btn" type="button" onclick="toggleEye('setPasswordConfirm',this)"><i class="fa-solid fa-eye"></i></button>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="acct-cancel-btn" onclick="toggleAcctSection('pass')">Cancel</button>
+              <button class="acct-save-btn" onclick="savePassword()"><i class="fa-solid fa-save" style="margin-right:5px"></i>Save Password</button>
+            </div>
           </div>
         </div>
-        <button class="btn-primary" onclick="updateAccount()" style="width:100%;justify-content:center"><i class="fa-solid fa-save"></i> Save Account Changes</button>
       </div>
 
       <!-- Subscription -->
@@ -461,31 +491,64 @@ function openSettings(){
   document.querySelectorAll('.theme-opt').forEach(el=>el.classList.remove('active'));
   const key=t.charAt(0).toUpperCase()+t.slice(1);
   document.getElementById('theme'+key)?.classList.add('active');
-  document.getElementById('setEmail').value='';
-  document.getElementById('setPassword').value='';
-  document.getElementById('setPasswordConfirm').value='';
+  // Reset account sections to collapsed state
+  collapseAcctSection('email');
+  collapseAcctSection('pass');
+  // Show current email
+  const emailDisplay=document.getElementById('emailCurrentDisplay');
+  if(emailDisplay&&currentUser?.email)emailDisplay.textContent=currentUser.email;
   document.getElementById('settingsModal').classList.add('open');
 }
 function closeSettings(){document.getElementById('settingsModal').classList.remove('open');}
 document.getElementById('settingsModal').addEventListener('click',function(e){if(e.target===this)closeSettings();});
 
-async function updateAccount(){
+// ── Account section toggle ─────────────────────────────────
+function toggleAcctSection(section){
+  const emailSection=document.getElementById('emailSection');
+  const passSection=document.getElementById('passSection');
+  if(section==='email'){
+    const open=emailSection.style.display!=='none'&&emailSection.style.display!=='';
+    if(open){collapseAcctSection('email');}
+    else{collapseAcctSection('pass');emailSection.style.display='block';setTimeout(()=>document.getElementById('setEmail')?.focus(),80);}
+  } else {
+    const open=passSection.style.display==='flex';
+    if(open){collapseAcctSection('pass');}
+    else{collapseAcctSection('email');passSection.style.display='flex';setTimeout(()=>document.getElementById('setPassword')?.focus(),80);}
+  }
+}
+function collapseAcctSection(section){
+  if(section==='email'){
+    const el=document.getElementById('emailSection');
+    if(el){el.style.display='none';const inp=document.getElementById('setEmail');if(inp)inp.value='';}
+  } else {
+    const el=document.getElementById('passSection');
+    if(el){el.style.display='none';['setPassword','setPasswordConfirm'].forEach(id=>{const inp=document.getElementById(id);if(inp)inp.value='';});}
+  }
+}
+
+async function saveEmail(){
   const email=document.getElementById('setEmail').value.trim();
+  if(!email){showToast('Enter a new email address.','fa-solid fa-circle-exclamation','red');return;}
+  try{
+    const{error}=await db.auth.updateUser({email});
+    if(error)throw error;
+    document.getElementById('emailCurrentDisplay').textContent=email;
+    collapseAcctSection('email');
+    showToast('Email updated! Check your inbox to confirm.','fa-solid fa-circle-check','green');
+  }catch(e){showToast('Error: '+e.message,'fa-solid fa-circle-exclamation','red');}
+}
+
+async function savePassword(){
   const pass =document.getElementById('setPassword').value;
   const passC=document.getElementById('setPasswordConfirm').value;
-  if(!email&&!pass){showToast('No changes to save.','fa-solid fa-info-circle','');return;}
-  if(pass&&pass!==passC){showToast('Passwords do not match.','fa-solid fa-circle-exclamation','red');return;}
-  if(pass&&pass.length<8){showToast('Password must be at least 8 characters.','fa-solid fa-circle-exclamation','red');return;}
+  if(!pass){showToast('Enter a new password.','fa-solid fa-circle-exclamation','red');return;}
+  if(pass.length<8){showToast('Password must be at least 8 characters.','fa-solid fa-circle-exclamation','red');return;}
+  if(pass!==passC){showToast('Passwords do not match.','fa-solid fa-circle-exclamation','red');return;}
   try{
-    const updates={};
-    if(email)updates.email=email;
-    if(pass)updates.password=pass;
-    const{error}=await db.auth.updateUser(updates);
+    const{error}=await db.auth.updateUser({password:pass});
     if(error)throw error;
-    document.getElementById('setEmail').value='';
-    document.getElementById('setPassword').value='';
-    document.getElementById('setPasswordConfirm').value='';
-    showToast('Account updated!','fa-solid fa-circle-check','green');
+    collapseAcctSection('pass');
+    showToast('Password updated successfully!','fa-solid fa-circle-check','green');
   }catch(e){showToast('Error: '+e.message,'fa-solid fa-circle-exclamation','red');}
 }
 

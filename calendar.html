@@ -74,9 +74,9 @@ body{visibility:hidden;background:var(--bg);color:var(--text);font-family:'Inter
   <div class="cal-hdr">
     <h2><i class="fa-solid fa-calendar-days" style="color:var(--accent2)"></i>Trade Calendar</h2>
     <div class="nav-row">
-      <button class="nav-btn" onclick="prevMonth()"><i class="fa-solid fa-chevron-left"></i></button>
+      <button class="nav-btn" id="prevBtn" onclick="prevMonthClick()"><i class="fa-solid fa-chevron-left"></i></button>
       <span class="month-lbl" id="monthLbl">—</span>
-      <button class="nav-btn" onclick="nextMonth()"><i class="fa-solid fa-chevron-right"></i></button>
+      <button class="nav-btn" id="nextBtn" onclick="nextMonth()"><i class="fa-solid fa-chevron-right"></i></button>
       <button class="nav-btn" onclick="goToday()" style="width:auto;padding:0 10px;font-size:11px;font-weight:600">Today</button>
     </div>
   </div>
@@ -131,7 +131,11 @@ function applyTheme(t){const r=document.documentElement,dk=t==='dark'||(t==='sys
 (()=>applyTheme(localStorage.getItem('tl_theme')||'dark'))();
 window.addEventListener('message',e=>{
   if(e.data?.theme)applyTheme(e.data.theme);
-  if(e.data?.type==='tz_plan'&&typeof e.data.isPro!=='undefined'){userIsPro=e.data.isPro;document.getElementById('freeBanner').style.display=userIsPro?'none':'flex';}
+  if(e.data?.type==='tz_plan'&&typeof e.data.isPro!=='undefined'){
+    userIsPro=e.data.isPro;
+    document.getElementById('freeBanner').style.display=userIsPro?'none':'flex';
+    updateNavButtons();
+  }
 });
 
 const jid=sessionStorage.getItem('tz_current_journal');
@@ -193,6 +197,7 @@ function isLocked(dateStr){if(userIsPro)return false;var d=new Date(dateStr+'T12
   document.getElementById('skelWrap').style.display='none';
   document.getElementById('calWrap').style.display='block';
   renderMonth();
+  updateNavButtons();
   // Show ad for free users
   if(!userIsPro){
     document.getElementById('calAdSlot').style.display='block';
@@ -304,9 +309,68 @@ function showDayPanel(dayNum,dateStr,trades){
   document.getElementById('dayPanel').classList.add('show');
 }
 function closePanel(){document.getElementById('dayPanel').classList.remove('show');}
-function prevMonth(){curMonth--;if(curMonth<0){curMonth=11;curYear--;}renderMonth();}
-function nextMonth(){curMonth++;if(curMonth>11){curMonth=0;curYear++;}renderMonth();}
-function goToday(){curYear=new Date().getFullYear();curMonth=new Date().getMonth();renderMonth();}
+function prevMonthClick(){
+  // Check if blocked for free users
+  if(!userIsPro){
+    var testM=curMonth-1,testY=curYear;
+    if(testM<0){testM=11;testY--;}
+    var lastDay=new Date(testY,testM+1,0);
+    var cut=new Date();cut.setDate(cut.getDate()-90);
+    if(lastDay<cut){
+      // Show upgrade nudge in the free banner
+      var banner=document.getElementById('freeBanner');
+      banner.style.display='flex';
+      banner.style.background='rgba(245,158,11,.1)';
+      banner.style.borderColor='rgba(245,158,11,.4)';
+      setTimeout(()=>{banner.style.background='';banner.style.borderColor='';},2000);
+      return;
+    }
+  }
+  prevMonth();
+}
+
+function prevMonth(){
+  curMonth--;if(curMonth<0){curMonth=11;curYear--;}
+  renderMonth();
+  updateNavButtons();
+}
+function nextMonth(){
+  curMonth++;if(curMonth>11){curMonth=0;curYear++;}
+  renderMonth();
+  updateNavButtons();
+}
+function goToday(){
+  curYear=new Date().getFullYear();curMonth=new Date().getMonth();
+  renderMonth();
+  updateNavButtons();
+}
+
+function updateNavButtons(){
+  var prevBtn=document.getElementById('prevBtn');
+  var nextBtn=document.getElementById('nextBtn');
+  if(!prevBtn||!nextBtn)return;
+  var today=new Date();
+  var todayY=today.getFullYear(),todayM=today.getMonth();
+  var isCurrentOrFuture=(curYear>todayY)||(curYear===todayY&&curMonth>=todayM);
+  nextBtn.disabled=isCurrentOrFuture;
+  nextBtn.style.opacity=isCurrentOrFuture?'.35':'';
+  nextBtn.style.cursor=isCurrentOrFuture?'not-allowed':'';
+  if(!userIsPro){
+    var testM=curMonth-1,testY=curYear;
+    if(testM<0){testM=11;testY--;}
+    var lastDayOfPrevMonth=new Date(testY,testM+1,0);
+    var cut=new Date();cut.setDate(cut.getDate()-90);
+    var prevBlocked=lastDayOfPrevMonth<cut;
+    prevBtn.disabled=prevBlocked;
+    prevBtn.style.opacity=prevBlocked?'.35':'';
+    prevBtn.style.cursor=prevBlocked?'not-allowed':'';
+    prevBtn.title=prevBlocked?'Upgrade to Pro to view older history':'';
+  } else {
+    prevBtn.disabled=false;
+    prevBtn.style.opacity='';
+    prevBtn.style.cursor='';
+  }
+}
 </script>
 </body>
 </html>

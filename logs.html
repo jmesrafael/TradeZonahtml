@@ -278,7 +278,8 @@ let currentUser=null,trades=[],settings=null,userIsPro=false;
 let analyticsOn=localStorage.getItem('tl_analytics_on')!=='false';
 let pendingDelId=null,activeNotesId=null,imgBuffer=[],activePill=null,saveTimer=null;
 const FREE_TAG_LIMIT=2, FREE_IMG_LIMIT=1;
-// Flag: suppress realtime re-render while we're doing our own insert
+// Once we have DOM rows, suppress ALL realtime re-renders.
+// render() only runs on initial load. After that, all changes are DOM-patched directly.
 let _suppressRerender=false;
 
 (async()=>{
@@ -293,6 +294,8 @@ let _suppressRerender=false;
   document.getElementById('skelTable').style.display='none';
   document.getElementById('tableWrap').style.display='block';
   applyAnalyticsState(); render();
+  // After initial render, suppress realtime DOM wipeout — edits are patched in-place
+  _suppressRerender=true;
   document.body.style.visibility='visible';
   // Show ads for free users
   if(!userIsPro){
@@ -309,8 +312,15 @@ let _suppressRerender=false;
 
 async function reloadSettings(){settings=await getJournalSettings(jid);render();}
 async function refreshTrades(){
-  // Don't re-render if we're mid-insert — the row is already in the DOM
+  // Only do a full re-render if suppression is off AND no rows are in the DOM yet
+  // Once there are DOM rows, all mutations are handled in-place (no wipeout)
   if(_suppressRerender)return;
+  const hasRows=document.getElementById('tbody').querySelectorAll('tr[data-id]').length>0;
+  if(hasRows){
+    // Just sync the trades array silently — don't touch the DOM
+    const r=await getTrades(jid);trades=r.map(dbToTrade);updateAnalytics();
+    return;
+  }
   const r=await getTrades(jid);trades=r.map(dbToTrade);render();
 }
 
@@ -371,10 +381,12 @@ function updPos(sel,id){updF(id,'position',sel.value);sel.style.color=sel.value=
 async function setConf(id,n){const t=trades.find(x=>x.id===id);if(!t)return;t.confidence=n;document.querySelectorAll(`[data-id="${id}"] .star`).forEach((s,i)=>s.classList.toggle('on',i<n));await updateTrade(id,{confidence:n});}
 function showSaveInd(v){document.getElementById('saveInd').classList.toggle('show',v);}
 
-// ── ADD TRADE — row stays in DOM, no full re-render ─────
+// ── ADD TRADE — row is permanent in DOM; realtime never wipes it ──
 async function addRow(){
   showSaveInd(true);
-  _suppressRerender=true; // block realtime re-render during this insert
+  // Once we insert a row, suppress realtime re-renders forever
+  // (DOM is the source of truth; realtime only syncs the trades[] array silently)
+  _suppressRerender=true;
   const now=new Date();
   const date=now.toISOString().split('T')[0];
   const time=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
@@ -383,26 +395,17 @@ async function addRow(){
     const newTrade={id:row.id,date,time,pair:'',position:'Long',strategy:[],timeframe:[],pnl:'',r:'',confidence:0,mood:[],notes:'',images:[]};
     trades.unshift(newTrade);
     const tb=document.getElementById('tbody');
-    // Remove empty-state row if present
     const emptyRow=tb.querySelector('.er');if(emptyRow)emptyRow.remove();
-    // Build and insert new row at top, mark it highlighted
     const tr=buildRow(newTrade, 1);
     tr.classList.add('new-row');
     if(tb.firstChild)tb.insertBefore(tr,tb.firstChild);else tb.appendChild(tr);
-    // Re-number rows
     renumberRows();
-    // Focus the pair input
     const pairInput=tr.querySelector('.pw-cell input');
     if(pairInput){setTimeout(()=>pairInput.focus(),50);}
     updateAnalytics();
-    // Remove highlight after 3s
     setTimeout(()=>tr.classList.remove('new-row'),3000);
   }catch(e){showToast('Error creating trade: '+e.message,'fa-solid fa-circle-exclamation','red');}
-  finally{
-    showSaveInd(false);
-    // Re-enable realtime after a short delay (enough for the INSERT event to arrive and be ignored)
-    setTimeout(()=>{_suppressRerender=false;},1500);
-  }
+  finally{showSaveInd(false);}
 }
 
 function renumberRows(){
