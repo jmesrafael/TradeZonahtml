@@ -20,12 +20,13 @@ Deno.serve(async (req) => {
     const token = authHeader.replace("Bearer ", "").trim();
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const anonKey     = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    // Verify JWT via raw fetch — same approach as create-checkout (proven to work)
+    // Verify JWT — /auth/v1/user requires the anon key as apikey
     const userRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
       headers: {
         "Authorization": `Bearer ${token}`,
-        "apikey": serviceKey,
+        "apikey": anonKey,
       },
     });
     const userData = await userRes.json();

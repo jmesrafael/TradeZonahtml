@@ -26,6 +26,7 @@ Deno.serve(async (req) => {
     // ── Env var check (log which ones are missing) ────────────
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceKey  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const anonKey     = Deno.env.get("SUPABASE_ANON_KEY");
     const stripeKey   = Deno.env.get("STRIPE_SECRET_KEY");
     const priceId     = Deno.env.get("STRIPE_PRICE_ID");
     const appUrl      = Deno.env.get("APP_URL") || "https://tradezona.vercel.app";
@@ -49,8 +50,9 @@ Deno.serve(async (req) => {
     const token = authHeader.replace("Bearer ", "").trim();
     console.log("Token length:", token.length);
 
+    // /auth/v1/user requires the anon key as apikey, NOT the service role key
     const userRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
-      headers: { "Authorization": `Bearer ${token}`, "apikey": serviceKey },
+      headers: { "Authorization": `Bearer ${token}`, "apikey": anonKey },
     });
     const userData = await userRes.json();
     console.log("Auth status:", userRes.status, "| user id:", userData.id || "NONE");
