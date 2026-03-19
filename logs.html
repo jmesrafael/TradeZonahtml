@@ -521,12 +521,19 @@ async function openNotes(id){
 }
 function closeNotes(){document.getElementById('nOverlay').classList.remove('open');activeNotesId=null;imgBuffer=[];}
 async function saveNotes(){
-  if(!activeNotesId)return;const t=trades.find(x=>x.id===activeNotesId);if(!t)return;
-  const newNotes=document.getElementById('nmText').value;setSaveInd('saving');
+  if(!activeNotesId)return;
+  const t=trades.find(x=>x.id===activeNotesId);if(!t)return;
+  const newNotes=document.getElementById('nmText').value;
+  setSaveInd('saving');
   try{
-    await updateTrade(activeNotesId,{notes:newNotes});t.notes=newNotes;
+    // Update notes in local trade object first
+    t.notes=newNotes;
+
+    // Handle image deletions
     const keepIds=new Set(imgBuffer.filter(i=>i.id).map(i=>i.id));
     for(const img of(t.images||[])){if(img.id&&!keepIds.has(img.id))await deleteTradeImage(img.id);}
+
+    // Upload any new images
     const final=[];
     for(const img of imgBuffer){
       if(img.id){final.push(img);}
@@ -536,9 +543,16 @@ async function saveNotes(){
       }
     }
     t.images=final;
+
+    // Save FULL trade object — prevents mood/strategy/etc from being wiped
+    await updateTrade(activeNotesId,t);
+
+    // Update the notes button in the row
     const tr=document.querySelector(`tr[data-id="${activeNotesId}"]`);
     if(tr){const btn=tr.querySelector('.notes-btn');if(btn){const hasN=(newNotes&&newNotes.trim())||final.length>0;btn.className=`notes-btn${hasN?' hc':''}`;btn.innerHTML=hasN?`<i class="fa-solid fa-note-sticky"></i> View${final.length?`<span style="font-size:10px;background:var(--accent2);color:#0b0f0c;border-radius:10px;padding:1px 5px;font-weight:700">${final.length}</span>`:''}`:`<i class="fa-regular fa-note-sticky"></i> Add`;}}
-    closeNotes();setSaveInd('saved');
+
+    closeNotes();
+    setSaveInd('saved');
   }catch(e){showToast('Save error: '+e.message,'fa-solid fa-circle-exclamation','red');}
 }
 function renderImgs(){
