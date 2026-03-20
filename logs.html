@@ -133,13 +133,13 @@ td{padding:7px 7px;vertical-align:middle;text-align:center}
 .filter-bar{display:flex;align-items:center;gap:5px;margin-bottom:10px;flex-wrap:wrap}
 .fb-btn{
   display:inline-flex;align-items:center;gap:5px;
-  padding:5px 11px;border:1px solid var(--border);border-radius:20px;
+  padding:5px 12px;border:1px solid var(--border);border-radius:20px;
   background:none;color:var(--muted);font-family:'Inter',sans-serif;font-size:12px;
   cursor:pointer;transition:all .15s;white-space:nowrap;position:relative;user-select:none;
 }
 .fb-btn:hover{border-color:var(--accent2);color:var(--text)}
 .fb-btn.active{border-color:var(--accent2);color:var(--accent2);background:rgba(0,255,136,.07)}
-.fb-btn i.fa-chevron-down{font-size:9px;opacity:.6;transition:transform .15s}
+.fb-btn i.fa-chevron-down{font-size:9px;opacity:.5;transition:transform .15s}
 .fb-btn.open i.fa-chevron-down{transform:rotate(180deg)}
 .fb-badge{
   background:var(--accent2);color:#0b0f0c;
@@ -166,7 +166,6 @@ td{padding:7px 7px;vertical-align:middle;text-align:center}
 }
 .fd.open{display:block}
 .fd-title{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px;font-weight:600}
-/* Date range specific */
 .fd-date{min-width:220px}
 .fd-row{display:flex;flex-direction:column;gap:5px;margin-bottom:8px}
 .fd-lbl{font-size:11px;color:var(--muted)}
@@ -177,35 +176,56 @@ td{padding:7px 7px;vertical-align:middle;text-align:center}
 }
 .fd-input:focus{border-color:var(--accent2)}
 .fd-sep{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px;padding:2px 0}
-/* Checkbox list */
-.fd-list{max-height:200px;overflow-y:auto;display:flex;flex-direction:column;gap:2px}
+
+/* Custom radio-style checkbox list */
+.fd-list{max-height:200px;overflow-y:auto;display:flex;flex-direction:column;gap:2px;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.fd-list::-webkit-scrollbar{width:3px}
+.fd-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 .fd-item{
-  display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px;
-  cursor:pointer;transition:background .12s;font-size:13px;
+  display:flex;align-items:center;gap:9px;
+  padding:6px 8px;border-radius:7px;cursor:pointer;
+  transition:background .12s;font-size:13px;
+  color:var(--text);user-select:none;
 }
 .fd-item:hover{background:rgba(255,255,255,.05)}
-.fd-item input[type=checkbox]{
-  accent-color:var(--accent2);width:14px;height:14px;cursor:pointer;flex-shrink:0;
+/* Hide the real checkbox, use a custom circle */
+.fd-item input[type=checkbox]{display:none}
+.fd-radio{
+  width:16px;height:16px;border-radius:50%;
+  border:2px solid var(--border);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .15s;background:var(--bg);
 }
-.fd-item.checked{color:var(--accent2)}
+.fd-item input[type=checkbox]:checked + .fd-radio{
+  border-color:var(--accent2);background:var(--accent2);
+}
+.fd-item input[type=checkbox]:checked + .fd-radio::after{
+  content:'';width:6px;height:6px;border-radius:50%;background:#0b0f0c;
+}
+.fd-item input[type=checkbox]:checked ~ span{color:var(--accent2)}
+.fd-item:hover .fd-radio{border-color:var(--accent2)}
+
 /* PNL range */
 .fd-pnl{min-width:210px}
 .fd-pnl-row{display:flex;gap:6px;align-items:center}
 .fd-pnl-inp{
   flex:1;background:var(--bg);border:1px solid var(--border);border-radius:7px;
   padding:7px 8px;color:var(--text);font-family:'Inter',sans-serif;font-size:12px;
-  outline:none;transition:border-color .2s;min-width:0;
+  outline:none;transition:border-color .2s;min-width:0;-moz-appearance:textfield;
 }
+.fd-pnl-inp::-webkit-outer-spin-button,.fd-pnl-inp::-webkit-inner-spin-button{-webkit-appearance:none}
 .fd-pnl-inp:focus{border-color:var(--accent2)}
+
 /* Confidence stars */
-.fd-stars{display:flex;gap:6px;flex-wrap:wrap;padding:2px 0}
+.fd-stars{display:flex;gap:5px;flex-wrap:wrap;padding:2px 0}
 .fd-star-opt{
   display:flex;align-items:center;gap:4px;padding:5px 10px;
   border:1px solid var(--border);border-radius:20px;cursor:pointer;
-  font-size:12px;color:var(--muted);transition:all .12s;
+  font-size:12px;color:var(--muted);transition:all .12s;user-select:none;
 }
 .fd-star-opt:hover{border-color:var(--accent2);color:var(--text)}
 .fd-star-opt.sel{border-color:var(--accent2);color:var(--accent2);background:rgba(0,255,136,.07)}
+
 /* Apply btn */
 .fd-apply{
   width:100%;margin-top:8px;padding:7px;
@@ -214,6 +234,15 @@ td{padding:7px 7px;vertical-align:middle;text-align:center}
   cursor:pointer;transition:opacity .15s;
 }
 .fd-apply:hover{opacity:.85}
+
+/* ── Light theme contrast fixes ─────────────────────────────── */
+body.light-theme{
+  --muted:#3d5c52;
+  --text:#0a1a13;
+  --border:#c5d5ce;
+  --panel:#ffffff;
+  --bg:#eef4f1;
+}
 
 @media(max-width:768px){body{padding:12px}.topbar{flex-direction:column;align-items:stretch}.tl{justify-content:space-between}table{min-width:740px}th{padding:8px 5px;font-size:9px}td{padding:5px 4px;font-size:12px}.filter-bar{gap:4px}.fb-btn{font-size:11px;padding:4px 9px}}
 </style>
@@ -229,99 +258,70 @@ td{padding:7px 7px;vertical-align:middle;text-align:center}
 
 <!-- Filter bar -->
 <div class="filter-bar" id="filterBar">
-  <!-- Date -->
-  <button class="fb-btn" id="fbDate" onclick="toggleFD('date',this)">
-    <i class="fa-solid fa-calendar-days"></i> Date <i class="fa-solid fa-chevron-down"></i>
-  </button>
-  <!-- Pair -->
-  <button class="fb-btn" id="fbPair" onclick="toggleFD('pair',this)">
-    <i class="fa-solid fa-arrow-right-arrow-left"></i> Pair <i class="fa-solid fa-chevron-down"></i>
-  </button>
-  <!-- Position -->
-  <button class="fb-btn" id="fbPosition" onclick="toggleFD('position',this)">
-    <i class="fa-solid fa-arrows-up-down"></i> Position <i class="fa-solid fa-chevron-down"></i>
-  </button>
-  <!-- Strategy -->
-  <button class="fb-btn" id="fbStrategy" onclick="toggleFD('strategy',this)">
-    <i class="fa-solid fa-chess-knight"></i> Strategy <i class="fa-solid fa-chevron-down"></i>
-  </button>
-  <!-- Timeframe -->
-  <button class="fb-btn" id="fbTimeframe" onclick="toggleFD('timeframe',this)">
-    <i class="fa-solid fa-clock"></i> Timeframe <i class="fa-solid fa-chevron-down"></i>
-  </button>
-  <!-- PNL -->
-  <button class="fb-btn" id="fbPnl" onclick="toggleFD('pnl',this)">
-    <i class="fa-solid fa-dollar-sign"></i> PNL <i class="fa-solid fa-chevron-down"></i>
-  </button>
-  <!-- Confidence -->
-  <button class="fb-btn" id="fbConfidence" onclick="toggleFD('confidence',this)">
-    <i class="fa-solid fa-star"></i> Confidence <i class="fa-solid fa-chevron-down"></i>
-  </button>
-  <!-- Mood -->
-  <button class="fb-btn" id="fbMood" onclick="toggleFD('mood',this)">
-    <i class="fa-solid fa-face-smile"></i> Mood <i class="fa-solid fa-chevron-down"></i>
-  </button>
-  <!-- Clear -->
+  <button class="fb-btn" id="fbDate" onclick="toggleFD('date',this)">Date <i class="fa-solid fa-chevron-down"></i></button>
+  <button class="fb-btn" id="fbPair" onclick="toggleFD('pair',this)">Pair <i class="fa-solid fa-chevron-down"></i></button>
+  <button class="fb-btn" id="fbPosition" onclick="toggleFD('position',this)">Position <i class="fa-solid fa-chevron-down"></i></button>
+  <button class="fb-btn" id="fbStrategy" onclick="toggleFD('strategy',this)">Strategy <i class="fa-solid fa-chevron-down"></i></button>
+  <button class="fb-btn" id="fbTimeframe" onclick="toggleFD('timeframe',this)">Timeframe <i class="fa-solid fa-chevron-down"></i></button>
+  <button class="fb-btn" id="fbPnl" onclick="toggleFD('pnl',this)">PNL <i class="fa-solid fa-chevron-down"></i></button>
+  <button class="fb-btn" id="fbConfidence" onclick="toggleFD('confidence',this)">Confidence <i class="fa-solid fa-chevron-down"></i></button>
+  <button class="fb-btn" id="fbMood" onclick="toggleFD('mood',this)">Mood <i class="fa-solid fa-chevron-down"></i></button>
   <button class="fb-clear" id="fbClear" onclick="clearAllFilters()"><i class="fa-solid fa-xmark"></i> Clear Filters</button>
   <span class="fb-count" id="fbCount"></span>
 </div>
 
-<!-- Filter Dropdowns (appended to body, positioned via JS) -->
+<!-- Filter Dropdowns -->
 <!-- Date -->
 <div class="fd fd-date" id="fd-date">
-  <div class="fd-title"><i class="fa-solid fa-calendar" style="margin-right:5px;color:var(--accent2)"></i>Date Range</div>
+  <div class="fd-title">Date Range</div>
   <div class="fd-row"><div class="fd-lbl">From</div><input class="fd-input" type="date" id="fd-date-from"></div>
-  <div class="fd-sep"><i class="fa-solid fa-arrows-up-down" style="font-size:9px"></i></div>
+  <div class="fd-sep">—</div>
   <div class="fd-row" style="margin-bottom:0"><div class="fd-lbl">To</div><input class="fd-input" type="date" id="fd-date-to"></div>
   <button class="fd-apply" onclick="applyFD('date')">Apply</button>
 </div>
 <!-- Pair -->
 <div class="fd" id="fd-pair">
-  <div class="fd-title"><i class="fa-solid fa-arrow-right-arrow-left" style="margin-right:5px;color:var(--accent2)"></i>Select Pairs</div>
+  <div class="fd-title">Pair</div>
   <div class="fd-list" id="fd-pair-list"></div>
   <button class="fd-apply" onclick="applyFD('pair')">Apply</button>
 </div>
 <!-- Position -->
 <div class="fd" id="fd-position" style="min-width:160px">
-  <div class="fd-title"><i class="fa-solid fa-arrows-up-down" style="margin-right:5px;color:var(--accent2)"></i>Position</div>
+  <div class="fd-title">Position</div>
   <div class="fd-list">
-    <label class="fd-item"><input type="checkbox" value="Long" id="fd-pos-long"><span style="color:var(--accent2)">Long</span></label>
-    <label class="fd-item"><input type="checkbox" value="Short" id="fd-pos-short"><span style="color:#ff5f6d">Short</span></label>
+    <label class="fd-item"><input type="checkbox" value="Long" id="fd-pos-long"><span class="fd-radio"></span><span style="color:var(--accent2)">Long</span></label>
+    <label class="fd-item"><input type="checkbox" value="Short" id="fd-pos-short"><span class="fd-radio"></span><span style="color:#ff5f6d">Short</span></label>
   </div>
   <button class="fd-apply" onclick="applyFD('position')">Apply</button>
 </div>
 <!-- Strategy -->
 <div class="fd" id="fd-strategy">
-  <div class="fd-title"><i class="fa-solid fa-chess-knight" style="margin-right:5px;color:var(--accent2)"></i>Strategy</div>
+  <div class="fd-title">Strategy</div>
   <div class="fd-list" id="fd-strategy-list"></div>
   <button class="fd-apply" onclick="applyFD('strategy')">Apply</button>
 </div>
 <!-- Timeframe -->
 <div class="fd" id="fd-timeframe">
-  <div class="fd-title"><i class="fa-solid fa-clock" style="margin-right:5px;color:var(--accent2)"></i>Timeframe</div>
+  <div class="fd-title">Timeframe</div>
   <div class="fd-list" id="fd-timeframe-list"></div>
   <button class="fd-apply" onclick="applyFD('timeframe')">Apply</button>
 </div>
 <!-- PNL -->
 <div class="fd fd-pnl" id="fd-pnl">
-  <div class="fd-title"><i class="fa-solid fa-dollar-sign" style="margin-right:5px;color:var(--accent2)"></i>PNL Range</div>
+  <div class="fd-title">PNL Range</div>
   <div class="fd-row">
     <div class="fd-lbl">Min ($)</div>
-    <div class="fd-pnl-row">
-      <input class="fd-pnl-inp" type="number" id="fd-pnl-min" placeholder="e.g. -100" step="0.01">
-    </div>
+    <input class="fd-pnl-inp" type="number" id="fd-pnl-min" placeholder="e.g. -100" step="0.01">
   </div>
   <div class="fd-row" style="margin-bottom:0">
     <div class="fd-lbl">Max ($)</div>
-    <div class="fd-pnl-row">
-      <input class="fd-pnl-inp" type="number" id="fd-pnl-max" placeholder="e.g. 500" step="0.01">
-    </div>
+    <input class="fd-pnl-inp" type="number" id="fd-pnl-max" placeholder="e.g. 500" step="0.01">
   </div>
   <button class="fd-apply" onclick="applyFD('pnl')">Apply</button>
 </div>
 <!-- Confidence -->
 <div class="fd" id="fd-confidence" style="min-width:190px">
-  <div class="fd-title"><i class="fa-solid fa-star" style="margin-right:5px;color:var(--accent2)"></i>Min Confidence</div>
+  <div class="fd-title">Min Confidence</div>
   <div class="fd-stars" id="fd-confidence-stars">
     <div class="fd-star-opt" data-v="1" onclick="fdStarClick(1)">★</div>
     <div class="fd-star-opt" data-v="2" onclick="fdStarClick(2)">★★</div>
@@ -333,7 +333,7 @@ td{padding:7px 7px;vertical-align:middle;text-align:center}
 </div>
 <!-- Mood -->
 <div class="fd" id="fd-mood">
-  <div class="fd-title"><i class="fa-solid fa-face-smile" style="margin-right:5px;color:var(--accent2)"></i>Mood</div>
+  <div class="fd-title">Mood</div>
   <div class="fd-list" id="fd-mood-list"></div>
   <button class="fd-apply" onclick="applyFD('mood')">Apply</button>
 </div>
@@ -445,7 +445,7 @@ td{padding:7px 7px;vertical-align:middle;text-align:center}
 <div id="toast"><i id="toastIcon" class="fa-solid fa-circle-check"></i><span id="toastMsg"></span></div>
 
 <script>
-function applyTheme(t){const r=document.documentElement,dk=t==='dark'||(t==='system'&&!window.matchMedia('(prefers-color-scheme:light)').matches);if(!dk){r.style.setProperty('--bg','#f4f7f5');r.style.setProperty('--panel','#ffffff');r.style.setProperty('--accent','#19c37d');r.style.setProperty('--accent2','#0fa86a');r.style.setProperty('--border','#dde8e3');r.style.setProperty('--text','#0f1c17');r.style.setProperty('--muted','#6b8578');}else{r.style.setProperty('--bg','#0b0f0c');r.style.setProperty('--panel','#111816');r.style.setProperty('--accent','#00ff88');r.style.setProperty('--accent2','#19c37d');r.style.setProperty('--border','#1c2a25');r.style.setProperty('--text','#e6f2ec');r.style.setProperty('--muted','#8fa39a');}}
+function applyTheme(t){const r=document.documentElement,dk=t==='dark'||(t==='system'&&!window.matchMedia('(prefers-color-scheme:light)').matches);if(!dk){r.style.setProperty('--bg','#eef3f0');r.style.setProperty('--panel','#ffffff');r.style.setProperty('--accent','#19c37d');r.style.setProperty('--accent2','#0a9460');r.style.setProperty('--border','#c4d4cc');r.style.setProperty('--text','#0a1812');r.style.setProperty('--muted','#2e5044');}else{r.style.setProperty('--bg','#0b0f0c');r.style.setProperty('--panel','#111816');r.style.setProperty('--accent','#00ff88');r.style.setProperty('--accent2','#19c37d');r.style.setProperty('--border','#1c2a25');r.style.setProperty('--text','#e6f2ec');r.style.setProperty('--muted','#8fa39a');}}
 (()=>applyTheme(localStorage.getItem('tl_theme')||'dark'))();
 window.addEventListener('message',e=>{
   if(e.data?.theme)applyTheme(e.data.theme);
@@ -566,8 +566,9 @@ function _populateList(key,items){
   const sel=fState[key]||[];
   if(!items.length){el.innerHTML='<div style="font-size:12px;color:var(--muted);padding:6px 8px">No tags yet</div>';return;}
   el.innerHTML=items.map(item=>`
-    <label class="fd-item${sel.includes(item)?' checked':''}">
+    <label class="fd-item">
       <input type="checkbox" value="${esc(item)}" ${sel.includes(item)?'checked':''}>
+      <span class="fd-radio"></span>
       <span>${esc(item)}</span>
     </label>`).join('');
 }
@@ -580,9 +581,10 @@ function _populateMoodList(){
   if(!moods.length){el.innerHTML='<div style="font-size:12px;color:var(--muted);padding:6px 8px">No moods yet</div>';return;}
   el.innerHTML=moods.map(m=>{
     const c=colors[m]||'#8fa39a';
-    return`<label class="fd-item${sel.includes(m)?' checked':''}">
+    return`<label class="fd-item">
       <input type="checkbox" value="${esc(m)}" ${sel.includes(m)?'checked':''}>
-      <span style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:${c};flex-shrink:0"></span>${esc(m)}</span>
+      <span class="fd-radio"></span>
+      <span style="display:flex;align-items:center;gap:6px"><span style="width:9px;height:9px;border-radius:50%;background:${c};flex-shrink:0"></span>${esc(m)}</span>
     </label>`;
   }).join('');
 }
