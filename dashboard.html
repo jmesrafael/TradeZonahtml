@@ -6,7 +6,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TradeZona — Dashboard</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<!-- PostHog — replace YOUR_POSTHOG_KEY -->
 <script>!function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]);t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException loadToolbar get_property getSessionProperty createPersonProfile opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing debug".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);posthog.init('YOUR_POSTHOG_KEY',{api_host:'https://us.i.posthog.com',person_profiles:'identified_only',capture_pageview:true});</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="supabase.js"></script>
@@ -54,7 +53,6 @@ main{padding:32px;max-width:1100px;margin:0 auto}
 .jcard:hover{border-color:var(--accent2);transform:translateY(-1px)}
 .jcard-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px;gap:8px}
 .jcard h3{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;word-break:break-word;flex:1}
-/* PIN lock badge on card */
 .pin-lock{width:26px;height:26px;background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.25);border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--accent2);font-size:11px;flex-shrink:0}
 .jcard .cap{font-size:12px;color:var(--muted);margin-bottom:5px;display:flex;align-items:center;gap:5px}
 .pnl-row{display:flex;align-items:baseline;gap:6px;margin-bottom:16px}
@@ -101,11 +99,29 @@ main{padding:32px;max-width:1100px;margin:0 auto}
 .set-sec:last-child{margin-bottom:0}
 .set-title{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:8px}
 .set-title i{color:var(--accent2)}
-.theme-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.theme-opt{border:1px solid var(--border);border-radius:9px;padding:12px 10px;text-align:center;cursor:pointer;transition:all .18s;font-size:13px;color:var(--muted)}
+/* Theme grid — 3 cols on small, 4 on wide */
+.theme-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+@media(max-width:460px){.theme-grid{grid-template-columns:repeat(2,1fr)}}
+.theme-opt{border:1px solid var(--border);border-radius:9px;padding:12px 10px;text-align:center;cursor:pointer;transition:all .18s;font-size:13px;color:var(--muted);position:relative}
 .theme-opt:hover{border-color:var(--accent2);color:var(--text)}
 .theme-opt.active{border-color:var(--accent2);background:rgba(0,255,136,.06);color:var(--accent2);font-weight:600}
 .theme-opt i{display:block;font-size:20px;margin-bottom:6px}
+/* Blue Electric theme option */
+.theme-opt.electric{border-color:rgba(0,229,255,.25)}
+.theme-opt.electric:hover{border-color:#00e5ff;color:#00e5ff}
+.theme-opt.electric.active{border-color:#00e5ff;background:rgba(0,229,255,.07);color:#00e5ff}
+.theme-opt.electric i{color:#00e5ff}
+/* Pro lock overlay on a theme option */
+.theme-pro-badge{
+  position:absolute;top:5px;right:5px;
+  background:rgba(0,229,255,.15);color:#00e5ff;
+  border:1px solid rgba(0,229,255,.4);border-radius:4px;
+  font-size:8px;font-weight:700;padding:1px 5px;letter-spacing:.4px;
+  text-transform:uppercase;
+}
+/* Dim locked theme option for free users */
+.theme-opt.pro-locked{opacity:.5;cursor:not-allowed}
+.theme-opt.pro-locked:hover{border-color:rgba(0,229,255,.25);color:var(--muted)}
 .plan-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)}
 .plan-row:last-child{border-bottom:none}
 .pr-lbl{font-size:13px;font-weight:500}
@@ -139,7 +155,7 @@ main{padding:32px;max-width:1100px;margin:0 auto}
 .nudge-text strong{color:var(--text);display:block;margin-bottom:2px}
 .nudge-btn{background:var(--accent);color:#0b0f0c;border:none;border-radius:7px;padding:7px 14px;font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;transition:opacity .2s;flex-shrink:0}
 .nudge-btn:hover{opacity:.85}
-/* Toast — TOP center, green/red variants */
+/* Toast */
 #toast{
   position:fixed;top:20px;left:50%;
   transform:translateX(-50%) translateY(-20px);
@@ -237,14 +253,23 @@ main{padding:32px;max-width:1100px;margin:0 auto}
           <div class="theme-opt" id="themeSystem" onclick="setTheme('system')"><i class="fa-solid fa-circle-half-stroke"></i>System</div>
           <div class="theme-opt" id="themeDark"   onclick="setTheme('dark')"><i class="fa-solid fa-moon"></i>Dark</div>
           <div class="theme-opt" id="themeLight"  onclick="setTheme('light')"><i class="fa-solid fa-sun"></i>Light</div>
+          <!-- Blue Electric — Pro only -->
+          <div class="theme-opt electric" id="themeBlueElectric" onclick="setTheme('blue-electric')">
+            <span class="theme-pro-badge" id="elecProBadge">PRO</span>
+            <i class="fa-solid fa-bolt"></i>Electric
+          </div>
+        </div>
+        <!-- Pro upsell shown only to free users -->
+        <div id="electricUpsell" style="display:none;margin-top:10px;padding:9px 12px;background:rgba(0,229,255,.05);border:1px solid rgba(0,229,255,.2);border-radius:8px;font-size:12px;color:#7ab3d4;line-height:1.6">
+          <i class="fa-solid fa-bolt" style="color:#00e5ff;margin-right:5px"></i>
+          <strong style="color:#00e5ff">Blue Electric</strong> is a Pro-exclusive theme.
+          <a href="/subscription" style="color:#00e5ff;font-weight:700;text-decoration:none;margin-left:4px">Upgrade →</a>
         </div>
       </div>
 
       <!-- Account -->
       <div class="set-sec">
         <div class="set-title"><i class="fa-solid fa-user-circle"></i>Account</div>
-
-        <!-- Email row — button reveals input -->
         <div style="margin-bottom:12px">
           <div id="emailBtnRow" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px">
             <div>
@@ -261,8 +286,6 @@ main{padding:32px;max-width:1100px;margin:0 auto}
             </div>
           </div>
         </div>
-
-        <!-- Password row — button reveals inputs -->
         <div>
           <div id="passBtnRow" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px">
             <div>
@@ -293,7 +316,6 @@ main{padding:32px;max-width:1100px;margin:0 auto}
         <div class="set-title"><i class="fa-solid fa-star"></i>Subscription</div>
         <div class="plan-row">
           <div><div class="pr-lbl">Current Plan</div><div class="pr-val" id="settingsPlanLabel">Free</div></div>
-          <!-- Only shown on Free plan -->
           <button class="upgrade-btn" id="settingsUpgradeBtn" onclick="location.href='/subscription'"><i class="fa-solid fa-arrow-up"></i> Upgrade to Pro</button>
         </div>
         <div class="plan-row">
@@ -354,41 +376,75 @@ main{padding:32px;max-width:1100px;margin:0 auto}
 <div id="toast"><i id="toastIcon" class="fa-solid fa-circle-check"></i><span id="toastMsg"></span></div>
 
 <script>
+// ══════════════════════════════════════════════════════════════
+//  UNIVERSAL THEME ENGINE — reads from TZ.tokens when available
+// ══════════════════════════════════════════════════════════════
+function applyTheme(t) {
+  const pref = t || localStorage.getItem('tl_theme') || 'dark';
+  const r = document.documentElement;
+  if (window.TZ && window.TZ._resolveTokens) {
+    const tokens = window.TZ._resolveTokens(pref);
+    Object.entries(tokens).forEach(([k, v]) => r.style.setProperty(k, v));
+    r.dataset.theme   = pref === 'light' ? 'light' : 'dark';
+    r.dataset.variant = pref;
+    return;
+  }
+  // Fallback — no theme.js
+  const dark = pref === 'dark' || (pref === 'system' && !window.matchMedia('(prefers-color-scheme:light)').matches);
+  if (!dark) {
+    r.style.setProperty('--bg','#eef3f0'); r.style.setProperty('--panel','#ffffff');
+    r.style.setProperty('--accent','#19c37d'); r.style.setProperty('--accent2','#0a9460');
+    r.style.setProperty('--border','#c4d4cc'); r.style.setProperty('--text','#0a1812');
+    r.style.setProperty('--muted','#2e5044');
+  } else {
+    r.style.setProperty('--bg','#0b0f0c'); r.style.setProperty('--panel','#111816');
+    r.style.setProperty('--accent','#00ff88'); r.style.setProperty('--accent2','#19c37d');
+    r.style.setProperty('--border','#1c2a25'); r.style.setProperty('--text','#e6f2ec');
+    r.style.setProperty('--muted','#8fa39a');
+  }
+}
+applyTheme(localStorage.getItem('tl_theme') || 'dark');
+
+// ── State ──────────────────────────────────────────────────────
 let currentUser = null, journals = [], pnlMap = {};
 let isPro = false;
 
-// ── Theme ──────────────────────────────────────────────────
-function applyTheme(t) {
-  const r = document.documentElement;
-  const dark = t==='dark'||(t==='system'&&!window.matchMedia('(prefers-color-scheme:light)').matches);
-  if (!dark) {
-    r.style.setProperty('--bg','#f4f7f5');r.style.setProperty('--panel','#ffffff');
-    r.style.setProperty('--accent','#19c37d');r.style.setProperty('--accent2','#0fa86a');
-    r.style.setProperty('--border','#dde8e3');r.style.setProperty('--text','#0f1c17');r.style.setProperty('--muted','#6b8578');
-  } else {
-    r.style.setProperty('--bg','#0b0f0c');r.style.setProperty('--panel','#111816');
-    r.style.setProperty('--accent','#00ff88');r.style.setProperty('--accent2','#19c37d');
-    r.style.setProperty('--border','#1c2a25');r.style.setProperty('--text','#e6f2ec');r.style.setProperty('--muted','#8fa39a');
-  }
-}
-applyTheme(localStorage.getItem('tl_theme')||'dark');
-
+// ── setTheme — Pro gate for blue-electric ─────────────────────
 function setTheme(t) {
-  localStorage.setItem('tl_theme', t); applyTheme(t);
-  document.querySelectorAll('.theme-opt').forEach(el=>el.classList.remove('active'));
-  const key = t.charAt(0).toUpperCase()+t.slice(1);
-  document.getElementById('theme'+key)?.classList.add('active');
+  if (t === 'blue-electric' && !isPro) {
+    showToast('Blue Electric is a Pro-only theme. Upgrade to unlock it.', 'fa-solid fa-bolt', 'red');
+    setTimeout(() => location.href = '/subscription', 2200);
+    return;
+  }
+  localStorage.setItem('tl_theme', t);
+  applyTheme(t);
+  _highlightActiveTheme(t);
+  // Broadcast to iframes
+  document.querySelectorAll('iframe').forEach(f => {
+    try { f.contentWindow.postMessage({ type:'tz_theme', theme:t }, '*'); } catch(e) {}
+  });
+}
+
+function _highlightActiveTheme(t) {
+  document.querySelectorAll('.theme-opt').forEach(el => el.classList.remove('active'));
+  const map = {
+    'system':         'themeSystem',
+    'dark':           'themeDark',
+    'light':          'themeLight',
+    'blue-electric':  'themeBlueElectric',
+  };
+  if (map[t]) document.getElementById(map[t])?.classList.add('active');
 }
 
 function toggleEye(id, btn) {
   const inp = document.getElementById(id);
-  const show = inp.type==='password';
+  const show = inp.type === 'password';
   inp.type = show ? 'text' : 'password';
   btn.querySelector('i').className = show ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye';
 }
 
-// ── Boot ───────────────────────────────────────────────────
-(async()=>{
+// ── Boot ───────────────────────────────────────────────────────
+(async () => {
   currentUser = await requireAuth(); if (!currentUser) return;
   const profile = await getProfile(currentUser.id);
   isPro = profile?.plan === 'pro';
@@ -396,52 +452,55 @@ function toggleEye(id, btn) {
   document.getElementById('uName').textContent = profile?.name || currentUser.email;
   const badge = document.getElementById('planBadge');
   if (isPro) {
-    badge.textContent='Pro'; badge.className='plan-badge badge-pro';
-    document.getElementById('settingsPlanLabel').textContent='Pro — Active';
-    document.getElementById('settingsUpgradeBtn').style.display='none';
-    document.getElementById('proLockIcon').style.display='none';
+    badge.textContent = 'Pro'; badge.className = 'plan-badge badge-pro';
+    document.getElementById('settingsPlanLabel').textContent = 'Pro — Active';
+    document.getElementById('settingsUpgradeBtn').style.display = 'none';
+    document.getElementById('proLockIcon').style.display = 'none';
+    // Show PRO badge on electric option but remove locked styling
+    document.getElementById('themeBlueElectric').classList.remove('pro-locked');
+    document.getElementById('elecProBadge').style.display = 'none'; // hide badge for Pro (they own it)
   } else {
     document.getElementById('adSlot').classList.add('visible');
     document.getElementById('upgradeNudge').classList.add('visible');
-    try{(adsbygoogle=window.adsbygoogle||[]).push({});}catch(e){}
+    // Dim and lock the electric option for free users
+    document.getElementById('themeBlueElectric').classList.add('pro-locked');
+    document.getElementById('electricUpsell').style.display = 'block';
+    try { (adsbygoogle = window.adsbygoogle || []).push({}); } catch(e) {}
   }
-  if (window.posthog) posthog.identify(currentUser.id,{email:currentUser.email,plan:isPro?'pro':'free',name:profile?.name});
+  if (window.posthog) posthog.identify(currentUser.id, { email: currentUser.email, plan: isPro ? 'pro' : 'free', name: profile?.name });
   await loadJournals();
   document.getElementById('pageLoader').classList.add('gone');
 })();
 
-// ── Journals ───────────────────────────────────────────────
+// ── Journals ───────────────────────────────────────────────────
 async function loadJournals() {
   journals = await getJournals(currentUser.id);
   pnlMap = {};
-  await Promise.all(journals.map(async j=>{
+  await Promise.all(journals.map(async j => {
     const trades = await getTrades(j.id);
-    const valid  = trades.filter(t=>t.pnl!=null&&t.pnl!=='');
-    if (valid.length) pnlMap[j.id] = valid.reduce((s,t)=>s+parseFloat(t.pnl),0);
+    const valid  = trades.filter(t => t.pnl != null && t.pnl !== '');
+    if (valid.length) pnlMap[j.id] = valid.reduce((s, t) => s + parseFloat(t.pnl), 0);
   }));
-  document.getElementById('loadingState').style.display='none';
+  document.getElementById('loadingState').style.display = 'none';
   renderJournals();
 }
 
 function renderJournals() {
-  const grid = document.getElementById('grid'); grid.style.display='';
+  const grid = document.getElementById('grid'); grid.style.display = '';
   if (!journals.length) {
-    grid.innerHTML='<div class="empty-state"><i class="fa-solid fa-book-open"></i>No journals yet.<br>Click <strong>+ New Journal</strong> to get started.</div>';
+    grid.innerHTML = '<div class="empty-state"><i class="fa-solid fa-book-open"></i>No journals yet.<br>Click <strong>+ New Journal</strong> to get started.</div>';
     return;
   }
-  grid.innerHTML = journals.map(j=>{
-    // PIN lock icon — shown only when pin_hash is truthy
+  grid.innerHTML = journals.map(j => {
     const pinHtml = j.pin_hash
       ? `<div class="pin-lock" title="PIN protected"><i class="fa-solid fa-lock"></i></div>` : '';
-    // Capital — only if show_capital is true AND capital is set
-    const capHtml = (j.show_capital!==false) && j.capital
+    const capHtml = (j.show_capital !== false) && j.capital
       ? `<div class="cap"><i class="fa-solid fa-wallet" style="font-size:10px"></i>$${Number(j.capital).toLocaleString()}</div>` : '';
-    // PNL — only if show_pnl is true AND there's a pnl value
     const pnl = pnlMap[j.id];
     let pnlHtml = '';
-    if ((j.show_pnl!==false) && pnl!=null) {
-      const cls = pnl>=0 ? 'pnl-pos':'pnl-neg';
-      const fmt = (pnl>=0?'+':'-')+'$'+Math.abs(pnl).toFixed(2);
+    if ((j.show_pnl !== false) && pnl != null) {
+      const cls = pnl >= 0 ? 'pnl-pos' : 'pnl-neg';
+      const fmt = (pnl >= 0 ? '+' : '-') + '$' + Math.abs(pnl).toFixed(2);
       pnlHtml = `<div class="pnl-row"><span class="pnl-lbl">PNL</span><span class="pnl-val ${cls}">${fmt}</span></div>`;
     }
     return `<div class="jcard">
@@ -457,152 +516,149 @@ function renderJournals() {
 function goJournal(id) {
   sessionStorage.setItem('tz_current_journal', id);
   if (window.posthog) posthog.capture('journal_opened');
-  location.href='/journal';
+  location.href = '/journal';
 }
 
-// ── Create Journal ─────────────────────────────────────────
+// ── Create Journal ─────────────────────────────────────────────
 function openCreate() {
-  if (!isPro && journals.length>=1) {
-    showToast('Free plan: 1 journal only. Upgrade for unlimited.','fa-solid fa-lock','red');
-    setTimeout(()=>location.href='/subscription',2100); return;
+  if (!isPro && journals.length >= 1) {
+    showToast('Free plan: 1 journal only. Upgrade for unlimited.', 'fa-solid fa-lock', 'red');
+    setTimeout(() => location.href = '/subscription', 2100); return;
   }
   document.getElementById('createModal').classList.add('open');
-  setTimeout(()=>document.getElementById('jName').focus(),100);
+  setTimeout(() => document.getElementById('jName').focus(), 100);
 }
-function closeCreate(){document.getElementById('createModal').classList.remove('open');document.getElementById('jName').value='';document.getElementById('jCapital').value='';}
-async function doCreate(){
-  const name=document.getElementById('jName').value.trim();
-  const capital=document.getElementById('jCapital').value.trim();
-  if(!name){document.getElementById('jName').style.borderColor='#ff5f6d';setTimeout(()=>document.getElementById('jName').style.borderColor='',1500);return;}
-  const btn=document.getElementById('createBtn');btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Creating…';
-  try{
-    await createJournal(currentUser.id,{name,capital:capital?parseFloat(capital):null,pin_hash:null});
-    closeCreate();showToast('Journal created!','fa-solid fa-circle-check','green');
-    if(window.posthog)posthog.capture('journal_created');
+function closeCreate() { document.getElementById('createModal').classList.remove('open'); document.getElementById('jName').value = ''; document.getElementById('jCapital').value = ''; }
+async function doCreate() {
+  const name = document.getElementById('jName').value.trim();
+  const capital = document.getElementById('jCapital').value.trim();
+  if (!name) { document.getElementById('jName').style.borderColor = '#ff5f6d'; setTimeout(() => document.getElementById('jName').style.borderColor = '', 1500); return; }
+  const btn = document.getElementById('createBtn'); btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Creating…';
+  try {
+    await createJournal(currentUser.id, { name, capital: capital ? parseFloat(capital) : null, pin_hash: null });
+    closeCreate(); showToast('Journal created!', 'fa-solid fa-circle-check', 'green');
+    if (window.posthog) posthog.capture('journal_created');
     await loadJournals();
-  }catch(e){showToast('Error: '+e.message,'fa-solid fa-circle-exclamation','red');}
-  finally{btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-check"></i> Create';}
+  } catch(e) { showToast('Error: ' + e.message, 'fa-solid fa-circle-exclamation', 'red'); }
+  finally { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-check"></i> Create'; }
 }
-document.getElementById('createModal').addEventListener('click',function(e){if(e.target===this)closeCreate();});
+document.getElementById('createModal').addEventListener('click', function(e) { if (e.target === this) closeCreate(); });
 
-// ── Settings ───────────────────────────────────────────────
-function openSettings(){
-  const t=localStorage.getItem('tl_theme')||'dark';
-  document.querySelectorAll('.theme-opt').forEach(el=>el.classList.remove('active'));
-  const key=t.charAt(0).toUpperCase()+t.slice(1);
-  document.getElementById('theme'+key)?.classList.add('active');
-  // Reset account sections to collapsed state
+// ── Settings ───────────────────────────────────────────────────
+function openSettings() {
+  const t = localStorage.getItem('tl_theme') || 'dark';
+  _highlightActiveTheme(t);
   collapseAcctSection('email');
   collapseAcctSection('pass');
-  // Show current email
-  const emailDisplay=document.getElementById('emailCurrentDisplay');
-  if(emailDisplay&&currentUser?.email)emailDisplay.textContent=currentUser.email;
+  const emailDisplay = document.getElementById('emailCurrentDisplay');
+  if (emailDisplay && currentUser?.email) emailDisplay.textContent = currentUser.email;
   document.getElementById('settingsModal').classList.add('open');
 }
-function closeSettings(){document.getElementById('settingsModal').classList.remove('open');}
-document.getElementById('settingsModal').addEventListener('click',function(e){if(e.target===this)closeSettings();});
+function closeSettings() { document.getElementById('settingsModal').classList.remove('open'); }
+document.getElementById('settingsModal').addEventListener('click', function(e) { if (e.target === this) closeSettings(); });
 
-// ── Account section toggle ─────────────────────────────────
-function toggleAcctSection(section){
-  const emailSection=document.getElementById('emailSection');
-  const passSection=document.getElementById('passSection');
-  if(section==='email'){
-    const open=emailSection.style.display!=='none'&&emailSection.style.display!=='';
-    if(open){collapseAcctSection('email');}
-    else{collapseAcctSection('pass');emailSection.style.display='block';setTimeout(()=>document.getElementById('setEmail')?.focus(),80);}
+// ── Account section toggle ─────────────────────────────────────
+function toggleAcctSection(section) {
+  const emailSection = document.getElementById('emailSection');
+  const passSection  = document.getElementById('passSection');
+  if (section === 'email') {
+    const open = emailSection.style.display !== 'none' && emailSection.style.display !== '';
+    if (open) { collapseAcctSection('email'); }
+    else { collapseAcctSection('pass'); emailSection.style.display = 'block'; setTimeout(() => document.getElementById('setEmail')?.focus(), 80); }
   } else {
-    const open=passSection.style.display==='flex';
-    if(open){collapseAcctSection('pass');}
-    else{collapseAcctSection('email');passSection.style.display='flex';setTimeout(()=>document.getElementById('setPassword')?.focus(),80);}
+    const open = passSection.style.display === 'flex';
+    if (open) { collapseAcctSection('pass'); }
+    else { collapseAcctSection('email'); passSection.style.display = 'flex'; setTimeout(() => document.getElementById('setPassword')?.focus(), 80); }
   }
 }
-function collapseAcctSection(section){
-  if(section==='email'){
-    const el=document.getElementById('emailSection');
-    if(el){el.style.display='none';const inp=document.getElementById('setEmail');if(inp)inp.value='';}
+function collapseAcctSection(section) {
+  if (section === 'email') {
+    const el = document.getElementById('emailSection');
+    if (el) { el.style.display = 'none'; const inp = document.getElementById('setEmail'); if (inp) inp.value = ''; }
   } else {
-    const el=document.getElementById('passSection');
-    if(el){el.style.display='none';['setPassword','setPasswordConfirm'].forEach(id=>{const inp=document.getElementById(id);if(inp)inp.value='';});}
+    const el = document.getElementById('passSection');
+    if (el) { el.style.display = 'none'; ['setPassword','setPasswordConfirm'].forEach(id => { const inp = document.getElementById(id); if (inp) inp.value = ''; }); }
   }
 }
-
-async function saveEmail(){
-  const email=document.getElementById('setEmail').value.trim();
-  if(!email){showToast('Enter a new email address.','fa-solid fa-circle-exclamation','red');return;}
-  try{
-    const{error}=await db.auth.updateUser({email});
-    if(error)throw error;
-    document.getElementById('emailCurrentDisplay').textContent=email;
+async function saveEmail() {
+  const email = document.getElementById('setEmail').value.trim();
+  if (!email) { showToast('Enter a new email address.', 'fa-solid fa-circle-exclamation', 'red'); return; }
+  try {
+    const { error } = await db.auth.updateUser({ email });
+    if (error) throw error;
+    document.getElementById('emailCurrentDisplay').textContent = email;
     collapseAcctSection('email');
-    showToast('Email updated! Check your inbox to confirm.','fa-solid fa-circle-check','green');
-  }catch(e){showToast('Error: '+e.message,'fa-solid fa-circle-exclamation','red');}
+    showToast('Email updated! Check your inbox to confirm.', 'fa-solid fa-circle-check', 'green');
+  } catch(e) { showToast('Error: ' + e.message, 'fa-solid fa-circle-exclamation', 'red'); }
 }
-
-async function savePassword(){
-  const pass =document.getElementById('setPassword').value;
-  const passC=document.getElementById('setPasswordConfirm').value;
-  if(!pass){showToast('Enter a new password.','fa-solid fa-circle-exclamation','red');return;}
-  if(pass.length<8){showToast('Password must be at least 8 characters.','fa-solid fa-circle-exclamation','red');return;}
-  if(pass!==passC){showToast('Passwords do not match.','fa-solid fa-circle-exclamation','red');return;}
-  try{
-    const{error}=await db.auth.updateUser({password:pass});
-    if(error)throw error;
+async function savePassword() {
+  const pass  = document.getElementById('setPassword').value;
+  const passC = document.getElementById('setPasswordConfirm').value;
+  if (!pass) { showToast('Enter a new password.', 'fa-solid fa-circle-exclamation', 'red'); return; }
+  if (pass.length < 8) { showToast('Password must be at least 8 characters.', 'fa-solid fa-circle-exclamation', 'red'); return; }
+  if (pass !== passC) { showToast('Passwords do not match.', 'fa-solid fa-circle-exclamation', 'red'); return; }
+  try {
+    const { error } = await db.auth.updateUser({ password: pass });
+    if (error) throw error;
     collapseAcctSection('pass');
-    showToast('Password updated successfully!','fa-solid fa-circle-check','green');
-  }catch(e){showToast('Error: '+e.message,'fa-solid fa-circle-exclamation','red');}
+    showToast('Password updated successfully!', 'fa-solid fa-circle-check', 'green');
+  } catch(e) { showToast('Error: ' + e.message, 'fa-solid fa-circle-exclamation', 'red'); }
 }
 
-// ── Delete Account ─────────────────────────────────────────
-function openDelAccount(){
-  document.getElementById('delAccInput').value='';
-  document.getElementById('delAccForm').style.display='block';
+// ── Delete Account ─────────────────────────────────────────────
+function openDelAccount() {
+  document.getElementById('delAccInput').value = '';
+  document.getElementById('delAccForm').style.display = 'block';
   document.getElementById('delAccProgress').classList.remove('show');
   checkDelAcc();
   document.getElementById('settingsModal').classList.remove('open');
   document.getElementById('delAccountOverlay').classList.add('open');
-  setTimeout(()=>document.getElementById('delAccInput').focus(),150);
+  setTimeout(() => document.getElementById('delAccInput').focus(), 150);
 }
-function closeDelAccount(){document.getElementById('delAccountOverlay').classList.remove('open');}
-function checkDelAcc(){
-  const ok=document.getElementById('delAccInput').value.trim()==='DELETE';
-  const btn=document.getElementById('delAccBtn');
-  btn.disabled=!ok;btn.style.opacity=ok?'1':'.4';btn.style.cursor=ok?'pointer':'not-allowed';
+function closeDelAccount() { document.getElementById('delAccountOverlay').classList.remove('open'); }
+function checkDelAcc() {
+  const ok = document.getElementById('delAccInput').value.trim() === 'DELETE';
+  const btn = document.getElementById('delAccBtn');
+  btn.disabled = !ok; btn.style.opacity = ok ? '1' : '.4'; btn.style.cursor = ok ? 'pointer' : 'not-allowed';
 }
-async function executeDeleteAccount(){
-  document.getElementById('delAccForm').style.display='none';
+async function executeDeleteAccount() {
+  document.getElementById('delAccForm').style.display = 'none';
   document.getElementById('delAccProgress').classList.add('show');
-  if(window.posthog)posthog.capture('account_delete_initiated');
-  try{
-    const{data:{session}}=await db.auth.getSession();
-    if(!session)throw new Error('Not authenticated');
-    const res=await fetch(`${SUPABASE_URL}/functions/v1/delete-account`,{method:'POST',headers:{Authorization:'Bearer '+session.access_token,'Content-Type':'application/json'}});
-    const data=await res.json();
-    if(!res.ok)throw new Error(data.error||'Deletion failed');
-    document.getElementById('delAccMsg').textContent='Account deleted. Redirecting…';
+  if (window.posthog) posthog.capture('account_delete_initiated');
+  try {
+    const { data: { session } } = await db.auth.getSession();
+    if (!session) throw new Error('Not authenticated');
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/delete-account`, {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + session.access_token, 'Content-Type': 'application/json' }
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Deletion failed');
+    document.getElementById('delAccMsg').textContent = 'Account deleted. Redirecting…';
     await db.auth.signOut();
-    sessionStorage.clear();localStorage.clear();
-    setTimeout(()=>location.href='/',1500);
-  }catch(e){
-    showToast('Failed: '+e.message,'fa-solid fa-circle-exclamation','red');
-    document.getElementById('delAccForm').style.display='block';
+    sessionStorage.clear(); localStorage.clear();
+    setTimeout(() => location.href = '/', 1500);
+  } catch(e) {
+    showToast('Failed: ' + e.message, 'fa-solid fa-circle-exclamation', 'red');
+    document.getElementById('delAccForm').style.display = 'block';
     document.getElementById('delAccProgress').classList.remove('show');
   }
 }
-document.getElementById('delAccountOverlay').addEventListener('click',function(e){if(e.target===this)closeDelAccount();});
+document.getElementById('delAccountOverlay').addEventListener('click', function(e) { if (e.target === this) closeDelAccount(); });
 
-async function logout(){await db.auth.signOut();sessionStorage.clear();location.href='/auth';}
+async function logout() { await db.auth.signOut(); sessionStorage.clear(); location.href = '/auth'; }
 
-// ── Toast ──────────────────────────────────────────────────
+// ── Toast ──────────────────────────────────────────────────────
 let _tt;
-function showToast(msg, icon='fa-solid fa-circle-check', type='') {
-  const t=document.getElementById('toast');
-  document.getElementById('toastIcon').className=icon;
-  document.getElementById('toastMsg').textContent=msg;
-  t.className='show'+(type==='green'?' toast-green':type==='red'?' toast-red':'');
+function showToast(msg, icon = 'fa-solid fa-circle-check', type = '') {
+  const t = document.getElementById('toast');
+  document.getElementById('toastIcon').className = icon;
+  document.getElementById('toastMsg').textContent = msg;
+  t.className = 'show' + (type === 'green' ? ' toast-green' : type === 'red' ? ' toast-red' : '');
   clearTimeout(_tt);
-  _tt=setTimeout(()=>{t.classList.remove('show','toast-green','toast-red');},3400);
+  _tt = setTimeout(() => { t.classList.remove('show','toast-green','toast-red'); }, 3400);
 }
-function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 </script>
 </body>
 </html>

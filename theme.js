@@ -46,7 +46,28 @@ TZ.tokens = {
     '--red':     '#dc2626',
     '--amber':   '#b45309',
     '--blue':    '#1d4ed8',
-  }
+  },
+
+  // ──────────────────────────────────────────────────────────
+  //  BLUE ELECTRIC — deep navy base, neon cyan accent
+  //  A techy, high-contrast dark theme with electric energy.
+  //  Inspired by terminal grids, radar screens, and circuit boards.
+  // ──────────────────────────────────────────────────────────
+  'blue-electric': {
+    '--bg':      '#060d18',   // deep navy-black page background
+    '--panel':   '#0a1628',   // dark navy card / panel background
+    '--panel2':  '#0d1e35',   // secondary panel (modals, strips)
+    '--accent':  '#00e5ff',   // neon cyan — primary buttons, highlights
+    '--accent2': '#0ea5e9',   // electric blue — icons, secondary borders
+    '--border':  '#0f2a45',   // subtle navy border
+    '--border2': '#163860',   // stronger blue border
+    '--text':    '#e0f2fe',   // icy blue-white primary text
+    '--muted':   '#7ab3d4',   // muted sky blue secondary text
+    '--muted2':  '#3d6e8c',   // dimmed tertiary / disabled text
+    '--red':     '#ff4d6a',   // hot red — loss / danger
+    '--amber':   '#fbbf24',   // amber — warning / unsaved
+    '--blue':    '#38bdf8',   // lighter sky blue — info
+  },
 };
 
 // ══════════════════════════════════════════════════════════════
@@ -86,15 +107,34 @@ TZ.loader = {
 // ══════════════════════════════════════════════════════════════
 //  5. THEME ENGINE  — don't normally need to edit below here
 // ══════════════════════════════════════════════════════════════
+
+/**
+ * Resolve which token set to use.
+ * Supports: 'dark' | 'light' | 'blue-electric' | 'system'
+ */
+TZ._resolveTokens = function(mode) {
+  if (mode === 'system') {
+    const prefersDark = !window.matchMedia('(prefers-color-scheme:light)').matches;
+    return prefersDark ? TZ.tokens.dark : TZ.tokens.light;
+  }
+  // Named themes (dark, light, blue-electric, …)
+  return TZ.tokens[mode] || TZ.tokens.dark;
+};
+
 TZ.applyTheme = function(mode) {
   const pref   = mode || localStorage.getItem('tl_theme') || 'dark';
-  const isDark = pref === 'dark' ||
-    (pref === 'system' && !window.matchMedia('(prefers-color-scheme:light)').matches);
-  const tokens = isDark ? TZ.tokens.dark : TZ.tokens.light;
+  const tokens = TZ._resolveTokens(pref);
   const root   = document.documentElement;
+
   Object.entries(tokens).forEach(([k, v]) => root.style.setProperty(k, v));
-  root.dataset.theme   = isDark ? 'dark' : 'light';
-  TZ.currentTheme = isDark ? 'dark' : 'light';
+
+  // data-theme: controls light/dark CSS forks; treat blue-electric as 'dark'
+  const themeClass = (pref === 'light') ? 'light' : 'dark';
+  root.dataset.theme   = themeClass;
+  root.dataset.variant = pref;         // e.g. 'blue-electric' for per-variant CSS
+
+  TZ.currentTheme = pref;
+
   // Shorthand refs for Chart.js and JS consumers
   TZ.accent  = tokens['--accent'];
   TZ.accent2 = tokens['--accent2'];
@@ -137,6 +177,7 @@ TZ.buildLoader = function() {
   const cfg   = TZ.loader;
   const dark  = TZ.tokens.dark;
   const light = TZ.tokens.light;
+  const elec  = TZ.tokens['blue-electric'];
 
   el.innerHTML = `
     <style>
@@ -169,17 +210,29 @@ TZ.buildLoader = function() {
         width:11px;border-radius:3px;position:absolute;z-index:2;
       }
 
-      /* Green candle */
+      /* Green candle — dark */
       .tz-g .tz-body { background:${dark['--accent']};box-shadow:0 0 10px ${dark['--accent']}99; }
       .tz-g .tz-wick { background:${dark['--accent']};box-shadow:0 0 6px ${dark['--accent']}88; }
+
+      /* Green candle — light */
       [data-theme="light"] .tz-g .tz-body { background:${light['--accent']};box-shadow:0 0 10px ${light['--accent']}66; }
       [data-theme="light"] .tz-g .tz-wick { background:${light['--accent2']};box-shadow:none; }
 
-      /* Red candle */
+      /* Green candle — blue-electric (uses cyan as "up" color) */
+      [data-variant="blue-electric"] .tz-g .tz-body { background:${elec['--accent']};box-shadow:0 0 12px ${elec['--accent']}99; }
+      [data-variant="blue-electric"] .tz-g .tz-wick { background:${elec['--accent']};box-shadow:0 0 8px ${elec['--accent']}88; }
+
+      /* Red candle — dark */
       .tz-r .tz-body { background:${dark['--red']};box-shadow:0 0 10px ${dark['--red']}88; }
       .tz-r .tz-wick { background:${dark['--red']};box-shadow:0 0 6px ${dark['--red']}77; }
+
+      /* Red candle — light */
       [data-theme="light"] .tz-r .tz-body { background:${light['--red']};box-shadow:0 0 8px ${light['--red']}55; }
       [data-theme="light"] .tz-r .tz-wick { background:${light['--red']};box-shadow:none; }
+
+      /* Red candle — blue-electric */
+      [data-variant="blue-electric"] .tz-r .tz-body { background:${elec['--red']};box-shadow:0 0 10px ${elec['--red']}88; }
+      [data-variant="blue-electric"] .tz-r .tz-wick { background:${elec['--red']};box-shadow:0 0 6px ${elec['--red']}77; }
 
       @keyframes tzFloat {
         0%,100% { transform:translateY(6px); }
@@ -252,6 +305,7 @@ TZ._injectTabLoaderStyle = function() {
   TZ._tabLoaderStyleInjected = true;
   const dark  = TZ.tokens.dark;
   const light = TZ.tokens.light;
+  const elec  = TZ.tokens['blue-electric'];
   const s = document.createElement('style');
   s.id = 'tz-tab-loader-styles';
   s.textContent = `
@@ -272,14 +326,25 @@ TZ._injectTabLoaderStyle = function() {
     }
     .tz-tl-wick { width:2px;border-radius:2px;opacity:.85;flex-shrink:0; }
     .tz-tl-body { width:8px;border-radius:2px;position:absolute;z-index:2; }
+
+    /* dark */
     .tz-tl-g .tz-tl-body { background:${dark['--accent']};box-shadow:0 0 7px ${dark['--accent']}88; }
     .tz-tl-g .tz-tl-wick { background:${dark['--accent']}; }
     .tz-tl-r .tz-tl-body { background:${dark['--red']};box-shadow:0 0 7px ${dark['--red']}77; }
     .tz-tl-r .tz-tl-wick { background:${dark['--red']}; }
+
+    /* light */
     [data-theme="light"] .tz-tl-g .tz-tl-body { background:${light['--accent']};box-shadow:0 0 6px ${light['--accent']}55; }
     [data-theme="light"] .tz-tl-g .tz-tl-wick { background:${light['--accent2']}; }
     [data-theme="light"] .tz-tl-r .tz-tl-body { background:${light['--red']};box-shadow:0 0 5px ${light['--red']}44; }
     [data-theme="light"] .tz-tl-r .tz-tl-wick { background:${light['--red']}; }
+
+    /* blue-electric */
+    [data-variant="blue-electric"] .tz-tl-g .tz-tl-body { background:${elec['--accent']};box-shadow:0 0 9px ${elec['--accent']}99; }
+    [data-variant="blue-electric"] .tz-tl-g .tz-tl-wick { background:${elec['--accent']}; }
+    [data-variant="blue-electric"] .tz-tl-r .tz-tl-body { background:${elec['--red']};box-shadow:0 0 7px ${elec['--red']}88; }
+    [data-variant="blue-electric"] .tz-tl-r .tz-tl-wick { background:${elec['--red']}; }
+
     @keyframes tzTabFloat {
       0%,100% { transform:translateY(4px); }
       50%      { transform:translateY(-8px); }
