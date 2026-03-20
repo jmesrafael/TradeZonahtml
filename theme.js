@@ -3,25 +3,17 @@
  * ─────────────────────────────────────────────────────────────
  * Single source of truth for ALL visual design across the app.
  * Include in every page: <script src="theme.js"></script>
- *
- * ┌─────────────────────────────────────────────────────────┐
- * │  TO CHANGE THE ENTIRE APP APPEARANCE:                   │
- * │  Edit TZ.tokens.dark / TZ.tokens.light below.           │
- * │  Everything — colors, fonts, radius, spacing — is here. │
- * └─────────────────────────────────────────────────────────┘
  */
 
 window.TZ = window.TZ || {};
 
 // ══════════════════════════════════════════════════════════════
-//  1. COLOR TOKENS  — edit here to retheme the whole app
-//
-//  Each theme also gets automatic companion tokens:
-//    --accent-rgb   → R,G,B values of --accent  (for rgba() usage)
-//    --accent2-rgb  → R,G,B values of --accent2
-//  These are computed automatically from hex values below.
+//  1. COLOR TOKENS
+//  Private keys prefixed with _ are not injected as CSS vars.
+//  _font_heading, _font_body, _font_url  → per-theme font overrides
 // ══════════════════════════════════════════════════════════════
 TZ.tokens = {
+
   dark: {
     '--bg':      '#0b0f0c',
     '--panel':   '#111816',
@@ -37,6 +29,7 @@ TZ.tokens = {
     '--amber':   '#f59e0b',
     '--blue':    '#60a5fa',
   },
+
   light: {
     '--bg':      '#eef3f0',
     '--panel':   '#ffffff',
@@ -53,9 +46,6 @@ TZ.tokens = {
     '--blue':    '#1d4ed8',
   },
 
-  // ──────────────────────────────────────────────────────────
-  //  BLUE ELECTRIC — deep navy base, neon cyan accent
-  // ──────────────────────────────────────────────────────────
   'blue-electric': {
     '--bg':      '#060d18',
     '--panel':   '#0a1628',
@@ -71,10 +61,112 @@ TZ.tokens = {
     '--amber':   '#fbbf24',
     '--blue':    '#38bdf8',
   },
+
+  // ──────────────────────────────────────────────────────────
+  //  GOLDEN HOUR — warm champagne dark, rich gold accent
+  //  Elegant serif headings. Feels like a premium trading desk.
+  //  Pro only
+  // ──────────────────────────────────────────────────────────
+  'golden': {
+    '--bg':      '#0e0c09',
+    '--panel':   '#16120c',
+    '--panel2':  '#1e1910',
+    '--accent':  '#f5c842',
+    '--accent2': '#d4a017',
+    '--border':  '#2e2412',
+    '--border2': '#3d3018',
+    '--text':    '#f5ead8',
+    '--muted':   '#a08c6a',
+    '--muted2':  '#6b5c3e',
+    '--red':     '#e05c5c',
+    '--amber':   '#f59e0b',
+    '--blue':    '#7eb8d4',
+    _font_heading: "'Playfair Display', serif",
+    _font_body:    "'DM Sans', sans-serif",
+    _font_url:     'https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=DM+Sans:ital,wght@0,400;0,500;1,400&display=swap',
+  },
+
+  // ──────────────────────────────────────────────────────────
+  //  VOID — pure black, crisp white borders, zero glow
+  //  High contrast. No tints. Clinical mono headings.
+  //  Pro only
+  // ──────────────────────────────────────────────────────────
+  'void': {
+    '--bg':      '#000000',
+    '--panel':   '#0d0d0d',
+    '--panel2':  '#141414',
+    '--accent':  '#ffffff',
+    '--accent2': '#b0b0b0',
+    '--border':  '#2a2a2a',
+    '--border2': '#3a3a3a',
+    '--text':    '#f0f0f0',
+    '--muted':   '#777777',
+    '--muted2':  '#444444',
+    '--red':     '#ff4444',
+    '--amber':   '#ccaa00',
+    '--blue':    '#88aaff',
+    _font_heading: "'IBM Plex Mono', monospace",
+    _font_body:    "'IBM Plex Sans', sans-serif",
+    _font_url:     'https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500&display=swap',
+  },
 };
 
 // ══════════════════════════════════════════════════════════════
-//  2. TYPOGRAPHY
+//  2. THEME METADATA  — drives the theme picker dropdown UI
+// ══════════════════════════════════════════════════════════════
+TZ.themeList = [
+  {
+    id:       'system',
+    label:    'System',
+    desc:     'Follows your OS setting',
+    icon:     'fa-solid fa-circle-half-stroke',
+    pro:      false,
+    swatches: ['#111111', '#1a1a1a', '#aaaaaa'],
+  },
+  {
+    id:       'dark',
+    label:    'Dark',
+    desc:     'Deep green-tinted dark',
+    icon:     'fa-solid fa-moon',
+    pro:      false,
+    swatches: ['#0b0f0c', '#111816', '#00ff88'],
+  },
+  {
+    id:       'light',
+    label:    'Light',
+    desc:     'Clean light mode',
+    icon:     'fa-solid fa-sun',
+    pro:      false,
+    swatches: ['#eef3f0', '#ffffff', '#19c37d'],
+  },
+  {
+    id:       'blue-electric',
+    label:    'Electric',
+    desc:     'Deep navy · neon cyan',
+    icon:     'fa-solid fa-bolt',
+    pro:      true,
+    swatches: ['#060d18', '#0a1628', '#00e5ff'],
+  },
+  {
+    id:       'golden',
+    label:    'Golden Hour',
+    desc:     'Warm dark · rich gold',
+    icon:     'fa-solid fa-crown',
+    pro:      true,
+    swatches: ['#0e0c09', '#16120c', '#f5c842'],
+  },
+  {
+    id:       'void',
+    label:    'Void',
+    desc:     'Pure black · crisp white',
+    icon:     'fa-solid fa-circle',
+    pro:      true,
+    swatches: ['#000000', '#0d0d0d', '#f0f0f0'],
+  },
+];
+
+// ══════════════════════════════════════════════════════════════
+//  3. DEFAULT TYPOGRAPHY  (overridden per-theme via _font_* keys)
 // ══════════════════════════════════════════════════════════════
 TZ.fonts = {
   heading: "'Space Grotesk', sans-serif",
@@ -82,7 +174,7 @@ TZ.fonts = {
 };
 
 // ══════════════════════════════════════════════════════════════
-//  3. SHAPE TOKENS
+//  4. SHAPE TOKENS
 // ══════════════════════════════════════════════════════════════
 TZ.shape = {
   radius:  { sm:'6px', md:'8px', lg:'10px', xl:'12px', pill:'20px' },
@@ -90,23 +182,33 @@ TZ.shape = {
 };
 
 // ══════════════════════════════════════════════════════════════
-//  4. RGB HELPER
-//  Converts a hex color string like "#00ff88" → "0,255,136"
-//  so CSS can do: rgba(var(--accent-rgb), 0.1)
+//  5. RGB HELPER
 // ══════════════════════════════════════════════════════════════
 TZ._hexToRgb = function(hex) {
-  const h = hex.replace('#', '');
-  const full = h.length === 3
-    ? h.split('').map(c => c + c).join('')
-    : h;
-  const r = parseInt(full.slice(0, 2), 16);
-  const g = parseInt(full.slice(2, 4), 16);
-  const b = parseInt(full.slice(4, 6), 16);
+  const h    = hex.replace('#', '');
+  const full = h.length === 3 ? h.split('').map(c => c + c).join('') : h;
+  const r    = parseInt(full.slice(0, 2), 16);
+  const g    = parseInt(full.slice(2, 4), 16);
+  const b    = parseInt(full.slice(4, 6), 16);
   return `${r},${g},${b}`;
 };
 
 // ══════════════════════════════════════════════════════════════
-//  5. THEME ENGINE
+//  6. FONT INJECTION
+// ══════════════════════════════════════════════════════════════
+TZ._injectedFontUrls = new Set();
+
+TZ._injectFont = function(url) {
+  if (!url || TZ._injectedFontUrls.has(url)) return;
+  TZ._injectedFontUrls.add(url);
+  const link = document.createElement('link');
+  link.rel  = 'stylesheet';
+  link.href = url;
+  document.head.appendChild(link);
+};
+
+// ══════════════════════════════════════════════════════════════
+//  7. THEME ENGINE
 // ══════════════════════════════════════════════════════════════
 
 TZ._resolveTokens = function(mode) {
@@ -122,17 +224,24 @@ TZ.applyTheme = function(mode) {
   const tokens = TZ._resolveTokens(pref);
   const root   = document.documentElement;
 
-  // Apply all named tokens
-  Object.entries(tokens).forEach(([k, v]) => root.style.setProperty(k, v));
+  // Apply CSS color tokens (skip private _ keys)
+  Object.entries(tokens).forEach(([k, v]) => {
+    if (!k.startsWith('_')) root.style.setProperty(k, v);
+  });
 
-  // Compute and inject RGB companions for opacity-based rgba() usage
-  // e.g. rgba(var(--accent-rgb), 0.15) works in all browsers
-  if (tokens['--accent']) {
-    root.style.setProperty('--accent-rgb',  TZ._hexToRgb(tokens['--accent']));
-  }
-  if (tokens['--accent2']) {
-    root.style.setProperty('--accent2-rgb', TZ._hexToRgb(tokens['--accent2']));
-  }
+  // RGB companions
+  if (tokens['--accent'])  root.style.setProperty('--accent-rgb',  TZ._hexToRgb(tokens['--accent']));
+  if (tokens['--accent2']) root.style.setProperty('--accent2-rgb', TZ._hexToRgb(tokens['--accent2']));
+
+  // Per-theme font overrides — stored as CSS vars AND applied to body
+  const headingFont = tokens._font_heading || TZ.fonts.heading;
+  const bodyFont    = tokens._font_body    || TZ.fonts.body;
+  root.style.setProperty('--font-heading', headingFont);
+  root.style.setProperty('--font-body',    bodyFont);
+  if (document.body) document.body.style.fontFamily = bodyFont;
+
+  // Inject theme-specific Google Fonts
+  if (tokens._font_url) TZ._injectFont(tokens._font_url);
 
   const themeClass = (pref === 'light') ? 'light' : 'dark';
   root.dataset.theme   = themeClass;
@@ -140,7 +249,6 @@ TZ.applyTheme = function(mode) {
 
   TZ.currentTheme = pref;
 
-  // Expose quick-access values for JS use
   TZ.accent  = tokens['--accent'];
   TZ.accent2 = tokens['--accent2'];
   TZ.muted   = tokens['--muted'];
@@ -157,20 +265,18 @@ TZ.setTheme = function(mode) {
   });
 };
 
-// ── Listen for theme messages from parent ──────────────────────
+// ── Listen for theme messages from parent ─────────────────
 window.addEventListener('message', function(e) {
-  if (e.data?.type === 'tz_theme')     TZ.applyTheme(e.data.theme);
-  if (e.data?.theme && !e.data?.type)  TZ.applyTheme(e.data.theme);
+  if (e.data?.type === 'tz_theme') TZ.applyTheme(e.data.theme);
+  if (e.data?.theme && !e.data?.type) TZ.applyTheme(e.data.theme);
 });
 
-// ── Backward-compat alias ──────────────────────────────────────
 window.applyTheme = TZ.applyTheme;
 
-// ── Auto-apply on load ─────────────────────────────────────────
 TZ.applyTheme();
 
 // ══════════════════════════════════════════════════════════════
-//  6. PAGE LOADER
+//  8. PAGE LOADER
 // ══════════════════════════════════════════════════════════════
 (function() {
   const s = document.createElement('style');
@@ -186,7 +292,7 @@ TZ.applyTheme();
     }
     #pageLoader.gone { opacity: 0; pointer-events: none; }
     #pageLoader .tz-pl-logo {
-      font-family: 'Space Grotesk', sans-serif;
+      font-family: var(--font-heading, 'Space Grotesk', sans-serif);
       font-size: 22px; font-weight: 700; letter-spacing: .3px;
       color: var(--text);
     }

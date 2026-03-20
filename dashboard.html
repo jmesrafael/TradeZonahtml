@@ -14,33 +14,31 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh}
+body{background:var(--bg);color:var(--text);font-family:var(--font-body,'Inter',sans-serif);min-height:100vh}
 @keyframes spin{to{transform:rotate(360deg)}}
-@keyframes slideDown{from{opacity:0;transform:translateX(-50%) translateY(-20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+@keyframes slideDown{from{opacity:0;transform:translateX(-50%) translateY(-14px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+@keyframes dropIn{from{opacity:0;transform:translateY(-8px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
 
-/* ── Header ──────────────────────────────────────────── */
+/* ── Header ───────────────────────────────────────────────── */
 header{display:flex;align-items:center;justify-content:space-between;padding:14px 28px;border-bottom:1px solid var(--border);background:var(--panel);flex-wrap:wrap;gap:10px}
-.logo{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:600;cursor:pointer;user-select:none}
+.logo{font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:18px;font-weight:600;cursor:pointer;user-select:none}
 .logo span{color:var(--accent)}
 .hright{display:flex;align-items:center;gap:8px}
 .huser{display:flex;align-items:center;gap:10px;margin-right:6px}
 .uname{font-size:13px;color:var(--muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-
-/* Plan badge — uses CSS vars so it adapts to any theme */
 .plan-badge{font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;transition:all .2s}
 .badge-pro{background:rgba(var(--accent-rgb,0,255,136),.15);color:var(--accent2);border:1px solid rgba(var(--accent-rgb,0,255,136),.3)}
 .badge-free{background:rgba(143,163,154,.1);color:var(--muted);border:1px solid var(--border)}
 .badge-free:hover{border-color:var(--accent2);color:var(--accent2)}
-
-.btn-ghost{background:none;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:8px 14px;font-family:'Inter',sans-serif;font-size:13px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:6px}
+.btn-ghost{background:none;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:8px 14px;font-family:var(--font-body,'Inter',sans-serif);font-size:13px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:6px}
 .btn-ghost:hover{border-color:var(--accent2);color:var(--text)}
 
-/* ── Main ─────────────────────────────────────────────── */
+/* ── Main ─────────────────────────────────────────────────── */
 main{padding:32px;max-width:1100px;margin:0 auto}
 @media(max-width:600px){main{padding:20px 16px}}
 .sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:10px}
-.sec-hdr h2{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600}
-.btn-primary{background:var(--accent);color:#0b0f0c;border:none;border-radius:8px;padding:10px 18px;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .2s;display:flex;align-items:center;gap:7px}
+.sec-hdr h2{font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:16px;font-weight:600}
+.btn-primary{background:var(--accent);color:#0b0f0c;border:none;border-radius:8px;padding:10px 18px;font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:13px;font-weight:600;cursor:pointer;transition:opacity .2s;display:flex;align-items:center;gap:7px}
 .btn-primary:hover{opacity:.85}
 
 /* Skeleton */
@@ -53,96 +51,137 @@ main{padding:32px;max-width:1100px;margin:0 auto}
 .jcard{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:22px;transition:border-color .2s,transform .15s}
 .jcard:hover{border-color:var(--accent2);transform:translateY(-1px)}
 .jcard-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px;gap:8px}
-.jcard h3{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;word-break:break-word;flex:1}
+.jcard h3{font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:15px;font-weight:600;word-break:break-word;flex:1}
 .pin-lock{width:26px;height:26px;background:rgba(var(--accent-rgb,0,255,136),.1);border:1px solid rgba(var(--accent-rgb,0,255,136),.25);border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--accent2);font-size:11px;flex-shrink:0}
 .jcard .cap{font-size:12px;color:var(--muted);margin-bottom:5px;display:flex;align-items:center;gap:5px}
 .pnl-row{display:flex;align-items:baseline;gap:6px;margin-bottom:16px}
 .pnl-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
-.pnl-val{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700}
+.pnl-val{font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:18px;font-weight:700}
 .pnl-pos{color:var(--accent)!important}.pnl-neg{color:var(--red)!important}
-.open-btn{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--accent);border:1px solid rgba(var(--accent-rgb,0,255,136),.4);border-radius:6px;padding:7px 14px;background:none;cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s}
+.open-btn{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--accent);border:1px solid rgba(var(--accent-rgb,0,255,136),.4);border-radius:6px;padding:7px 14px;background:none;cursor:pointer;font-family:var(--font-body,'Inter',sans-serif);transition:all .2s}
 .open-btn:hover{background:var(--accent);color:#0b0f0c}
 .empty-state{color:var(--muted);font-size:14px;padding:56px 0;text-align:center;grid-column:1/-1;line-height:1.9}
 .empty-state i{display:block;font-size:36px;margin-bottom:12px;opacity:.3}
 
-/* Overlay */
+/* Overlay / Modal */
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:200;align-items:center;justify-content:center;padding:20px}
 .overlay.open{display:flex}
-
-/* Modal */
 .modal{background:var(--panel);border:1px solid var(--border);border-radius:14px;width:100%;max-width:460px;overflow:hidden;max-height:92vh;display:flex;flex-direction:column}
 .modal-hdr{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--border);flex-shrink:0}
-.modal-hdr h3{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600}
+.modal-hdr h3{font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:15px;font-weight:600}
 .modal-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:6px;transition:all .15s}
 .modal-close:hover{background:var(--border);color:var(--text)}
 .modal-body{padding:24px;overflow-y:auto;flex:1}
 .modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;flex-shrink:0}
-
-/* Field */
 .field{margin-bottom:16px}
 .field label{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:7px}
-.fi{position:relative}
-.fi input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:11px 40px 11px 13px;color:var(--text);font-family:'Inter',sans-serif;font-size:14px;outline:none;transition:border-color .2s}
+.field input.plain{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:11px 13px;color:var(--text);font-family:var(--font-body,'Inter',sans-serif);font-size:14px;outline:none;transition:border-color .2s}
+.field input.plain:focus{border-color:var(--accent2)}
+.btn-cancel{background:none;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:10px 18px;font-family:var(--font-body,'Inter',sans-serif);font-size:13px;cursor:pointer;transition:all .2s}
+.btn-cancel:hover{border-color:var(--muted)}
+.fi input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:11px 40px 11px 13px;color:var(--text);font-family:var(--font-body,'Inter',sans-serif);font-size:14px;outline:none;transition:border-color .2s}
 .fi input:focus{border-color:var(--accent2)}
 .fi input.no-icon{padding-right:13px}
 .eye-btn{position:absolute;right:11px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:2px;transition:color .15s;line-height:1}
 .eye-btn:hover{color:var(--text)}
-.acct-edit-btn{background:none;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:6px 12px;font-family:'Inter',sans-serif;font-size:12px;font-weight:500;cursor:pointer;transition:all .2s;display:flex;align-items:center;flex-shrink:0}
+.acct-edit-btn{background:none;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:6px 12px;font-family:var(--font-body,'Inter',sans-serif);font-size:12px;font-weight:500;cursor:pointer;transition:all .2s;display:flex;align-items:center;flex-shrink:0}
 .acct-edit-btn:hover{border-color:var(--accent2);color:var(--accent2)}
-.acct-save-btn{flex:1;background:var(--accent);color:#0b0f0c;border:none;border-radius:7px;padding:9px 14px;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .2s;display:flex;align-items:center;justify-content:center}
+.acct-save-btn{flex:1;background:var(--accent);color:#0b0f0c;border:none;border-radius:7px;padding:9px 14px;font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:13px;font-weight:600;cursor:pointer;transition:opacity .2s;display:flex;align-items:center;justify-content:center}
 .acct-save-btn:hover{opacity:.85}
-.acct-cancel-btn{background:none;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:9px 14px;font-family:'Inter',sans-serif;font-size:13px;cursor:pointer;transition:all .15s}
+.acct-cancel-btn{background:none;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:9px 14px;font-family:var(--font-body,'Inter',sans-serif);font-size:13px;cursor:pointer;transition:all .15s}
 .acct-cancel-btn:hover{border-color:var(--muted);color:var(--text)}
-.field input.plain{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:11px 13px;color:var(--text);font-family:'Inter',sans-serif;font-size:14px;outline:none;transition:border-color .2s}
-.field input.plain:focus{border-color:var(--accent2)}
-.btn-cancel{background:none;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:10px 18px;font-family:'Inter',sans-serif;font-size:13px;cursor:pointer;transition:all .2s}
-.btn-cancel:hover{border-color:var(--muted)}
 
-/* ── Settings modal ───────────────────────────────────── */
+/* ── Settings modal ───────────────────────────────────────── */
 .settings-modal{max-width:520px}
 .set-sec{margin-bottom:24px}
 .set-sec:last-child{margin-bottom:0}
 .set-title{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:8px}
 .set-title i{color:var(--accent2)}
 
-/* Theme grid */
-.theme-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-@media(max-width:460px){.theme-grid{grid-template-columns:repeat(2,1fr)}}
-.theme-opt{border:1px solid var(--border);border-radius:9px;padding:12px 10px;text-align:center;cursor:pointer;transition:all .18s;font-size:13px;color:var(--muted);position:relative}
-.theme-opt:hover{border-color:var(--accent2);color:var(--text)}
-.theme-opt.active{border-color:var(--accent2);background:rgba(var(--accent-rgb,0,255,136),.06);color:var(--accent2);font-weight:600}
-.theme-opt i{display:block;font-size:20px;margin-bottom:6px}
+/* ── Theme picker — button + dropdown list ─────────────────
+   Replaces the old card grid. One trigger button shows a
+   popover list of all themes with swatches and Pro badges.   */
+.theme-trigger{
+  display:flex;align-items:center;justify-content:space-between;
+  width:100%;padding:11px 14px;
+  background:var(--bg);border:1px solid var(--border);border-radius:9px;
+  cursor:pointer;transition:border-color .2s;
+  font-family:var(--font-body,'Inter',sans-serif);font-size:13px;color:var(--text);
+}
+.theme-trigger:hover{border-color:var(--accent2)}
+.theme-trigger-left{display:flex;align-items:center;gap:10px}
+.theme-trigger-swatches{display:flex;gap:3px}
+.theme-trigger-swatch{width:12px;height:12px;border-radius:50%;border:1px solid rgba(255,255,255,.08)}
+.theme-trigger-name{font-weight:500}
+.theme-trigger-right{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:12px}
+.theme-trigger-right i{font-size:10px;transition:transform .2s}
+.theme-trigger.open .theme-trigger-right i{transform:rotate(180deg)}
 
-/* Electric theme option — always uses blue colors to show what the theme looks like */
-.theme-opt.electric{border-color:rgba(0,229,255,.25);color:var(--muted)}
-.theme-opt.electric i{color:#00e5ff}
-.theme-opt.electric:hover{border-color:#00e5ff;color:#00e5ff}
-/* When electric is the active theme, the button itself uses electric colors */
-.theme-opt.electric.active{border-color:#00e5ff;background:rgba(0,229,255,.07);color:#00e5ff;font-weight:600}
-/* When electric is locked (free plan) */
-.theme-opt.electric.pro-locked{opacity:.5;cursor:not-allowed}
-.theme-opt.electric.pro-locked:hover{border-color:rgba(0,229,255,.25);color:var(--muted)}
-.theme-pro-badge{position:absolute;top:5px;right:5px;background:rgba(0,229,255,.15);color:#00e5ff;border:1px solid rgba(0,229,255,.4);border-radius:4px;font-size:8px;font-weight:700;padding:1px 5px;letter-spacing:.4px;text-transform:uppercase}
+/* Dropdown */
+.theme-dropdown{
+  display:none;margin-top:4px;
+  background:var(--panel);border:1px solid var(--border);border-radius:10px;
+  overflow:hidden;
+  box-shadow:0 8px 32px rgba(0,0,0,.4);
+  animation:dropIn .18s ease;
+}
+.theme-dropdown.open{display:block}
 
-/* Electric upsell box */
-#electricUpsell{margin-top:10px;padding:9px 12px;background:rgba(0,229,255,.05);border:1px solid rgba(0,229,255,.2);border-radius:8px;font-size:12px;color:#7ab3d4;line-height:1.6}
+.theme-row{
+  display:flex;align-items:center;gap:12px;
+  padding:11px 14px;cursor:pointer;
+  transition:background .12s;position:relative;
+  border-bottom:1px solid var(--border);
+}
+.theme-row:last-child{border-bottom:none}
+.theme-row:hover{background:rgba(255,255,255,.04)}
+.theme-row.active{background:rgba(var(--accent-rgb,0,255,136),.05)}
+.theme-row.locked{opacity:.55;cursor:not-allowed}
+.theme-row.locked:hover{background:none}
+
+.tr-swatches{display:flex;gap:3px;flex-shrink:0}
+.tr-swatch{width:14px;height:14px;border-radius:50%;border:1px solid rgba(255,255,255,.1)}
+.tr-swatch:last-child{/* accent */border-width:2px}
+
+.tr-info{flex:1;min-width:0}
+.tr-name{font-size:13px;font-weight:500;color:var(--text);line-height:1.2}
+.tr-desc{font-size:11px;color:var(--muted);margin-top:1px}
+
+.tr-right{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.tr-check{color:var(--accent2);font-size:13px}
+.tr-pro{font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap}
+
+/* Pro badge colors per theme — shown as static preview colors */
+.tr-pro.electric{background:rgba(0,229,255,.12);color:#00e5ff;border:1px solid rgba(0,229,255,.3)}
+.tr-pro.golden{background:rgba(245,200,66,.12);color:#d4a017;border:1px solid rgba(245,200,66,.3)}
+.tr-pro.void{background:rgba(200,200,200,.1);color:#aaaaaa;border:1px solid rgba(200,200,200,.25)}
+
+/* Pro upsell hint below dropdown */
+.theme-pro-hint{
+  display:none;margin-top:8px;padding:9px 12px;
+  background:rgba(var(--accent-rgb,0,255,136),.04);
+  border:1px solid rgba(var(--accent-rgb,0,255,136),.15);
+  border-radius:8px;font-size:12px;color:var(--muted);line-height:1.6;
+}
+.theme-pro-hint.show{display:block}
+.theme-pro-hint a{color:var(--accent2);font-weight:600;text-decoration:none}
 
 /* Plan rows */
 .plan-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)}
 .plan-row:last-child{border-bottom:none}
 .pr-lbl{font-size:13px;font-weight:500}
 .pr-val{font-size:12px;color:var(--muted)}
-.upgrade-btn{background:var(--accent);color:#0b0f0c;border:none;border-radius:7px;padding:7px 14px;font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:opacity .2s}
+.upgrade-btn{background:var(--accent);color:#0b0f0c;border:none;border-radius:7px;padding:7px 14px;font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:12px;font-weight:700;cursor:pointer;transition:opacity .2s}
 .upgrade-btn:hover{opacity:.85}
 .links-row{display:flex;flex-direction:column;gap:4px}
 .link-item{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;cursor:pointer;transition:background .15s;font-size:13px;color:var(--text)}
 .link-item:hover{background:rgba(255,255,255,.04)}
 .link-item i.arr{color:var(--muted);font-size:11px}
 
-/* Danger section */
+/* Danger */
 .danger-title{color:var(--red)!important}
 .danger-title i{color:var(--red)!important}
-.btn-danger-full{display:flex;align-items:center;gap:7px;background:rgba(255,95,109,.06);border:1px solid rgba(255,95,109,.3);color:var(--red);border-radius:8px;padding:10px 14px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .18s;width:100%;justify-content:center}
+.btn-danger-full{display:flex;align-items:center;gap:7px;background:rgba(255,95,109,.06);border:1px solid rgba(255,95,109,.3);color:var(--red);border-radius:8px;padding:10px 14px;font-family:var(--font-body,'Inter',sans-serif);font-size:13px;font-weight:600;cursor:pointer;transition:all .18s;width:100%;justify-content:center}
 .btn-danger-full:hover{background:rgba(255,95,109,.12);border-color:var(--red)}
 
 /* Delete account modal */
@@ -162,7 +201,7 @@ main{padding:32px;max-width:1100px;margin:0 auto}
 .nudge.visible{display:flex}
 .nudge-text{font-size:12px;color:var(--muted);line-height:1.5}
 .nudge-text strong{color:var(--text);display:block;margin-bottom:2px}
-.nudge-btn{background:var(--accent);color:#0b0f0c;border:none;border-radius:7px;padding:7px 14px;font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;transition:opacity .2s;flex-shrink:0}
+.nudge-btn{background:var(--accent);color:#0b0f0c;border:none;border-radius:7px;padding:7px 14px;font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;transition:opacity .2s;flex-shrink:0}
 .nudge-btn:hover{opacity:.85}
 
 /* Toast */
@@ -246,29 +285,36 @@ main{padding:32px;max-width:1100px;margin:0 auto}
     </div>
     <div class="modal-body">
 
-      <!-- Appearance -->
+      <!-- ── Appearance ── -->
       <div class="set-sec">
         <div class="set-title"><i class="fa-solid fa-palette"></i>Appearance</div>
-        <div class="theme-grid">
-          <div class="theme-opt" id="themeSystem" onclick="setTheme('system')"><i class="fa-solid fa-circle-half-stroke"></i>System</div>
-          <div class="theme-opt" id="themeDark"   onclick="setTheme('dark')"><i class="fa-solid fa-moon"></i>Dark</div>
-          <div class="theme-opt" id="themeLight"  onclick="setTheme('light')"><i class="fa-solid fa-sun"></i>Light</div>
-          <!-- Electric: always shows with blue accent to preview the theme — only .active state is toggled by JS -->
-          <div class="theme-opt electric" id="themeBlueElectric" onclick="setTheme('blue-electric')">
-            <span class="theme-pro-badge" id="elecProBadge">PRO</span>
-            <i class="fa-solid fa-bolt"></i>Electric
+
+        <!-- Theme trigger button -->
+        <button class="theme-trigger" id="themeTrigger" onclick="toggleThemeDropdown()">
+          <div class="theme-trigger-left">
+            <div class="theme-trigger-swatches" id="triggerSwatches"></div>
+            <span class="theme-trigger-name" id="triggerName">Dark</span>
           </div>
-        </div>
-        <div id="electricUpsell" style="display:none">
-          <i class="fa-solid fa-bolt" style="color:#00e5ff;margin-right:5px"></i>
-          <strong style="color:#00e5ff">Blue Electric</strong> is a Pro-exclusive theme.
-          <a href="/subscription" style="color:#00e5ff;font-weight:700;text-decoration:none;margin-left:4px">Upgrade →</a>
+          <div class="theme-trigger-right">
+            <span id="triggerDesc" style="color:var(--muted);font-size:11px"></span>
+            <i class="fa-solid fa-chevron-down"></i>
+          </div>
+        </button>
+
+        <!-- Theme dropdown list -->
+        <div class="theme-dropdown" id="themeDropdown"></div>
+
+        <!-- Pro upsell hint (shown when free user hovers a pro theme) -->
+        <div class="theme-pro-hint" id="themeProHint">
+          <i class="fa-solid fa-lock" style="margin-right:6px;opacity:.6"></i>
+          Pro themes unlock with a <a href="/subscription">Pro plan</a>. Golden Hour, Void, and Electric included.
         </div>
       </div>
 
-      <!-- Account -->
+      <!-- ── Account ── -->
       <div class="set-sec">
         <div class="set-title"><i class="fa-solid fa-user-circle"></i>Account</div>
+
         <div style="margin-bottom:12px">
           <div id="emailBtnRow" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px">
             <div>
@@ -278,13 +324,17 @@ main{padding:32px;max-width:1100px;margin:0 auto}
             <button class="acct-edit-btn" onclick="toggleAcctSection('email')"><i class="fa-solid fa-pen" style="margin-right:5px"></i>Change</button>
           </div>
           <div id="emailSection" style="display:none;margin-top:8px">
-            <div class="fi"><input type="email" id="setEmail" class="no-icon" placeholder="New email address" autocomplete="email" style="padding-right:13px;width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:11px 13px;color:var(--text);font-family:'Inter',sans-serif;font-size:14px;outline:none;transition:border-color .2s"></div>
+            <div style="position:relative">
+              <input type="email" id="setEmail" class="no-icon" placeholder="New email address" autocomplete="email"
+                style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:11px 13px;color:var(--text);font-family:var(--font-body,'Inter',sans-serif);font-size:14px;outline:none;transition:border-color .2s">
+            </div>
             <div style="display:flex;gap:8px;margin-top:8px">
               <button class="acct-cancel-btn" onclick="toggleAcctSection('email')">Cancel</button>
               <button class="acct-save-btn" onclick="saveEmail()"><i class="fa-solid fa-save" style="margin-right:5px"></i>Save Email</button>
             </div>
           </div>
         </div>
+
         <div>
           <div id="passBtnRow" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px">
             <div>
@@ -294,12 +344,14 @@ main{padding:32px;max-width:1100px;margin:0 auto}
             <button class="acct-edit-btn" onclick="toggleAcctSection('pass')"><i class="fa-solid fa-pen" style="margin-right:5px"></i>Change</button>
           </div>
           <div id="passSection" style="display:none;flex-direction:column;gap:8px">
-            <div class="fi" style="position:relative">
-              <input type="password" id="setPassword" placeholder="New password (min 8 chars)" autocomplete="new-password" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:11px 40px 11px 13px;color:var(--text);font-family:'Inter',sans-serif;font-size:14px;outline:none;transition:border-color .2s">
+            <div style="position:relative;margin-top:8px">
+              <input type="password" id="setPassword" placeholder="New password (min 8 chars)" autocomplete="new-password"
+                style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:11px 40px 11px 13px;color:var(--text);font-family:var(--font-body,'Inter',sans-serif);font-size:14px;outline:none;transition:border-color .2s">
               <button class="eye-btn" type="button" onclick="toggleEye('setPassword',this)"><i class="fa-solid fa-eye"></i></button>
             </div>
-            <div class="fi" style="position:relative">
-              <input type="password" id="setPasswordConfirm" placeholder="Confirm new password" autocomplete="new-password" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:11px 40px 11px 13px;color:var(--text);font-family:'Inter',sans-serif;font-size:14px;outline:none;transition:border-color .2s">
+            <div style="position:relative">
+              <input type="password" id="setPasswordConfirm" placeholder="Confirm new password" autocomplete="new-password"
+                style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:11px 40px 11px 13px;color:var(--text);font-family:var(--font-body,'Inter',sans-serif);font-size:14px;outline:none;transition:border-color .2s">
               <button class="eye-btn" type="button" onclick="toggleEye('setPasswordConfirm',this)"><i class="fa-solid fa-eye"></i></button>
             </div>
             <div style="display:flex;gap:8px">
@@ -310,7 +362,7 @@ main{padding:32px;max-width:1100px;margin:0 auto}
         </div>
       </div>
 
-      <!-- Subscription -->
+      <!-- ── Subscription ── -->
       <div class="set-sec">
         <div class="set-title"><i class="fa-solid fa-star"></i>Subscription</div>
         <div class="plan-row">
@@ -318,12 +370,12 @@ main{padding:32px;max-width:1100px;margin:0 auto}
           <button class="upgrade-btn" id="settingsUpgradeBtn" onclick="location.href='/subscription'"><i class="fa-solid fa-arrow-up"></i> Upgrade to Pro</button>
         </div>
         <div class="plan-row">
-          <div><div class="pr-lbl">Includes</div><div class="pr-val">Unlimited journals, calculator, full analytics</div></div>
+          <div><div class="pr-lbl">Includes</div><div class="pr-val">Unlimited journals, calculator, full analytics, all themes</div></div>
           <i class="fa-solid fa-lock" style="color:var(--muted);font-size:13px" id="proLockIcon"></i>
         </div>
       </div>
 
-      <!-- Legal -->
+      <!-- ── Legal ── -->
       <div class="set-sec">
         <div class="set-title"><i class="fa-solid fa-file-lines"></i>Legal</div>
         <div class="links-row">
@@ -332,11 +384,12 @@ main{padding:32px;max-width:1100px;margin:0 auto}
         </div>
       </div>
 
-      <!-- Danger -->
+      <!-- ── Danger ── -->
       <div class="set-sec">
         <div class="set-title danger-title"><i class="fa-solid fa-triangle-exclamation"></i>Danger Zone</div>
         <button class="btn-danger-full" onclick="openDelAccount()"><i class="fa-solid fa-user-xmark"></i>Delete My Account Permanently</button>
       </div>
+
     </div>
   </div>
 </div>
@@ -345,7 +398,7 @@ main{padding:32px;max-width:1100px;margin:0 auto}
 <div class="overlay" id="delAccountOverlay">
   <div class="del-modal">
     <div class="del-icon"><i class="fa-solid fa-user-xmark"></i></div>
-    <h3 style="font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;text-align:center;margin-bottom:8px;color:var(--red)">Delete Your Account?</h3>
+    <h3 style="font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:18px;font-weight:700;text-align:center;margin-bottom:8px;color:var(--red)">Delete Your Account?</h3>
     <p style="font-size:13px;color:var(--muted);line-height:1.7;text-align:center;margin-bottom:16px">This will <strong style="color:var(--red)">permanently and irreversibly</strong> delete everything.</p>
     <div class="warn-list">
       <div class="warn-item"><i class="fa-solid fa-xmark"></i>All journals and trade history</div>
@@ -356,11 +409,11 @@ main{padding:32px;max-width:1100px;margin:0 auto}
     <div id="delAccForm">
       <div style="font-size:12px;color:var(--muted);margin-bottom:7px">Type <strong style="color:var(--text)">DELETE</strong> to confirm:</div>
       <input type="text" id="delAccInput" placeholder="DELETE" oninput="checkDelAcc()"
-        style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:11px 13px;color:var(--text);font-family:'Inter',sans-serif;font-size:14px;outline:none;margin-bottom:14px;transition:border-color .2s">
+        style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:11px 13px;color:var(--text);font-family:var(--font-body,'Inter',sans-serif);font-size:14px;outline:none;margin-bottom:14px;transition:border-color .2s">
       <div style="display:flex;gap:8px">
-        <button onclick="closeDelAccount()" style="flex:1;background:none;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:10px;font-family:'Inter',sans-serif;font-size:13px;cursor:pointer">Cancel</button>
+        <button onclick="closeDelAccount()" style="flex:1;background:none;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:10px;font-family:var(--font-body,'Inter',sans-serif);font-size:13px;cursor:pointer">Cancel</button>
         <button id="delAccBtn" onclick="executeDeleteAccount()" disabled
-          style="flex:1;background:var(--red);color:#fff;border:none;border-radius:7px;padding:10px;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;cursor:not-allowed;opacity:.4;transition:all .2s">
+          style="flex:1;background:var(--red);color:#fff;border:none;border-radius:7px;padding:10px;font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:13px;font-weight:600;cursor:not-allowed;opacity:.4;transition:all .2s">
           <i class="fa-solid fa-user-xmark" style="margin-right:6px"></i>Delete Forever
         </button>
       </div>
@@ -377,32 +430,103 @@ main{padding:32px;max-width:1100px;margin:0 auto}
 <script>
 let currentUser=null, journals=[], pnlMap={};
 let isPro=false;
+let _themeDropOpen=false;
 
-// ── setTheme — Pro gate for blue-electric ──────────────────
-function setTheme(t){
-  if(t==='blue-electric'&&!isPro){
-    showToast('Blue Electric is a Pro-only theme. Upgrade to unlock it.','fa-solid fa-bolt','red');
-    setTimeout(()=>location.href='/subscription',2200);
-    return;
-  }
-  if(window.TZ)TZ.setTheme(t);
-  else{localStorage.setItem('tl_theme',t);}
-  _highlightActiveTheme(t);
-}
+// ── Theme picker ──────────────────────────────────────────────
+// All theme metadata lives in TZ.themeList (theme.js).
+// We render the dropdown from that list so adding new themes
+// only requires editing theme.js.
 
-function _highlightActiveTheme(t){
-  // Remove active from all non-electric theme opts
-  ['themeSystem','themeDark','themeLight'].forEach(id=>{
-    document.getElementById(id)?.classList.remove('active');
+function _buildThemeDropdown(){
+  const dd=document.getElementById('themeDropdown');
+  if(!dd||!window.TZ)return;
+  const cur=localStorage.getItem('tl_theme')||'dark';
+  dd.innerHTML='';
+  TZ.themeList.forEach(th=>{
+    const locked=th.pro&&!isPro;
+    const active=th.id===cur;
+    const row=document.createElement('div');
+    row.className='theme-row'+(active?' active':'')+(locked?' locked':'');
+    row.dataset.id=th.id;
+
+    // 3 swatches: bg, panel, accent
+    const swatchHtml=th.swatches.map(c=>`<span class="tr-swatch" style="background:${c}"></span>`).join('');
+
+    // Pro badge label/color per theme
+    const proBadgeClass={
+      'blue-electric':'electric','golden':'golden','void':'void'
+    }[th.id]||'electric';
+
+    row.innerHTML=`
+      <div class="tr-swatches">${swatchHtml}</div>
+      <div class="tr-info">
+        <div class="tr-name">${th.label}</div>
+        <div class="tr-desc">${th.desc}</div>
+      </div>
+      <div class="tr-right">
+        ${active?'<i class="fa-solid fa-check tr-check"></i>':''}
+        ${th.pro?`<span class="tr-pro ${proBadgeClass}">${locked?'PRO':'PRO'}</span>`:''}
+      </div>`;
+
+    if(!locked){
+      row.addEventListener('click',()=>{
+        _applyThemeSelection(th.id);
+        closeThemeDropdown();
+      });
+    } else {
+      row.addEventListener('click',()=>{
+        document.getElementById('themeProHint').classList.add('show');
+        showToast(`${th.label} is a Pro theme. Upgrade to unlock it.`,'fa-solid fa-crown','red');
+      });
+    }
+    dd.appendChild(row);
   });
-  // Electric button: remove active first, then conditionally re-add
-  const elBtn=document.getElementById('themeBlueElectric');
-  elBtn?.classList.remove('active');
-
-  // Map theme key → element id
-  const map={system:'themeSystem',dark:'themeDark',light:'themeLight','blue-electric':'themeBlueElectric'};
-  if(map[t])document.getElementById(map[t])?.classList.add('active');
 }
+
+function _updateTrigger(themeId){
+  const cur=themeId||localStorage.getItem('tl_theme')||'dark';
+  const meta=TZ.themeList?.find(t=>t.id===cur)||TZ.themeList?.[1]||{label:'Dark',desc:'',swatches:['#111','#1a1a1a','#aaa']};
+  const swEl=document.getElementById('triggerSwatches');
+  const nameEl=document.getElementById('triggerName');
+  const descEl=document.getElementById('triggerDesc');
+  if(swEl) swEl.innerHTML=meta.swatches.map(c=>`<span class="theme-trigger-swatch" style="background:${c}"></span>`).join('');
+  if(nameEl) nameEl.textContent=meta.label;
+  if(descEl) descEl.textContent=meta.desc;
+}
+
+function _applyThemeSelection(id){
+  if(window.TZ) TZ.setTheme(id);
+  else localStorage.setItem('tl_theme',id);
+  _updateTrigger(id);
+  _buildThemeDropdown(); // re-render to update checkmark
+}
+
+function toggleThemeDropdown(){
+  const dd=document.getElementById('themeDropdown');
+  const btn=document.getElementById('themeTrigger');
+  _themeDropOpen=!_themeDropOpen;
+  dd.classList.toggle('open',_themeDropOpen);
+  btn.classList.toggle('open',_themeDropOpen);
+  if(_themeDropOpen){
+    _buildThemeDropdown();
+    // Hide pro hint when opening fresh
+    document.getElementById('themeProHint').classList.remove('show');
+  }
+}
+
+function closeThemeDropdown(){
+  _themeDropOpen=false;
+  document.getElementById('themeDropdown')?.classList.remove('open');
+  document.getElementById('themeTrigger')?.classList.remove('open');
+}
+
+// Close dropdown on outside click
+document.addEventListener('click',e=>{
+  if(!_themeDropOpen)return;
+  const dd=document.getElementById('themeDropdown');
+  const btn=document.getElementById('themeTrigger');
+  if(dd&&!dd.contains(e.target)&&btn&&!btn.contains(e.target)) closeThemeDropdown();
+});
 
 function toggleEye(id,btn){
   const inp=document.getElementById(id);
@@ -411,7 +535,7 @@ function toggleEye(id,btn){
   btn.querySelector('i').className=show?'fa-solid fa-eye-slash':'fa-solid fa-eye';
 }
 
-// ── Boot ──────────────────────────────────────────────────
+// ── Boot ──────────────────────────────────────────────────────
 (async()=>{
   currentUser=await requireAuth();if(!currentUser)return;
   const profile=await getProfile(currentUser.id);
@@ -424,21 +548,19 @@ function toggleEye(id,btn){
     document.getElementById('settingsPlanLabel').textContent='Pro — Active';
     document.getElementById('settingsUpgradeBtn').style.display='none';
     document.getElementById('proLockIcon').style.display='none';
-    document.getElementById('themeBlueElectric').classList.remove('pro-locked');
-    document.getElementById('elecProBadge').style.display='none';
   } else {
     document.getElementById('adSlot').classList.add('visible');
     document.getElementById('upgradeNudge').classList.add('visible');
-    document.getElementById('themeBlueElectric').classList.add('pro-locked');
-    document.getElementById('electricUpsell').style.display='block';
     try{(adsbygoogle=window.adsbygoogle||[]).push({});}catch(e){}
   }
-  if(window.posthog)posthog.identify(currentUser.id,{email:currentUser.email,plan:isPro?'pro':'free',name:profile?.name});
+  if(window.posthog) posthog.identify(currentUser.id,{email:currentUser.email,plan:isPro?'pro':'free',name:profile?.name});
+  // Init trigger display
+  _updateTrigger(localStorage.getItem('tl_theme')||'dark');
   await loadJournals();
   TZ.hideLoader();
 })();
 
-// ── Journals ──────────────────────────────────────────────
+// ── Journals ──────────────────────────────────────────────────
 async function loadJournals(){
   journals=await getJournals(currentUser.id);
   pnlMap={};
@@ -483,7 +605,7 @@ function goJournal(id){
   location.href='/journal';
 }
 
-// ── Create Journal ─────────────────────────────────────────
+// ── Create Journal ─────────────────────────────────────────────
 function openCreate(){
   if(!isPro&&journals.length>=1){
     showToast('Free plan: 1 journal only. Upgrade for unlimited.','fa-solid fa-lock','red');
@@ -508,20 +630,20 @@ async function doCreate(){
 }
 document.getElementById('createModal').addEventListener('click',function(e){if(e.target===this)closeCreate();});
 
-// ── Settings ───────────────────────────────────────────────
+// ── Settings ───────────────────────────────────────────────────
 function openSettings(){
-  const t=localStorage.getItem('tl_theme')||'dark';
-  _highlightActiveTheme(t);
+  closeThemeDropdown();
   collapseAcctSection('email');
   collapseAcctSection('pass');
   const emailDisplay=document.getElementById('emailCurrentDisplay');
   if(emailDisplay&&currentUser?.email)emailDisplay.textContent=currentUser.email;
+  _updateTrigger(localStorage.getItem('tl_theme')||'dark');
   document.getElementById('settingsModal').classList.add('open');
 }
-function closeSettings(){document.getElementById('settingsModal').classList.remove('open');}
+function closeSettings(){document.getElementById('settingsModal').classList.remove('open');closeThemeDropdown();}
 document.getElementById('settingsModal').addEventListener('click',function(e){if(e.target===this)closeSettings();});
 
-// ── Account section toggle ──────────────────────────────────
+// ── Account section toggle ──────────────────────────────────────
 function toggleAcctSection(section){
   const emailSection=document.getElementById('emailSection');
   const passSection=document.getElementById('passSection');
@@ -566,7 +688,7 @@ async function savePassword(){
   }catch(e){showToast('Error: '+e.message,'fa-solid fa-circle-exclamation','red');}
 }
 
-// ── Delete Account ──────────────────────────────────────────
+// ── Delete Account ──────────────────────────────────────────────
 function openDelAccount(){
   document.getElementById('delAccInput').value='';
   document.getElementById('delAccForm').style.display='block';
@@ -606,7 +728,7 @@ document.getElementById('delAccountOverlay').addEventListener('click',function(e
 
 async function logout(){await db.auth.signOut();sessionStorage.clear();location.href='/auth';}
 
-// ── Toast ───────────────────────────────────────────────────
+// ── Toast ───────────────────────────────────────────────────────
 let _tt;
 function showToast(msg,icon='fa-solid fa-circle-check',type=''){
   const t=document.getElementById('toast');
