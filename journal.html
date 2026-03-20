@@ -230,7 +230,7 @@ iframe.ready{opacity:1}
 <nav>
   <button class="tab active" data-tab="logs"       onclick="switchTab('logs')"><i class="fa-solid fa-table-list"></i>Logs</button>
   <button class="tab"        data-tab="calendar"   onclick="switchTab('calendar')"><i class="fa-solid fa-calendar-days"></i>Calendar</button>
-  <button class="tab"        data-tab="gallery"    onclick="switchTab('gallery')"><i class="fa-solid fa-images"></i>Gallery</button>
+  <button class="tab"        data-tab="gallery"    onclick="switchTab('gallery')"><i class="fa-solid fa-note-sticky"></i>Notes</button>
   <button class="tab"        data-tab="analytics"  onclick="switchTab('analytics')"><i class="fa-solid fa-chart-line"></i>Analytics</button>
   <button class="tab"        data-tab="notes"      onclick="switchTab('notes')"><i class="fa-solid fa-note-sticky"></i>Notes</button>
   <button class="tab"        data-tab="calculator" onclick="switchTab('calculator')"><i class="fa-solid fa-calculator"></i>Calculator<span class="pro-tab-badge" id="calcBadge" style="display:none">PRO</span></button>
@@ -258,23 +258,10 @@ iframe.ready{opacity:1}
   <div class="tab-loader" id="loader-analytics"><div class="tab-loader-spin"></div><span class="tab-loader-label">Loading analytics…</span></div>
   <iframe id="analyticsFrame" onload="frameReady('analytics')"></iframe>
 </div>
-<!-- Tab: Notes — shared notepad per journal -->
+<!-- Tab: Notes — full notes management page -->
 <div class="tab-content" id="tab-notes">
-  <div style="flex:1;overflow-y:auto;padding:24px 20px">
-    <div style="max-width:720px;margin:0 auto">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
-        <div>
-          <h2 style="font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;margin-bottom:3px"><i class="fa-solid fa-note-sticky" style="color:var(--accent2);margin-right:7px"></i>Journal Notes</h2>
-          <p style="font-size:12px;color:var(--muted)">A freeform notepad for this journal — trading plans, rules, observations.</p>
-        </div>
-        <button onclick="saveJournalNote()" style="background:var(--accent);color:#0b0f0c;border:none;border-radius:8px;padding:9px 16px;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;transition:opacity .2s" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
-          <i class="fa-solid fa-floppy-disk"></i> Save Notes
-        </button>
-      </div>
-      <textarea id="journalNoteText" placeholder="Write your trading rules, daily plan, observations…" style="width:100%;min-height:400px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px;color:var(--text);font-family:'Inter',sans-serif;font-size:14px;line-height:1.7;resize:vertical;outline:none;transition:border-color .2s" onfocus="this.style.borderColor='var(--accent2)'" onblur="this.style.borderColor='var(--border)'"></textarea>
-      <div style="font-size:11px;color:var(--muted);margin-top:8px;text-align:right" id="noteSaveStatus"></div>
-    </div>
-  </div>
+  <div class="tab-loader" id="loader-notes"><div class="tab-loader-spin"></div><span class="tab-loader-label">Loading notes…</span></div>
+  <iframe id="notesFrame" onload="frameReady('notes')"></iframe>
 </div>
 <!-- Tab: Calculator — Pro gate wraps the iframe -->
 <div class="tab-content" id="tab-calculator">
@@ -563,6 +550,7 @@ function _preloadTabs(){
     {id:'calFrame',      src:'calendar.html'},
     {id:'galFrame',      src:'gallery.html'},
     {id:'analyticsFrame',src:'analytics.html'},
+    {id:'notesFrame',    src:'notes.html'},
   ];
   if(userIsPro) loads.push({id:'calcFrame',src:'calculator.html'});
   loads.forEach(({id,src})=>{
@@ -615,6 +603,7 @@ function switchTab(name){
     calendar:{id:'calFrame',src:'calendar.html'},
     gallery:{id:'galFrame',src:'gallery.html'},
     analytics:{id:'analyticsFrame',src:'analytics.html'},
+    notes:{id:'notesFrame',src:'notes.html'},
     calculator:{id:'calcFrame',src:'calculator.html'},
   };
 
@@ -636,13 +625,12 @@ function switchTab(name){
   }
 
   if(name==='settings')populateSettings();
-  if(name==='notes')populateJournalNote();
   document.getElementById('unsavedBar').classList.remove('show');
 }
 
 function showTabLoader(n){const l=document.getElementById('loader-'+n);if(l){l.style.display='';l.classList.remove('hidden');}}
 function frameReady(n){
-  const map={logs:'logsFrame',calendar:'calFrame',gallery:'galFrame',analytics:'analyticsFrame',calculator:'calcFrame'};
+  const map={logs:'logsFrame',calendar:'calFrame',gallery:'galFrame',analytics:'analyticsFrame',notes:'notesFrame',calculator:'calcFrame'};
   const f=document.getElementById(map[n]);
   try{if(f?.contentWindow?.applyTheme)f.contentWindow.applyTheme(localStorage.getItem('tl_theme')||'dark');}catch(e){}
   try{if(f?.contentWindow)f.contentWindow.postMessage({type:'tz_plan',isPro:userIsPro},'*');}catch(e){}
@@ -652,7 +640,7 @@ function frameReady(n){
     if(l){l.classList.add('hidden');setTimeout(()=>{if(l.classList.contains('hidden'))l.style.display='none';},350);}
   }
 }
-function bcast(msg){['logsFrame','calFrame','galFrame','analyticsFrame','calcFrame'].forEach(id=>{const f=document.getElementById(id);try{if(f?.contentWindow)f.contentWindow.postMessage(msg,'*');}catch(e){}});}
+function bcast(msg){['logsFrame','calFrame','galFrame','analyticsFrame','notesFrame','calcFrame'].forEach(id=>{const f=document.getElementById(id);try{if(f?.contentWindow)f.contentWindow.postMessage(msg,'*');}catch(e){}});}
 
 // ── Dirty tracking ─────────────────────────────────
 function markDirty(){isDirty=true;document.getElementById('unsavedBar').classList.add('show');}
@@ -912,26 +900,6 @@ function showToast(msg,icon='fa-solid fa-circle-check',type=''){
   _tt=setTimeout(()=>{t.classList.remove('show','toast-green','toast-red');},3500);
 }
 function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
-
-// ── Journal Notes tab ──────────────────────────────
-function populateJournalNote(){
-  if(!journalObj)return;
-  const ta=document.getElementById('journalNoteText');
-  if(ta)ta.value=journalObj.notes||'';
-  document.getElementById('noteSaveStatus').textContent='';
-}
-async function saveJournalNote(){
-  const ta=document.getElementById('journalNoteText');
-  if(!ta||!journalId)return;
-  const status=document.getElementById('noteSaveStatus');
-  status.textContent='Saving…';
-  try{
-    await updateJournal(journalId,{notes:ta.value});
-    journalObj.notes=ta.value;
-    status.textContent='Saved ✓';
-    setTimeout(()=>status.textContent='',2000);
-  }catch(e){status.textContent='Save failed.';showToast('Failed to save notes.','fa-solid fa-circle-exclamation','red');}
-}
 
 // ── Analytics toggle (wired to logs iframe) ────────
 function toggleAnalyticsBar(){
