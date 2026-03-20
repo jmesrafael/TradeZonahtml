@@ -15,22 +15,27 @@ window.TZ = window.TZ || {};
 
 // ══════════════════════════════════════════════════════════════
 //  1. COLOR TOKENS  — edit here to retheme the whole app
+//
+//  Each theme also gets automatic companion tokens:
+//    --accent-rgb   → R,G,B values of --accent  (for rgba() usage)
+//    --accent2-rgb  → R,G,B values of --accent2
+//  These are computed automatically from hex values below.
 // ══════════════════════════════════════════════════════════════
 TZ.tokens = {
   dark: {
-    '--bg':      '#0b0f0c',   // page background
-    '--panel':   '#111816',   // card / panel background
-    '--panel2':  '#161d1a',   // secondary panel (modals, strips)
-    '--accent':  '#00ff88',   // primary green — buttons, highlights
-    '--accent2': '#19c37d',   // secondary green — icons, borders
-    '--border':  '#1c2a25',   // default border
-    '--border2': '#243530',   // slightly stronger border
-    '--text':    '#e6f2ec',   // primary text
-    '--muted':   '#8fa39a',   // secondary / placeholder text
-    '--muted2':  '#5c7068',   // tertiary / disabled text
-    '--red':     '#ff5f6d',   // error / loss / danger
-    '--amber':   '#f59e0b',   // warning / unsaved
-    '--blue':    '#60a5fa',   // info
+    '--bg':      '#0b0f0c',
+    '--panel':   '#111816',
+    '--panel2':  '#161d1a',
+    '--accent':  '#00ff88',
+    '--accent2': '#19c37d',
+    '--border':  '#1c2a25',
+    '--border2': '#243530',
+    '--text':    '#e6f2ec',
+    '--muted':   '#8fa39a',
+    '--muted2':  '#5c7068',
+    '--red':     '#ff5f6d',
+    '--amber':   '#f59e0b',
+    '--blue':    '#60a5fa',
   },
   light: {
     '--bg':      '#eef3f0',
@@ -50,40 +55,54 @@ TZ.tokens = {
 
   // ──────────────────────────────────────────────────────────
   //  BLUE ELECTRIC — deep navy base, neon cyan accent
-  //  A techy, high-contrast dark theme with electric energy.
-  //  Inspired by terminal grids, radar screens, and circuit boards.
   // ──────────────────────────────────────────────────────────
   'blue-electric': {
-    '--bg':      '#060d18',   // deep navy-black page background
-    '--panel':   '#0a1628',   // dark navy card / panel background
-    '--panel2':  '#0d1e35',   // secondary panel (modals, strips)
-    '--accent':  '#00e5ff',   // neon cyan — primary buttons, highlights
-    '--accent2': '#0ea5e9',   // electric blue — icons, secondary borders
-    '--border':  '#0f2a45',   // subtle navy border
-    '--border2': '#163860',   // stronger blue border
-    '--text':    '#e0f2fe',   // icy blue-white primary text
-    '--muted':   '#7ab3d4',   // muted sky blue secondary text
-    '--muted2':  '#3d6e8c',   // dimmed tertiary / disabled text
-    '--red':     '#ff4d6a',   // hot red — loss / danger
-    '--amber':   '#fbbf24',   // amber — warning / unsaved
-    '--blue':    '#38bdf8',   // lighter sky blue — info
+    '--bg':      '#060d18',
+    '--panel':   '#0a1628',
+    '--panel2':  '#0d1e35',
+    '--accent':  '#00e5ff',
+    '--accent2': '#0ea5e9',
+    '--border':  '#0f2a45',
+    '--border2': '#163860',
+    '--text':    '#e0f2fe',
+    '--muted':   '#7ab3d4',
+    '--muted2':  '#3d6e8c',
+    '--red':     '#ff4d6a',
+    '--amber':   '#fbbf24',
+    '--blue':    '#38bdf8',
   },
 };
 
 // ══════════════════════════════════════════════════════════════
-//  2. TYPOGRAPHY  — fonts used across the app
+//  2. TYPOGRAPHY
 // ══════════════════════════════════════════════════════════════
 TZ.fonts = {
-  heading: "'Space Grotesk', sans-serif",  // headings, labels, numbers
-  body:    "'Inter', sans-serif",           // body text, inputs
+  heading: "'Space Grotesk', sans-serif",
+  body:    "'Inter', sans-serif",
 };
 
 // ══════════════════════════════════════════════════════════════
-//  3. SHAPE TOKENS  — border radius & spacing scale
+//  3. SHAPE TOKENS
 // ══════════════════════════════════════════════════════════════
 TZ.shape = {
-  radius: { sm:'6px', md:'8px', lg:'10px', xl:'12px', pill:'20px' },
-  spacing:{ xs:'4px', sm:'8px', md:'12px', lg:'18px', xl:'24px' },
+  radius:  { sm:'6px', md:'8px', lg:'10px', xl:'12px', pill:'20px' },
+  spacing: { xs:'4px', sm:'8px', md:'12px', lg:'18px', xl:'24px' },
+};
+
+// ══════════════════════════════════════════════════════════════
+//  4. RGB HELPER
+//  Converts a hex color string like "#00ff88" → "0,255,136"
+//  so CSS can do: rgba(var(--accent-rgb), 0.1)
+// ══════════════════════════════════════════════════════════════
+TZ._hexToRgb = function(hex) {
+  const h = hex.replace('#', '');
+  const full = h.length === 3
+    ? h.split('').map(c => c + c).join('')
+    : h;
+  const r = parseInt(full.slice(0, 2), 16);
+  const g = parseInt(full.slice(2, 4), 16);
+  const b = parseInt(full.slice(4, 6), 16);
+  return `${r},${g},${b}`;
 };
 
 // ══════════════════════════════════════════════════════════════
@@ -103,7 +122,17 @@ TZ.applyTheme = function(mode) {
   const tokens = TZ._resolveTokens(pref);
   const root   = document.documentElement;
 
+  // Apply all named tokens
   Object.entries(tokens).forEach(([k, v]) => root.style.setProperty(k, v));
+
+  // Compute and inject RGB companions for opacity-based rgba() usage
+  // e.g. rgba(var(--accent-rgb), 0.15) works in all browsers
+  if (tokens['--accent']) {
+    root.style.setProperty('--accent-rgb',  TZ._hexToRgb(tokens['--accent']));
+  }
+  if (tokens['--accent2']) {
+    root.style.setProperty('--accent2-rgb', TZ._hexToRgb(tokens['--accent2']));
+  }
 
   const themeClass = (pref === 'light') ? 'light' : 'dark';
   root.dataset.theme   = themeClass;
@@ -111,6 +140,7 @@ TZ.applyTheme = function(mode) {
 
   TZ.currentTheme = pref;
 
+  // Expose quick-access values for JS use
   TZ.accent  = tokens['--accent'];
   TZ.accent2 = tokens['--accent2'];
   TZ.muted   = tokens['--muted'];
@@ -141,8 +171,6 @@ TZ.applyTheme();
 
 // ══════════════════════════════════════════════════════════════
 //  6. PAGE LOADER
-//     Pages include <div id="pageLoader"></div> in their HTML.
-//     Call TZ.hideLoader() when the page is ready.
 // ══════════════════════════════════════════════════════════════
 (function() {
   const s = document.createElement('style');

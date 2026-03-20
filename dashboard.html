@@ -6,7 +6,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TradeZona — Dashboard</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<!-- PostHog — replace YOUR_POSTHOG_KEY -->
 <script>!function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]);t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException loadToolbar get_property getSessionProperty createPersonProfile opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing debug".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);posthog.init('YOUR_POSTHOG_KEY',{api_host:'https://us.i.posthog.com',person_profiles:'identified_only',capture_pageview:true});</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="theme.js"></script>
@@ -15,55 +14,61 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--bg:#0b0f0c;--panel:#111816;--accent:#00ff88;--accent2:#19c37d;--border:#1c2a25;--text:#e6f2ec;--muted:#8fa39a}
 body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh}
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes slideDown{from{opacity:0;transform:translateX(-50%) translateY(-20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
-/* Loader */
-/* Header */
+
+/* ── Header ──────────────────────────────────────────── */
 header{display:flex;align-items:center;justify-content:space-between;padding:14px 28px;border-bottom:1px solid var(--border);background:var(--panel);flex-wrap:wrap;gap:10px}
 .logo{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:600;cursor:pointer;user-select:none}
 .logo span{color:var(--accent)}
 .hright{display:flex;align-items:center;gap:8px}
 .huser{display:flex;align-items:center;gap:10px;margin-right:6px}
 .uname{font-size:13px;color:var(--muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Plan badge — uses CSS vars so it adapts to any theme */
 .plan-badge{font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;transition:all .2s}
-.badge-pro{background:rgba(0,255,136,.15);color:var(--accent2);border:1px solid rgba(0,255,136,.3)}
+.badge-pro{background:rgba(var(--accent-rgb,0,255,136),.15);color:var(--accent2);border:1px solid rgba(var(--accent-rgb,0,255,136),.3)}
 .badge-free{background:rgba(143,163,154,.1);color:var(--muted);border:1px solid var(--border)}
 .badge-free:hover{border-color:var(--accent2);color:var(--accent2)}
+
 .btn-ghost{background:none;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:8px 14px;font-family:'Inter',sans-serif;font-size:13px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:6px}
 .btn-ghost:hover{border-color:var(--accent2);color:var(--text)}
-/* Main */
+
+/* ── Main ─────────────────────────────────────────────── */
 main{padding:32px;max-width:1100px;margin:0 auto}
 @media(max-width:600px){main{padding:20px 16px}}
 .sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:10px}
 .sec-hdr h2{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600}
 .btn-primary{background:var(--accent);color:#0b0f0c;border:none;border-radius:8px;padding:10px 18px;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .2s;display:flex;align-items:center;gap:7px}
 .btn-primary:hover{opacity:.85}
+
 /* Skeleton */
 @keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}
 .skel{background:linear-gradient(90deg,var(--panel) 25%,rgba(255,255,255,.04) 50%,var(--panel) 75%);background-size:400px 100%;animation:shimmer 1.4s infinite;border-radius:8px}
 .skel-card{height:170px;border-radius:12px;border:1px solid var(--border)}
 .skel-grid,.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(265px,1fr));gap:16px}
+
 /* Journal cards */
 .jcard{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:22px;transition:border-color .2s,transform .15s}
 .jcard:hover{border-color:var(--accent2);transform:translateY(-1px)}
 .jcard-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px;gap:8px}
 .jcard h3{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;word-break:break-word;flex:1}
-/* PIN lock badge on card */
-.pin-lock{width:26px;height:26px;background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.25);border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--accent2);font-size:11px;flex-shrink:0}
+.pin-lock{width:26px;height:26px;background:rgba(var(--accent-rgb,0,255,136),.1);border:1px solid rgba(var(--accent-rgb,0,255,136),.25);border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--accent2);font-size:11px;flex-shrink:0}
 .jcard .cap{font-size:12px;color:var(--muted);margin-bottom:5px;display:flex;align-items:center;gap:5px}
 .pnl-row{display:flex;align-items:baseline;gap:6px;margin-bottom:16px}
 .pnl-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
 .pnl-val{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700}
-.pnl-pos{color:var(--accent)!important}.pnl-neg{color:#ff5f6d!important}
-.open-btn{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--accent);border:1px solid rgba(0,255,136,.4);border-radius:6px;padding:7px 14px;background:none;cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s}
+.pnl-pos{color:var(--accent)!important}.pnl-neg{color:var(--red)!important}
+.open-btn{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--accent);border:1px solid rgba(var(--accent-rgb,0,255,136),.4);border-radius:6px;padding:7px 14px;background:none;cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s}
 .open-btn:hover{background:var(--accent);color:#0b0f0c}
 .empty-state{color:var(--muted);font-size:14px;padding:56px 0;text-align:center;grid-column:1/-1;line-height:1.9}
 .empty-state i{display:block;font-size:36px;margin-bottom:12px;opacity:.3}
+
 /* Overlay */
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:200;align-items:center;justify-content:center;padding:20px}
 .overlay.open{display:flex}
+
 /* Modal */
 .modal{background:var(--panel);border:1px solid var(--border);border-radius:14px;width:100%;max-width:460px;overflow:hidden;max-height:92vh;display:flex;flex-direction:column}
 .modal-hdr{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--border);flex-shrink:0}
@@ -72,6 +77,7 @@ main{padding:32px;max-width:1100px;margin:0 auto}
 .modal-close:hover{background:var(--border);color:var(--text)}
 .modal-body{padding:24px;overflow-y:auto;flex:1}
 .modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;flex-shrink:0}
+
 /* Field */
 .field{margin-bottom:16px}
 .field label{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:7px}
@@ -91,25 +97,37 @@ main{padding:32px;max-width:1100px;margin:0 auto}
 .field input.plain:focus{border-color:var(--accent2)}
 .btn-cancel{background:none;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:10px 18px;font-family:'Inter',sans-serif;font-size:13px;cursor:pointer;transition:all .2s}
 .btn-cancel:hover{border-color:var(--muted)}
-/* Settings modal sections */
+
+/* ── Settings modal ───────────────────────────────────── */
 .settings-modal{max-width:520px}
 .set-sec{margin-bottom:24px}
 .set-sec:last-child{margin-bottom:0}
 .set-title{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:8px}
 .set-title i{color:var(--accent2)}
+
+/* Theme grid */
 .theme-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 @media(max-width:460px){.theme-grid{grid-template-columns:repeat(2,1fr)}}
-.theme-opt.electric{border-color:rgba(0,229,255,.25)}
-.theme-opt.electric:hover{border-color:#00e5ff;color:#00e5ff}
-.theme-opt.electric.active{border-color:#00e5ff;background:rgba(0,229,255,.07);color:#00e5ff}
-.theme-opt.electric i{color:#00e5ff}
-.theme-pro-badge{position:absolute;top:5px;right:5px;background:rgba(0,229,255,.15);color:#00e5ff;border:1px solid rgba(0,229,255,.4);border-radius:4px;font-size:8px;font-weight:700;padding:1px 5px;letter-spacing:.4px;text-transform:uppercase}
-.theme-opt.pro-locked{opacity:.5;cursor:not-allowed}
-.theme-opt.pro-locked:hover{border-color:rgba(0,229,255,.25);color:var(--muted)}
-.theme-opt{border:1px solid var(--border);border-radius:9px;padding:12px 10px;text-align:center;cursor:pointer;transition:all .18s;font-size:13px;color:var(--muted)}
+.theme-opt{border:1px solid var(--border);border-radius:9px;padding:12px 10px;text-align:center;cursor:pointer;transition:all .18s;font-size:13px;color:var(--muted);position:relative}
 .theme-opt:hover{border-color:var(--accent2);color:var(--text)}
-.theme-opt.active{border-color:var(--accent2);background:rgba(0,255,136,.06);color:var(--accent2);font-weight:600}
+.theme-opt.active{border-color:var(--accent2);background:rgba(var(--accent-rgb,0,255,136),.06);color:var(--accent2);font-weight:600}
 .theme-opt i{display:block;font-size:20px;margin-bottom:6px}
+
+/* Electric theme option — always uses blue colors to show what the theme looks like */
+.theme-opt.electric{border-color:rgba(0,229,255,.25);color:var(--muted)}
+.theme-opt.electric i{color:#00e5ff}
+.theme-opt.electric:hover{border-color:#00e5ff;color:#00e5ff}
+/* When electric is the active theme, the button itself uses electric colors */
+.theme-opt.electric.active{border-color:#00e5ff;background:rgba(0,229,255,.07);color:#00e5ff;font-weight:600}
+/* When electric is locked (free plan) */
+.theme-opt.electric.pro-locked{opacity:.5;cursor:not-allowed}
+.theme-opt.electric.pro-locked:hover{border-color:rgba(0,229,255,.25);color:var(--muted)}
+.theme-pro-badge{position:absolute;top:5px;right:5px;background:rgba(0,229,255,.15);color:#00e5ff;border:1px solid rgba(0,229,255,.4);border-radius:4px;font-size:8px;font-weight:700;padding:1px 5px;letter-spacing:.4px;text-transform:uppercase}
+
+/* Electric upsell box */
+#electricUpsell{margin-top:10px;padding:9px 12px;background:rgba(0,229,255,.05);border:1px solid rgba(0,229,255,.2);border-radius:8px;font-size:12px;color:#7ab3d4;line-height:1.6}
+
+/* Plan rows */
 .plan-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)}
 .plan-row:last-child{border-bottom:none}
 .pr-lbl{font-size:13px;font-weight:500}
@@ -120,41 +138,37 @@ main{padding:32px;max-width:1100px;margin:0 auto}
 .link-item{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;cursor:pointer;transition:background .15s;font-size:13px;color:var(--text)}
 .link-item:hover{background:rgba(255,255,255,.04)}
 .link-item i.arr{color:var(--muted);font-size:11px}
-/* Danger in settings */
-.danger-title{color:#ff5f6d!important}
-.danger-title i{color:#ff5f6d!important}
-.btn-danger-full{display:flex;align-items:center;gap:7px;background:rgba(255,95,109,.06);border:1px solid rgba(255,95,109,.3);color:#ff5f6d;border-radius:8px;padding:10px 14px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .18s;width:100%;justify-content:center}
-.btn-danger-full:hover{background:rgba(255,95,109,.12);border-color:#ff5f6d}
+
+/* Danger section */
+.danger-title{color:var(--red)!important}
+.danger-title i{color:var(--red)!important}
+.btn-danger-full{display:flex;align-items:center;gap:7px;background:rgba(255,95,109,.06);border:1px solid rgba(255,95,109,.3);color:var(--red);border-radius:8px;padding:10px 14px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .18s;width:100%;justify-content:center}
+.btn-danger-full:hover{background:rgba(255,95,109,.12);border-color:var(--red)}
+
 /* Delete account modal */
 .del-modal{background:var(--panel);border:1px solid rgba(255,95,109,.35);border-radius:14px;width:100%;max-width:440px;padding:28px}
-.del-icon{width:54px;height:54px;background:rgba(255,95,109,.1);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:22px;color:#ff5f6d}
+.del-icon{width:54px;height:54px;background:rgba(255,95,109,.1);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:22px;color:var(--red)}
 .warn-list{background:rgba(255,95,109,.05);border:1px solid rgba(255,95,109,.18);border-radius:8px;padding:12px 14px;margin-bottom:16px;display:flex;flex-direction:column;gap:8px}
 .warn-item{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
-.warn-item i{color:#ff5f6d;width:14px;text-align:center;flex-shrink:0}
+.warn-item i{color:var(--red);width:14px;text-align:center;flex-shrink:0}
 .del-progress{display:none;text-align:center;padding:14px 0}
 .del-progress.show{display:block}
-.del-spin{width:34px;height:34px;border:3px solid var(--border);border-top-color:#ff5f6d;border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 12px}
-/* Ad */
+.del-spin{width:34px;height:34px;border:3px solid var(--border);border-top-color:var(--red);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 12px}
+
+/* Ad / nudge */
 .ad-slot{display:none;background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden}
 .ad-slot.visible{display:block}
-.nudge{margin-top:12px;padding:12px 16px;background:rgba(0,255,136,.04);border:1px solid rgba(0,255,136,.15);border-radius:10px;display:none;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.nudge{margin-top:12px;padding:12px 16px;background:rgba(var(--accent-rgb,0,255,136),.04);border:1px solid rgba(var(--accent-rgb,0,255,136),.15);border-radius:10px;display:none;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .nudge.visible{display:flex}
 .nudge-text{font-size:12px;color:var(--muted);line-height:1.5}
 .nudge-text strong{color:var(--text);display:block;margin-bottom:2px}
 .nudge-btn{background:var(--accent);color:#0b0f0c;border:none;border-radius:7px;padding:7px 14px;font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;transition:opacity .2s;flex-shrink:0}
 .nudge-btn:hover{opacity:.85}
-/* Toast — TOP center, green/red variants */
-#toast{
-  position:fixed;top:20px;left:50%;
-  transform:translateX(-50%) translateY(-20px);
-  background:var(--panel);border:1px solid var(--border);
-  border-radius:10px;padding:11px 18px;font-size:13px;color:var(--text);
-  box-shadow:0 8px 28px rgba(0,0,0,.45);z-index:99999;
-  opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;
-  white-space:nowrap;display:flex;align-items:center;gap:8px;max-width:90vw
-}
+
+/* Toast */
+#toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-20px);background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:11px 18px;font-size:13px;color:var(--text);box-shadow:0 8px 28px rgba(0,0,0,.45);z-index:99999;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;white-space:nowrap;display:flex;align-items:center;gap:8px;max-width:90vw}
 #toast.show{opacity:1;pointer-events:all;transform:translateX(-50%) translateY(0);animation:slideDown .25s ease}
-#toast.toast-green{border-color:rgba(0,255,136,.45);background:rgba(0,255,136,.08)}
+#toast.toast-green{border-color:rgba(var(--accent-rgb,0,255,136),.45);background:rgba(var(--accent-rgb,0,255,136),.08)}
 #toast.toast-red{border-color:rgba(255,95,109,.45);background:rgba(255,95,109,.08)}
 </style>
 </head>
@@ -190,7 +204,7 @@ main{padding:32px;max-width:1100px;margin:0 auto}
     </div>
   </div>
   <div class="nudge" id="upgradeNudge">
-    <div class="nudge-text"><strong><i class="fa-solid fa-circle-xmark" style="color:#ff5f6d;margin-right:5px"></i>Remove ads &amp; unlock everything</strong>Unlimited journals · Calculator · Full analytics · No ads.</div>
+    <div class="nudge-text"><strong><i class="fa-solid fa-circle-xmark" style="color:var(--red);margin-right:5px"></i>Remove ads &amp; unlock everything</strong>Unlimited journals · Calculator · Full analytics · No ads.</div>
     <button class="nudge-btn" onclick="location.href='/subscription'"><i class="fa-solid fa-arrow-up" style="margin-right:5px"></i>Upgrade to Pro</button>
   </div>
 </main>
@@ -239,12 +253,13 @@ main{padding:32px;max-width:1100px;margin:0 auto}
           <div class="theme-opt" id="themeSystem" onclick="setTheme('system')"><i class="fa-solid fa-circle-half-stroke"></i>System</div>
           <div class="theme-opt" id="themeDark"   onclick="setTheme('dark')"><i class="fa-solid fa-moon"></i>Dark</div>
           <div class="theme-opt" id="themeLight"  onclick="setTheme('light')"><i class="fa-solid fa-sun"></i>Light</div>
+          <!-- Electric: always shows with blue accent to preview the theme — only .active state is toggled by JS -->
           <div class="theme-opt electric" id="themeBlueElectric" onclick="setTheme('blue-electric')">
             <span class="theme-pro-badge" id="elecProBadge">PRO</span>
             <i class="fa-solid fa-bolt"></i>Electric
           </div>
         </div>
-        <div id="electricUpsell" style="display:none;margin-top:10px;padding:9px 12px;background:rgba(0,229,255,.05);border:1px solid rgba(0,229,255,.2);border-radius:8px;font-size:12px;color:#7ab3d4;line-height:1.6">
+        <div id="electricUpsell" style="display:none">
           <i class="fa-solid fa-bolt" style="color:#00e5ff;margin-right:5px"></i>
           <strong style="color:#00e5ff">Blue Electric</strong> is a Pro-exclusive theme.
           <a href="/subscription" style="color:#00e5ff;font-weight:700;text-decoration:none;margin-left:4px">Upgrade →</a>
@@ -254,8 +269,6 @@ main{padding:32px;max-width:1100px;margin:0 auto}
       <!-- Account -->
       <div class="set-sec">
         <div class="set-title"><i class="fa-solid fa-user-circle"></i>Account</div>
-
-        <!-- Email row — button reveals input -->
         <div style="margin-bottom:12px">
           <div id="emailBtnRow" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px">
             <div>
@@ -272,8 +285,6 @@ main{padding:32px;max-width:1100px;margin:0 auto}
             </div>
           </div>
         </div>
-
-        <!-- Password row — button reveals inputs -->
         <div>
           <div id="passBtnRow" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px">
             <div>
@@ -282,7 +293,7 @@ main{padding:32px;max-width:1100px;margin:0 auto}
             </div>
             <button class="acct-edit-btn" onclick="toggleAcctSection('pass')"><i class="fa-solid fa-pen" style="margin-right:5px"></i>Change</button>
           </div>
-          <div id="passSection" style="display:none;margin-top:8px;display:none;flex-direction:column;gap:8px">
+          <div id="passSection" style="display:none;flex-direction:column;gap:8px">
             <div class="fi" style="position:relative">
               <input type="password" id="setPassword" placeholder="New password (min 8 chars)" autocomplete="new-password" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:11px 40px 11px 13px;color:var(--text);font-family:'Inter',sans-serif;font-size:14px;outline:none;transition:border-color .2s">
               <button class="eye-btn" type="button" onclick="toggleEye('setPassword',this)"><i class="fa-solid fa-eye"></i></button>
@@ -304,7 +315,6 @@ main{padding:32px;max-width:1100px;margin:0 auto}
         <div class="set-title"><i class="fa-solid fa-star"></i>Subscription</div>
         <div class="plan-row">
           <div><div class="pr-lbl">Current Plan</div><div class="pr-val" id="settingsPlanLabel">Free</div></div>
-          <!-- Only shown on Free plan -->
           <button class="upgrade-btn" id="settingsUpgradeBtn" onclick="location.href='/subscription'"><i class="fa-solid fa-arrow-up"></i> Upgrade to Pro</button>
         </div>
         <div class="plan-row">
@@ -335,8 +345,8 @@ main{padding:32px;max-width:1100px;margin:0 auto}
 <div class="overlay" id="delAccountOverlay">
   <div class="del-modal">
     <div class="del-icon"><i class="fa-solid fa-user-xmark"></i></div>
-    <h3 style="font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;text-align:center;margin-bottom:8px;color:#ff5f6d">Delete Your Account?</h3>
-    <p style="font-size:13px;color:var(--muted);line-height:1.7;text-align:center;margin-bottom:16px">This will <strong style="color:#ff5f6d">permanently and irreversibly</strong> delete everything.</p>
+    <h3 style="font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;text-align:center;margin-bottom:8px;color:var(--red)">Delete Your Account?</h3>
+    <p style="font-size:13px;color:var(--muted);line-height:1.7;text-align:center;margin-bottom:16px">This will <strong style="color:var(--red)">permanently and irreversibly</strong> delete everything.</p>
     <div class="warn-list">
       <div class="warn-item"><i class="fa-solid fa-xmark"></i>All journals and trade history</div>
       <div class="warn-item"><i class="fa-solid fa-xmark"></i>All images and screenshots</div>
@@ -350,7 +360,7 @@ main{padding:32px;max-width:1100px;margin:0 auto}
       <div style="display:flex;gap:8px">
         <button onclick="closeDelAccount()" style="flex:1;background:none;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:10px;font-family:'Inter',sans-serif;font-size:13px;cursor:pointer">Cancel</button>
         <button id="delAccBtn" onclick="executeDeleteAccount()" disabled
-          style="flex:1;background:#ff5f6d;color:#fff;border:none;border-radius:7px;padding:10px;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;cursor:not-allowed;opacity:.4;transition:all .2s">
+          style="flex:1;background:var(--red);color:#fff;border:none;border-radius:7px;padding:10px;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;cursor:not-allowed;opacity:.4;transition:all .2s">
           <i class="fa-solid fa-user-xmark" style="margin-right:6px"></i>Delete Forever
         </button>
       </div>
@@ -365,55 +375,52 @@ main{padding:32px;max-width:1100px;margin:0 auto}
 <div id="toast"><i id="toastIcon" class="fa-solid fa-circle-check"></i><span id="toastMsg"></span></div>
 
 <script>
-let currentUser = null, journals = [], pnlMap = {};
-let isPro = false;
+let currentUser=null, journals=[], pnlMap={};
+let isPro=false;
 
-// ── Theme — delegates to theme.js TZ engine ────────────────
-function applyTheme(t) {
-  if (window.TZ) { TZ.applyTheme(t); return; }
-  // Fallback (should not reach here when theme.js is loaded)
-  const pref = t || localStorage.getItem('tl_theme') || 'dark';
-  const r = document.documentElement;
-  const dark = pref==='dark'||(pref==='system'&&!window.matchMedia('(prefers-color-scheme:light)').matches);
-  if (!dark){r.style.setProperty('--bg','#eef3f0');r.style.setProperty('--panel','#ffffff');r.style.setProperty('--accent','#19c37d');r.style.setProperty('--accent2','#0a9460');r.style.setProperty('--border','#c4d4cc');r.style.setProperty('--text','#0a1812');r.style.setProperty('--muted','#2e5044');}
-  else{r.style.setProperty('--bg','#0b0f0c');r.style.setProperty('--panel','#111816');r.style.setProperty('--accent','#00ff88');r.style.setProperty('--accent2','#19c37d');r.style.setProperty('--border','#1c2a25');r.style.setProperty('--text','#e6f2ec');r.style.setProperty('--muted','#8fa39a');}
-}
-applyTheme(localStorage.getItem('tl_theme')||'dark');
-
-// ── setTheme — Pro gate for blue-electric ─────────────────────
-function setTheme(t) {
-  if (t === 'blue-electric' && !isPro) {
-    showToast('Blue Electric is a Pro-only theme. Upgrade to unlock it.', 'fa-solid fa-bolt', 'red');
-    setTimeout(() => location.href = '/subscription', 2200);
+// ── setTheme — Pro gate for blue-electric ──────────────────
+function setTheme(t){
+  if(t==='blue-electric'&&!isPro){
+    showToast('Blue Electric is a Pro-only theme. Upgrade to unlock it.','fa-solid fa-bolt','red');
+    setTimeout(()=>location.href='/subscription',2200);
     return;
   }
-  if (window.TZ) TZ.setTheme(t);
-  else { localStorage.setItem('tl_theme', t); applyTheme(t); }
+  if(window.TZ)TZ.setTheme(t);
+  else{localStorage.setItem('tl_theme',t);}
   _highlightActiveTheme(t);
 }
-function _highlightActiveTheme(t) {
-  document.querySelectorAll('.theme-opt').forEach(el => el.classList.remove('active'));
-  const map = {'system':'themeSystem','dark':'themeDark','light':'themeLight','blue-electric':'themeBlueElectric'};
-  if (map[t]) document.getElementById(map[t])?.classList.add('active');
+
+function _highlightActiveTheme(t){
+  // Remove active from all non-electric theme opts
+  ['themeSystem','themeDark','themeLight'].forEach(id=>{
+    document.getElementById(id)?.classList.remove('active');
+  });
+  // Electric button: remove active first, then conditionally re-add
+  const elBtn=document.getElementById('themeBlueElectric');
+  elBtn?.classList.remove('active');
+
+  // Map theme key → element id
+  const map={system:'themeSystem',dark:'themeDark',light:'themeLight','blue-electric':'themeBlueElectric'};
+  if(map[t])document.getElementById(map[t])?.classList.add('active');
 }
 
-function toggleEye(id, btn) {
-  const inp = document.getElementById(id);
-  const show = inp.type==='password';
-  inp.type = show ? 'text' : 'password';
-  btn.querySelector('i').className = show ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye';
+function toggleEye(id,btn){
+  const inp=document.getElementById(id);
+  const show=inp.type==='password';
+  inp.type=show?'text':'password';
+  btn.querySelector('i').className=show?'fa-solid fa-eye-slash':'fa-solid fa-eye';
 }
 
-// ── Boot ───────────────────────────────────────────────────
+// ── Boot ──────────────────────────────────────────────────
 (async()=>{
-  currentUser = await requireAuth(); if (!currentUser) return;
-  const profile = await getProfile(currentUser.id);
-  isPro = profile?.plan === 'pro';
-  window._userIsPro = isPro;
-  document.getElementById('uName').textContent = profile?.name || currentUser.email;
-  const badge = document.getElementById('planBadge');
-  if (isPro) {
-    badge.textContent='Pro'; badge.className='plan-badge badge-pro';
+  currentUser=await requireAuth();if(!currentUser)return;
+  const profile=await getProfile(currentUser.id);
+  isPro=profile?.plan==='pro';
+  window._userIsPro=isPro;
+  document.getElementById('uName').textContent=profile?.name||currentUser.email;
+  const badge=document.getElementById('planBadge');
+  if(isPro){
+    badge.textContent='Pro';badge.className='plan-badge badge-pro';
     document.getElementById('settingsPlanLabel').textContent='Pro — Active';
     document.getElementById('settingsUpgradeBtn').style.display='none';
     document.getElementById('proLockIcon').style.display='none';
@@ -426,46 +433,41 @@ function toggleEye(id, btn) {
     document.getElementById('electricUpsell').style.display='block';
     try{(adsbygoogle=window.adsbygoogle||[]).push({});}catch(e){}
   }
-  if (window.posthog) posthog.identify(currentUser.id,{email:currentUser.email,plan:isPro?'pro':'free',name:profile?.name});
+  if(window.posthog)posthog.identify(currentUser.id,{email:currentUser.email,plan:isPro?'pro':'free',name:profile?.name});
   await loadJournals();
   TZ.hideLoader();
 })();
 
-// ── Journals ───────────────────────────────────────────────
-async function loadJournals() {
-  journals = await getJournals(currentUser.id);
-  pnlMap = {};
+// ── Journals ──────────────────────────────────────────────
+async function loadJournals(){
+  journals=await getJournals(currentUser.id);
+  pnlMap={};
   await Promise.all(journals.map(async j=>{
-    const trades = await getTrades(j.id);
-    const valid  = trades.filter(t=>t.pnl!=null&&t.pnl!=='');
-    if (valid.length) pnlMap[j.id] = valid.reduce((s,t)=>s+parseFloat(t.pnl),0);
+    const trades=await getTrades(j.id);
+    const valid=trades.filter(t=>t.pnl!=null&&t.pnl!=='');
+    if(valid.length)pnlMap[j.id]=valid.reduce((s,t)=>s+parseFloat(t.pnl),0);
   }));
   document.getElementById('loadingState').style.display='none';
   renderJournals();
 }
 
-function renderJournals() {
-  const grid = document.getElementById('grid'); grid.style.display='';
-  if (!journals.length) {
+function renderJournals(){
+  const grid=document.getElementById('grid');grid.style.display='';
+  if(!journals.length){
     grid.innerHTML='<div class="empty-state"><i class="fa-solid fa-book-open"></i>No journals yet.<br>Click <strong>+ New Journal</strong> to get started.</div>';
     return;
   }
-  grid.innerHTML = journals.map(j=>{
-    // PIN lock icon — shown only when pin_hash is truthy
-    const pinHtml = j.pin_hash
-      ? `<div class="pin-lock" title="PIN protected"><i class="fa-solid fa-lock"></i></div>` : '';
-    // Capital — only if show_capital is true AND capital is set
-    const capHtml = (j.show_capital!==false) && j.capital
-      ? `<div class="cap"><i class="fa-solid fa-wallet" style="font-size:10px"></i>$${Number(j.capital).toLocaleString()}</div>` : '';
-    // PNL — only if show_pnl is true AND there's a pnl value
-    const pnl = pnlMap[j.id];
-    let pnlHtml = '';
-    if ((j.show_pnl!==false) && pnl!=null) {
-      const cls = pnl>=0 ? 'pnl-pos':'pnl-neg';
-      const fmt = (pnl>=0?'+':'-')+'$'+Math.abs(pnl).toFixed(2);
-      pnlHtml = `<div class="pnl-row"><span class="pnl-lbl">PNL</span><span class="pnl-val ${cls}">${fmt}</span></div>`;
+  grid.innerHTML=journals.map(j=>{
+    const pinHtml=j.pin_hash?`<div class="pin-lock" title="PIN protected"><i class="fa-solid fa-lock"></i></div>`:'';
+    const capHtml=(j.show_capital!==false)&&j.capital?`<div class="cap"><i class="fa-solid fa-wallet" style="font-size:10px"></i>$${Number(j.capital).toLocaleString()}</div>`:'';
+    const pnl=pnlMap[j.id];
+    let pnlHtml='';
+    if((j.show_pnl!==false)&&pnl!=null){
+      const cls=pnl>=0?'pnl-pos':'pnl-neg';
+      const fmt=(pnl>=0?'+':'-')+'$'+Math.abs(pnl).toFixed(2);
+      pnlHtml=`<div class="pnl-row"><span class="pnl-lbl">PNL</span><span class="pnl-val ${cls}">${fmt}</span></div>`;
     }
-    return `<div class="jcard">
+    return`<div class="jcard">
       <div class="jcard-top"><h3>${esc(j.name)}</h3>${pinHtml}</div>
       ${capHtml}${pnlHtml}
       <button class="open-btn" onclick="goJournal('${j.id}')">
@@ -475,17 +477,17 @@ function renderJournals() {
   }).join('');
 }
 
-function goJournal(id) {
-  sessionStorage.setItem('tz_current_journal', id);
-  if (window.posthog) posthog.capture('journal_opened');
+function goJournal(id){
+  sessionStorage.setItem('tz_current_journal',id);
+  if(window.posthog)posthog.capture('journal_opened');
   location.href='/journal';
 }
 
 // ── Create Journal ─────────────────────────────────────────
-function openCreate() {
-  if (!isPro && journals.length>=1) {
+function openCreate(){
+  if(!isPro&&journals.length>=1){
     showToast('Free plan: 1 journal only. Upgrade for unlimited.','fa-solid fa-lock','red');
-    setTimeout(()=>location.href='/subscription',2100); return;
+    setTimeout(()=>location.href='/subscription',2100);return;
   }
   document.getElementById('createModal').classList.add('open');
   setTimeout(()=>document.getElementById('jName').focus(),100);
@@ -494,7 +496,7 @@ function closeCreate(){document.getElementById('createModal').classList.remove('
 async function doCreate(){
   const name=document.getElementById('jName').value.trim();
   const capital=document.getElementById('jCapital').value.trim();
-  if(!name){document.getElementById('jName').style.borderColor='#ff5f6d';setTimeout(()=>document.getElementById('jName').style.borderColor='',1500);return;}
+  if(!name){document.getElementById('jName').style.borderColor='var(--red)';setTimeout(()=>document.getElementById('jName').style.borderColor='',1500);return;}
   const btn=document.getElementById('createBtn');btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Creating…';
   try{
     await createJournal(currentUser.id,{name,capital:capital?parseFloat(capital):null,pin_hash:null});
@@ -510,10 +512,8 @@ document.getElementById('createModal').addEventListener('click',function(e){if(e
 function openSettings(){
   const t=localStorage.getItem('tl_theme')||'dark';
   _highlightActiveTheme(t);
-  // Reset account sections to collapsed state
   collapseAcctSection('email');
   collapseAcctSection('pass');
-  // Show current email
   const emailDisplay=document.getElementById('emailCurrentDisplay');
   if(emailDisplay&&currentUser?.email)emailDisplay.textContent=currentUser.email;
   document.getElementById('settingsModal').classList.add('open');
@@ -521,7 +521,7 @@ function openSettings(){
 function closeSettings(){document.getElementById('settingsModal').classList.remove('open');}
 document.getElementById('settingsModal').addEventListener('click',function(e){if(e.target===this)closeSettings();});
 
-// ── Account section toggle ─────────────────────────────────
+// ── Account section toggle ──────────────────────────────────
 function toggleAcctSection(section){
   const emailSection=document.getElementById('emailSection');
   const passSection=document.getElementById('passSection');
@@ -536,13 +536,8 @@ function toggleAcctSection(section){
   }
 }
 function collapseAcctSection(section){
-  if(section==='email'){
-    const el=document.getElementById('emailSection');
-    if(el){el.style.display='none';const inp=document.getElementById('setEmail');if(inp)inp.value='';}
-  } else {
-    const el=document.getElementById('passSection');
-    if(el){el.style.display='none';['setPassword','setPasswordConfirm'].forEach(id=>{const inp=document.getElementById(id);if(inp)inp.value='';});}
-  }
+  if(section==='email'){const el=document.getElementById('emailSection');if(el){el.style.display='none';const inp=document.getElementById('setEmail');if(inp)inp.value='';}}
+  else{const el=document.getElementById('passSection');if(el){el.style.display='none';['setPassword','setPasswordConfirm'].forEach(id=>{const inp=document.getElementById(id);if(inp)inp.value='';});}}
 }
 
 async function saveEmail(){
@@ -558,7 +553,7 @@ async function saveEmail(){
 }
 
 async function savePassword(){
-  const pass =document.getElementById('setPassword').value;
+  const pass=document.getElementById('setPassword').value;
   const passC=document.getElementById('setPasswordConfirm').value;
   if(!pass){showToast('Enter a new password.','fa-solid fa-circle-exclamation','red');return;}
   if(pass.length<8){showToast('Password must be at least 8 characters.','fa-solid fa-circle-exclamation','red');return;}
@@ -571,7 +566,7 @@ async function savePassword(){
   }catch(e){showToast('Error: '+e.message,'fa-solid fa-circle-exclamation','red');}
 }
 
-// ── Delete Account ─────────────────────────────────────────
+// ── Delete Account ──────────────────────────────────────────
 function openDelAccount(){
   document.getElementById('delAccInput').value='';
   document.getElementById('delAccForm').style.display='block';
@@ -611,9 +606,9 @@ document.getElementById('delAccountOverlay').addEventListener('click',function(e
 
 async function logout(){await db.auth.signOut();sessionStorage.clear();location.href='/auth';}
 
-// ── Toast ──────────────────────────────────────────────────
+// ── Toast ───────────────────────────────────────────────────
 let _tt;
-function showToast(msg, icon='fa-solid fa-circle-check', type='') {
+function showToast(msg,icon='fa-solid fa-circle-check',type=''){
   const t=document.getElementById('toast');
   document.getElementById('toastIcon').className=icon;
   document.getElementById('toastMsg').textContent=msg;

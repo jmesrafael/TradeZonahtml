@@ -32,7 +32,7 @@ canvas{max-height:190px}
 .ad-slot.visible{display:block}
 .ad-slot-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;padding:6px 12px 0;opacity:.6}
 .ad-slot-inner{min-height:90px;display:flex;align-items:center;justify-content:center}
-.ad-upgrade-nudge{padding:12px 16px;background:rgba(0,255,136,.04);border:1px solid rgba(0,255,136,.15);border-radius:10px;display:none;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.ad-upgrade-nudge{padding:12px 16px;background:rgba(var(--accent-rgb,0,255,136),.04);border:1px solid rgba(var(--accent-rgb,0,255,136),.15);border-radius:10px;display:none;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
 .ad-upgrade-nudge.visible{display:flex}
 .ad-nudge-text{font-size:12px;color:var(--muted);line-height:1.5}
 .ad-nudge-text strong{color:var(--text);display:block;margin-bottom:2px}
@@ -51,6 +51,7 @@ canvas{max-height:190px}
 .empty{color:var(--muted);font-size:14px;text-align:center;padding:60px 0;line-height:1.9}
 .empty i{font-size:36px;display:block;margin-bottom:12px;opacity:.3}
 @media(max-width:600px){.c2{grid-template-columns:1fr}.stk{grid-template-columns:1fr}}
+.pro-upsell-box{border-color:rgba(var(--accent-rgb,0,255,136),.2)!important;background:linear-gradient(135deg,rgba(var(--accent-rgb,0,255,136),.03),var(--panel))!important}
 </style>
 </head>
 <body>
@@ -95,7 +96,8 @@ function fPct(v){return'%'+parseFloat(v).toFixed(1);}
 
   // Read current theme tokens for chart colors
   const rootStyle=getComputedStyle(document.documentElement);
-  const accent=rootStyle.getPropertyValue('--accent').trim()||'#00ff88';
+  const accent=rootStyle.getPropertyValue('--accent').trim()||'#19c37d';
+  const red=rootStyle.getPropertyValue('--red').trim()||'#ff5f6d';
   const tc=rootStyle.getPropertyValue('--muted').trim()||'#8fa39a';
   const gc=rootStyle.getPropertyValue('--border').trim()||'#1c2a25';
 
@@ -114,7 +116,7 @@ function fPct(v){return'%'+parseFloat(v).toFixed(1);}
         <div style="width:100%;text-align:center;font-size:12px;color:var(--muted);padding:8px"><i class="fa-solid fa-rectangle-ad" style="margin-right:5px;opacity:.4"></i>Ad · <a href="/subscription" style="color:var(--accent2);text-decoration:none">Upgrade to Pro</a> to remove ads &amp; unlock full analytics</div>
       </div>
     </div>
-    <div class="cb" style="border-color:rgba(0,255,136,.2);background:linear-gradient(135deg,rgba(0,255,136,.03),var(--panel))">
+    <div class="cb pro-upsell-box">
       <div style="text-align:center;padding:20px 16px">
         <i class="fa-solid fa-lock" style="font-size:28px;color:var(--muted);opacity:.4;display:block;margin-bottom:12px"></i>
         <h3 style="font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;margin-bottom:8px">Advanced Analytics — Pro</h3>
@@ -155,9 +157,9 @@ function fPct(v){return'%'+parseFloat(v).toFixed(1);}
 
   if(!isPro)return;
 
-  new Chart(document.getElementById('wl'),{type:'doughnut',data:{labels:['Wins','Losses','BE'],datasets:[{data:[wins.length,losses.length,be.length],backgroundColor:[accent,'#ff5f6d','#8fa39a44'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{position:'bottom',labels:{padding:14,boxWidth:10}}},cutout:'62%'}});
+  new Chart(document.getElementById('wl'),{type:'doughnut',data:{labels:['Wins','Losses','BE'],datasets:[{data:[wins.length,losses.length,be.length],backgroundColor:[accent,red+'cc','#8fa39a44'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{position:'bottom',labels:{padding:14,boxWidth:10}}},cutout:'62%'}});
 
-  const sm={};trades.forEach(t=>(t.strategy||[]).forEach(s=>{if(!sm[s])sm[s]=0;sm[s]+=(parseFloat(t.pnl)||0);}));const sl=Object.keys(sm);if(sl.length){const sp=sl.map(s=>+sm[s].toFixed(2));new Chart(document.getElementById('st'),{type:'bar',data:{labels:sl,datasets:[{data:sp,backgroundColor:sp.map(v=>v>=0?accent+'cc':'#ff5f6dcc'),borderRadius:5}]},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false}},scales:{x:{},y:{}}}});}
+  const sm={};trades.forEach(t=>(t.strategy||[]).forEach(s=>{if(!sm[s])sm[s]=0;sm[s]+=(parseFloat(t.pnl)||0);}));const sl=Object.keys(sm);if(sl.length){const sp=sl.map(s=>+sm[s].toFixed(2));new Chart(document.getElementById('st'),{type:'bar',data:{labels:sl,datasets:[{data:sp,backgroundColor:sp.map(v=>v>=0?accent+'cc':red+'cc'),borderRadius:5}]},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false}},scales:{x:{},y:{}}}});}
 
   const tm={};trades.forEach(t=>(t.timeframe||[]).forEach(tf=>{if(!tm[tf])tm[tf]={w:0,tot:0,pnl:0};tm[tf].tot++;const p=parseFloat(t.pnl)||0;if(p>0)tm[tf].w++;tm[tf].pnl+=p;}));
   document.getElementById('tfb').innerHTML=Object.keys(tm).length?Object.keys(tm).map(tf=>{const d=tm[tf],w2=d.tot?(d.w/d.tot*100).toFixed(1):'0';return`<tr><td><strong>${tf}</strong></td><td>${d.tot}</td><td>${d.w}</td><td>${fPct(w2)}</td><td style="color:${d.pnl>=0?'var(--accent)':'var(--red)'}">${fP(d.pnl)}</td></tr>`;}).join(''):'<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:18px">No timeframe data yet.</td></tr>';
@@ -169,7 +171,7 @@ function fPct(v){return'%'+parseFloat(v).toFixed(1);}
   }
 
   const longs=trades.filter(t=>t.position==='Long').length,shorts=trades.filter(t=>t.position==='Short').length;
-  new Chart(document.getElementById('ls'),{type:'doughnut',data:{labels:['Long','Short'],datasets:[{data:[longs,shorts],backgroundColor:[accent+'cc','#ff5f6dcc'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{position:'bottom',labels:{padding:14,boxWidth:10}}},cutout:'60%'}});
+  new Chart(document.getElementById('ls'),{type:'doughnut',data:{labels:['Long','Short'],datasets:[{data:[longs,shorts],backgroundColor:[accent+'cc',red+'cc'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{position:'bottom',labels:{padding:14,boxWidth:10}}},cutout:'60%'}});
 
   const pc={};trades.forEach(t=>{if(t.pair)pc[t.pair]=(pc[t.pair]||0)+1;});const pe=Object.entries(pc).sort((a,b)=>b[1]-a[1]);const mx=pe[0]?pe[0][1]:1;
   document.getElementById('pb').innerHTML=pe.slice(0,8).map(([p,c])=>`<div style="margin-bottom:9px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><span style="font-weight:600">${p}</span><span style="color:var(--muted)">${c} trade${c>1?'s':''}</span></div><div style="height:5px;background:var(--border);border-radius:3px"><div style="height:5px;width:${(c/mx*100).toFixed(0)}%;background:var(--accent);border-radius:3px;transition:width .3s"></div></div></div>`).join('')||'<span style="color:var(--muted);font-size:13px">No pair data yet.</span>';
@@ -184,7 +186,7 @@ function fPct(v){return'%'+parseFloat(v).toFixed(1);}
   const hl=Array.from({length:24},(_,i)=>fH(i)),hc=Array.from({length:24},(_,i)=>(hm[i]||{tot:0}).tot),ha=Array.from({length:24},(_,i)=>{const d=hm[i];return(!d||!d.tot)?0:+(d.pnl/d.tot).toFixed(2);});
   if(twt.length){
     new Chart(document.getElementById('hh'),{type:'bar',data:{labels:hl,datasets:[{data:hc,backgroundColor:hc.map(v=>v>0?accent+'cc':gc),borderRadius:4}]},options:{responsive:true,maintainAspectRatio:true,maxBarThickness:28,plugins:{legend:{display:false}},scales:{x:{ticks:{maxTicksLimit:24,font:{size:10}}},y:{ticks:{stepSize:1}}}}});
-    new Chart(document.getElementById('hp'),{type:'bar',data:{labels:hl,datasets:[{data:ha,backgroundColor:ha.map(v=>v>0?accent+'cc':v<0?'#ff5f6dcc':gc),borderRadius:4}]},options:{responsive:true,maintainAspectRatio:true,maxBarThickness:28,plugins:{legend:{display:false}},scales:{x:{ticks:{maxTicksLimit:24,font:{size:10}}},y:{}}}});
+    new Chart(document.getElementById('hp'),{type:'bar',data:{labels:hl,datasets:[{data:ha,backgroundColor:ha.map(v=>v>0?accent+'cc':v<0?red+'cc':gc),borderRadius:4}]},options:{responsive:true,maintainAspectRatio:true,maxBarThickness:28,plugins:{legend:{display:false}},scales:{x:{ticks:{maxTicksLimit:24,font:{size:10}}},y:{}}}});
     document.getElementById('tb').innerHTML=Object.keys(hm).map(Number).sort((a,b)=>a-b).map(h=>{const d=hm[h],w=d.tot?(d.wins/d.tot*100).toFixed(1):'0',avg=d.tot?d.pnl/d.tot:0;return`<tr><td><strong>${fH(h)}–${fH(h+1)}</strong></td><td>${d.tot}</td><td>${d.wins}</td><td>${fPct(w)}</td><td style="color:${avg>=0?'var(--accent)':'var(--red)'}">${fP(avg)}</td></tr>`;}).join('');
   }
 })();
