@@ -87,37 +87,14 @@ TZ.shape = {
 };
 
 // ══════════════════════════════════════════════════════════════
-//  4. LOADER CONFIG  — candlestick loader settings
-// ══════════════════════════════════════════════════════════════
-TZ.loader = {
-  // Word shown below candles during loading — change this to rebrand
-  brandWord: 'TradeZona',
-  // Candle layout: each item is { color: 'green'|'red', height, bodyH, bodyTop }
-  // Adjust freely — the loader reads this array at runtime
-  candles: [
-    { color:'green', height:70,  bodyH:35, bodyTop:20 },
-    { color:'red',   height:100, bodyH:60, bodyTop:20 },
-    { color:'green', height:60,  bodyH:30, bodyTop:15 },
-    { color:'green', height:110, bodyH:70, bodyTop:25 },
-    { color:'red',   height:80,  bodyH:45, bodyTop:20 },
-    { color:'green', height:95,  bodyH:55, bodyTop:25 },
-  ],
-};
-
-// ══════════════════════════════════════════════════════════════
-//  5. THEME ENGINE  — don't normally need to edit below here
+//  5. THEME ENGINE
 // ══════════════════════════════════════════════════════════════
 
-/**
- * Resolve which token set to use.
- * Supports: 'dark' | 'light' | 'blue-electric' | 'system'
- */
 TZ._resolveTokens = function(mode) {
   if (mode === 'system') {
     const prefersDark = !window.matchMedia('(prefers-color-scheme:light)').matches;
     return prefersDark ? TZ.tokens.dark : TZ.tokens.light;
   }
-  // Named themes (dark, light, blue-electric, …)
   return TZ.tokens[mode] || TZ.tokens.dark;
 };
 
@@ -128,14 +105,12 @@ TZ.applyTheme = function(mode) {
 
   Object.entries(tokens).forEach(([k, v]) => root.style.setProperty(k, v));
 
-  // data-theme: controls light/dark CSS forks; treat blue-electric as 'dark'
   const themeClass = (pref === 'light') ? 'light' : 'dark';
   root.dataset.theme   = themeClass;
-  root.dataset.variant = pref;         // e.g. 'blue-electric' for per-variant CSS
+  root.dataset.variant = pref;
 
   TZ.currentTheme = pref;
 
-  // Shorthand refs for Chart.js and JS consumers
   TZ.accent  = tokens['--accent'];
   TZ.accent2 = tokens['--accent2'];
   TZ.muted   = tokens['--muted'];
@@ -147,7 +122,6 @@ TZ.applyTheme = function(mode) {
 TZ.setTheme = function(mode) {
   localStorage.setItem('tl_theme', mode);
   TZ.applyTheme(mode);
-  // Broadcast to all iframes
   document.querySelectorAll('iframe').forEach(f => {
     try { f.contentWindow.postMessage({ type:'tz_theme', theme:mode }, '*'); } catch(e) {}
   });
@@ -155,8 +129,8 @@ TZ.setTheme = function(mode) {
 
 // ── Listen for theme messages from parent ──────────────────────
 window.addEventListener('message', function(e) {
-  if (e.data?.type === 'tz_theme')            TZ.applyTheme(e.data.theme);
-  if (e.data?.theme && !e.data?.type)         TZ.applyTheme(e.data.theme);
+  if (e.data?.type === 'tz_theme')     TZ.applyTheme(e.data.theme);
+  if (e.data?.theme && !e.data?.type)  TZ.applyTheme(e.data.theme);
 });
 
 // ── Backward-compat alias ──────────────────────────────────────
@@ -166,265 +140,58 @@ window.applyTheme = TZ.applyTheme;
 TZ.applyTheme();
 
 // ══════════════════════════════════════════════════════════════
-//  6. CANDLESTICK PAGE LOADER
-//     Injects the loader into any page that has id="pageLoader".
-//     Auto-removes itself once the page calls TZ.hideLoader().
+//  6. PAGE LOADER
+//     Pages include <div id="pageLoader"></div> in their HTML.
+//     Call TZ.hideLoader() when the page is ready.
 // ══════════════════════════════════════════════════════════════
+(function() {
+  const s = document.createElement('style');
+  s.textContent = `
+    @keyframes tz-spin { to { transform: rotate(360deg); } }
+    #pageLoader {
+      position: fixed; inset: 0;
+      background: var(--bg);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 18px; z-index: 9999;
+      transition: opacity .35s ease;
+    }
+    #pageLoader.gone { opacity: 0; pointer-events: none; }
+    #pageLoader .tz-pl-logo {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 22px; font-weight: 700; letter-spacing: .3px;
+      color: var(--text);
+    }
+    #pageLoader .tz-pl-logo span { color: var(--accent); }
+    #pageLoader .tz-pl-spin {
+      width: 28px; height: 28px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: tz-spin .7s linear infinite;
+    }
+  `;
+  document.head.appendChild(s);
+})();
+
 TZ.buildLoader = function() {
   const el = document.getElementById('pageLoader');
-  if (!el) return;
-
-  const cfg   = TZ.loader;
-  const dark  = TZ.tokens.dark;
-  const light = TZ.tokens.light;
-  const elec  = TZ.tokens['blue-electric'];
-
+  if (!el || el.children.length) return;
   el.innerHTML = `
-    <style>
-      #pageLoader {
-        position:fixed;inset:0;
-        background:var(--bg);
-        display:flex;flex-direction:column;
-        align-items:center;justify-content:center;
-        gap:22px;z-index:9999;
-        transition:opacity .4s ease;
-      }
-      #pageLoader.gone { opacity:0;pointer-events:none; }
-
-      .tz-chart {
-        display:flex;gap:10px;align-items:flex-end;
-      }
-
-      .tz-candle {
-        position:relative;
-        display:flex;
-        flex-direction:column;
-        align-items:center;
-        animation:tzFloat 2s ease-in-out infinite;
-      }
-
-      .tz-wick {
-        width:2px;border-radius:2px;opacity:.9;flex-shrink:0;
-      }
-      .tz-body {
-        width:11px;border-radius:3px;position:absolute;z-index:2;
-      }
-
-      /* Green candle — dark */
-      .tz-g .tz-body { background:${dark['--accent']};box-shadow:0 0 10px ${dark['--accent']}99; }
-      .tz-g .tz-wick { background:${dark['--accent']};box-shadow:0 0 6px ${dark['--accent']}88; }
-
-      /* Green candle — light */
-      [data-theme="light"] .tz-g .tz-body { background:${light['--accent']};box-shadow:0 0 10px ${light['--accent']}66; }
-      [data-theme="light"] .tz-g .tz-wick { background:${light['--accent2']};box-shadow:none; }
-
-      /* Green candle — blue-electric (uses cyan as "up" color) */
-      [data-variant="blue-electric"] .tz-g .tz-body { background:${elec['--accent']};box-shadow:0 0 12px ${elec['--accent']}99; }
-      [data-variant="blue-electric"] .tz-g .tz-wick { background:${elec['--accent']};box-shadow:0 0 8px ${elec['--accent']}88; }
-
-      /* Red candle — dark */
-      .tz-r .tz-body { background:${dark['--red']};box-shadow:0 0 10px ${dark['--red']}88; }
-      .tz-r .tz-wick { background:${dark['--red']};box-shadow:0 0 6px ${dark['--red']}77; }
-
-      /* Red candle — light */
-      [data-theme="light"] .tz-r .tz-body { background:${light['--red']};box-shadow:0 0 8px ${light['--red']}55; }
-      [data-theme="light"] .tz-r .tz-wick { background:${light['--red']};box-shadow:none; }
-
-      /* Red candle — blue-electric */
-      [data-variant="blue-electric"] .tz-r .tz-body { background:${elec['--red']};box-shadow:0 0 10px ${elec['--red']}88; }
-      [data-variant="blue-electric"] .tz-r .tz-wick { background:${elec['--red']};box-shadow:0 0 6px ${elec['--red']}77; }
-
-      @keyframes tzFloat {
-        0%,100% { transform:translateY(6px); }
-        50%      { transform:translateY(-12px); }
-      }
-
-      .tz-brand {
-        font-family:'Space Grotesk',sans-serif;
-        font-size:15px;font-weight:600;letter-spacing:.5px;
-        color:var(--muted);
-        display:flex;align-items:center;gap:4px;
-      }
-      .tz-brand span { color:var(--accent); }
-    </style>
-
-    <div class="tz-chart" id="tzCandleChart"></div>
-    <div class="tz-brand">Trade<span>Zona</span></div>
+    <div class="tz-pl-logo">Trade<span>Zona</span></div>
+    <div class="tz-pl-spin"></div>
   `;
-
-  // Build candles from config
-  const chart = document.getElementById('tzCandleChart');
-  cfg.candles.forEach((c, i) => {
-    const div = document.createElement('div');
-    div.className = `tz-candle tz-${c.color === 'red' ? 'r' : 'g'}`;
-    div.style.cssText = `height:${c.height}px;animation-delay:${i * 0.18}s`;
-
-    const wick = document.createElement('div');
-    wick.className = 'tz-wick';
-    wick.style.height = c.height + 'px';
-
-    const body = document.createElement('div');
-    body.className = 'tz-body';
-    body.style.cssText = `height:${c.bodyH}px;top:${c.bodyTop}px`;
-
-    div.appendChild(wick);
-    div.appendChild(body);
-    chart.appendChild(div);
-  });
 };
 
 TZ.hideLoader = function() {
   const el = document.getElementById('pageLoader');
-  if (el) {
-    el.classList.add('gone');
-    setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, 450);
-  }
+  if (!el) return;
+  el.classList.add('gone');
+  setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, 400);
 };
 
-// Auto-build on DOM ready
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', TZ.buildLoader);
 } else {
   TZ.buildLoader();
 }
-
-// ══════════════════════════════════════════════════════════════
-//  7. TAB LOADER (mini candlestick — for iframes & tab panels)
-//     Call TZ.buildTabLoader(containerEl) to inject a small
-//     candlestick spinner into any .tab-loader div.
-//     Call TZ.hideTabLoader(containerEl) to fade it out.
-//
-//     In iframes: just add <div id="tzTabLoader"></div> and
-//     theme.js auto-builds it. Call TZ.hideTabLoader() when ready.
-// ══════════════════════════════════════════════════════════════
-
-// Shared CSS — injected once per document
-TZ._tabLoaderStyleInjected = false;
-TZ._injectTabLoaderStyle = function() {
-  if (TZ._tabLoaderStyleInjected) return;
-  TZ._tabLoaderStyleInjected = true;
-  const dark  = TZ.tokens.dark;
-  const light = TZ.tokens.light;
-  const elec  = TZ.tokens['blue-electric'];
-  const s = document.createElement('style');
-  s.id = 'tz-tab-loader-styles';
-  s.textContent = `
-    .tz-tl {
-      position:absolute;inset:0;
-      background:var(--bg);
-      display:flex;flex-direction:column;
-      align-items:center;justify-content:center;
-      gap:14px;z-index:10;
-      transition:opacity .3s ease;
-    }
-    .tz-tl.gone { opacity:0;pointer-events:none; }
-    .tz-tl-chart { display:flex;gap:7px;align-items:flex-end; }
-    .tz-tl-candle {
-      position:relative;display:flex;flex-direction:column;
-      align-items:center;
-      animation:tzTabFloat 1.8s ease-in-out infinite;
-    }
-    .tz-tl-wick { width:2px;border-radius:2px;opacity:.85;flex-shrink:0; }
-    .tz-tl-body { width:8px;border-radius:2px;position:absolute;z-index:2; }
-
-    /* dark */
-    .tz-tl-g .tz-tl-body { background:${dark['--accent']};box-shadow:0 0 7px ${dark['--accent']}88; }
-    .tz-tl-g .tz-tl-wick { background:${dark['--accent']}; }
-    .tz-tl-r .tz-tl-body { background:${dark['--red']};box-shadow:0 0 7px ${dark['--red']}77; }
-    .tz-tl-r .tz-tl-wick { background:${dark['--red']}; }
-
-    /* light */
-    [data-theme="light"] .tz-tl-g .tz-tl-body { background:${light['--accent']};box-shadow:0 0 6px ${light['--accent']}55; }
-    [data-theme="light"] .tz-tl-g .tz-tl-wick { background:${light['--accent2']}; }
-    [data-theme="light"] .tz-tl-r .tz-tl-body { background:${light['--red']};box-shadow:0 0 5px ${light['--red']}44; }
-    [data-theme="light"] .tz-tl-r .tz-tl-wick { background:${light['--red']}; }
-
-    /* blue-electric */
-    [data-variant="blue-electric"] .tz-tl-g .tz-tl-body { background:${elec['--accent']};box-shadow:0 0 9px ${elec['--accent']}99; }
-    [data-variant="blue-electric"] .tz-tl-g .tz-tl-wick { background:${elec['--accent']}; }
-    [data-variant="blue-electric"] .tz-tl-r .tz-tl-body { background:${elec['--red']};box-shadow:0 0 7px ${elec['--red']}88; }
-    [data-variant="blue-electric"] .tz-tl-r .tz-tl-wick { background:${elec['--red']}; }
-
-    @keyframes tzTabFloat {
-      0%,100% { transform:translateY(4px); }
-      50%      { transform:translateY(-8px); }
-    }
-    .tz-tl-label {
-      font-family:'Inter',sans-serif;font-size:12px;
-      color:var(--muted);letter-spacing:.2px;
-    }
-  `;
-  document.head.appendChild(s);
-};
-
-// Mini candle config — 4 candles, smaller scale
-TZ._tabCandles = [
-  { color:'green', height:44, bodyH:22, bodyTop:12 },
-  { color:'red',   height:60, bodyH:36, bodyTop:12 },
-  { color:'green', height:36, bodyH:18, bodyTop:10 },
-  { color:'green', height:66, bodyH:40, bodyTop:14 },
-  { color:'red',   height:48, bodyH:28, bodyTop:12 },
-];
-
-TZ.buildTabLoader = function(container, label) {
-  if (!container) return;
-  TZ._injectTabLoaderStyle();
-
-  const wrap = document.createElement('div');
-  wrap.className = 'tz-tl';
-
-  const chart = document.createElement('div');
-  chart.className = 'tz-tl-chart';
-
-  TZ._tabCandles.forEach((c, i) => {
-    const div = document.createElement('div');
-    div.className = `tz-tl-candle tz-tl-${c.color === 'red' ? 'r' : 'g'}`;
-    div.style.cssText = `height:${c.height}px;animation-delay:${i * 0.16}s`;
-    const wick = document.createElement('div');
-    wick.className = 'tz-tl-wick';
-    wick.style.height = c.height + 'px';
-    const body = document.createElement('div');
-    body.className = 'tz-tl-body';
-    body.style.cssText = `height:${c.bodyH}px;top:${c.bodyTop}px`;
-    div.appendChild(wick);
-    div.appendChild(body);
-    chart.appendChild(div);
-  });
-
-  wrap.appendChild(chart);
-
-  if (label !== false) {
-    const lbl = document.createElement('div');
-    lbl.className = 'tz-tl-label';
-    lbl.textContent = label || 'Loading…';
-    wrap.appendChild(lbl);
-  }
-
-  // Clear existing content and append
-  container.innerHTML = '';
-  container.appendChild(wrap);
-  return wrap;
-};
-
-TZ.hideTabLoader = function(container) {
-  const wrap = container
-    ? container.querySelector('.tz-tl')
-    : document.querySelector('.tz-tl');
-  if (!wrap) return;
-  wrap.classList.add('gone');
-  setTimeout(() => { if (wrap.parentNode) wrap.parentNode.removeChild(wrap); }, 350);
-};
-
-// ── Auto tab-loader for iframes ────────────────────────────────
-// If a page loaded inside an iframe has <div id="tzTabLoader"></div>
-// theme.js will auto-build the mini loader into it.
-// Call TZ.hideTabLoader() when the page is ready.
-(function() {
-  const el = document.getElementById('tzTabLoader');
-  if (!el) return;
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => TZ.buildTabLoader(el));
-  } else {
-    TZ.buildTabLoader(el);
-  }
-})();
