@@ -10,7 +10,6 @@
 <script src="theme.js"></script>
 <script src="supabase.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 @keyframes shimmer{0%{background-position:-600px 0}100%{background-position:600px 0}}
@@ -21,7 +20,7 @@ body{visibility:hidden;background:var(--bg);color:var(--text);font-family:var(--
 .btn-primary{background:var(--accent);color:#0b0f0c;border:none;border-radius:var(--radius-md);padding:9px 16px;font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:13px;font-weight:600;cursor:pointer;transition:opacity var(--transition-base);display:flex;align-items:center;gap:6px}
 .btn-primary:hover{opacity:.85}
 /* Analytics bar — hardcoded colors */
-.abar{display:none;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:10px;margin-bottom:14px;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;position:relative}
+.abar{display:none;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:10px;margin-bottom:14px;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px}
 .abar.show{display:grid}
 .stat{text-align:center}
 .stat .slbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:4px;display:block;text-align:center}
@@ -47,6 +46,7 @@ td{padding:5px 6px;vertical-align:middle;text-align:center}
 td:nth-child(1){width:30px}
 td:nth-child(2){width:90px}
 td:nth-child(3){width:72px}
+/* FIX: pair column wider — was 80px */
 td:nth-child(4){width:110px}
 td:nth-child(5){width:64px}
 td:nth-child(8){width:80px}
@@ -64,6 +64,7 @@ td:nth-child(9){width:64px}
 .dt-input.active::-webkit-calendar-picker-indicator{opacity:.5;cursor:pointer}
 .csel{background:none;border:none;font-family:var(--font-body,'Inter',sans-serif);font-size:12px;outline:none;cursor:pointer;padding:0;-webkit-appearance:none;text-align:center;width:100%;font-weight:600}
 .csel option{background:var(--panel)}
+/* Long always green, Short always red — hardcoded */
 .csel.long{color:#19c37d}
 .csel.short{color:#ff5f6d}
 .tc{display:flex;flex-wrap:wrap;justify-content:center;gap:3px;align-items:center;cursor:pointer;min-height:24px;padding:2px}
@@ -71,6 +72,7 @@ td:nth-child(9){width:64px}
 .pill:hover{background:rgba(var(--accent-rgb,25,195,125),.2)}
 .pill.ep{background:none;border:1px dashed var(--border);color:var(--muted);padding:2px 6px}
 .pill.ep:hover{border-color:var(--accent2);color:var(--text)}
+/* Pill picker */
 .pp{position:fixed;z-index:9000;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-lg);padding:10px;min-width:210px;max-width:270px;box-shadow:0 8px 28px rgba(0,0,0,.55);max-height:320px;overflow-y:auto}
 .pp-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
 .pp-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;font-weight:600}
@@ -220,91 +222,6 @@ td:nth-child(9){width:64px}
 #toast.show{opacity:1;pointer-events:all;transform:translateX(-50%) translateY(0)}
 #toast.toast-green{border-color:rgba(var(--accent-rgb,25,195,125),.4);background:rgba(var(--accent-rgb,25,195,125),.07)}
 #toast.toast-red{border-color:rgba(255,95,109,.4);background:rgba(255,95,109,.07)}
-
-/* ─── Share button in analytics bar ─────────────────────────── */
-.abar-actions{position:absolute;top:10px;right:10px;display:flex;align-items:center;gap:6px}
-.btn-share{display:inline-flex;align-items:center;gap:6px;padding:6px 13px;background:none;border:1px solid var(--border);border-radius:var(--radius-pill);color:var(--muted);font-family:var(--font-body,'Inter',sans-serif);font-size:12px;font-weight:500;cursor:pointer;transition:all var(--transition-fast);white-space:nowrap}
-.btn-share:hover{border-color:var(--accent2);color:var(--accent2);background:rgba(var(--accent-rgb,25,195,125),.07)}
-.btn-share i{font-size:11px}
-
-/* ─── Share Modal ────────────────────────────────────────────── */
-.share-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:700;align-items:center;justify-content:center;padding:16px}
-.share-overlay.open{display:flex}
-.share-modal{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-xl);width:100%;max-width:680px;max-height:92vh;overflow-y:auto;display:flex;flex-direction:column;box-shadow:0 24px 72px rgba(0,0,0,.6)}
-.share-hdr{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--border);flex-shrink:0}
-.share-hdr h3{font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px}
-.share-hdr h3 i{color:var(--accent2);font-size:14px}
-.share-body{padding:22px;display:flex;flex-direction:column;gap:20px}
-.share-section-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;font-weight:600;margin-bottom:10px}
-
-/* Preview pane */
-.share-preview-wrap{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;display:flex;align-items:center;justify-content:center;min-height:220px;overflow:hidden}
-.share-preview-inner{transform-origin:top center}
-
-/* Metric toggles */
-.share-toggles{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
-.share-tog{display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-md);cursor:pointer;transition:all var(--transition-fast);user-select:none}
-.share-tog:hover{border-color:var(--accent2)}
-.share-tog.on{border-color:var(--accent2);background:rgba(var(--accent-rgb,25,195,125),.07)}
-.share-tog-chk{width:14px;height:14px;border-radius:3px;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all var(--transition-fast)}
-.share-tog.on .share-tog-chk{background:var(--accent2);border-color:var(--accent2)}
-.share-tog.on .share-tog-chk::after{content:'✓';font-size:9px;color:#0b0f0c;font-weight:700;line-height:1}
-.share-tog-lbl{font-size:12px;color:var(--muted);transition:color var(--transition-fast)}
-.share-tog.on .share-tog-lbl{color:var(--text)}
-
-/* Highlight toggles */
-.share-highlights{display:flex;flex-wrap:wrap;gap:7px}
-.share-hl{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border:1px solid var(--border);border-radius:var(--radius-pill);cursor:pointer;font-size:12px;color:var(--muted);font-family:var(--font-body,'Inter',sans-serif);transition:all var(--transition-fast);user-select:none}
-.share-hl:hover{border-color:var(--accent2);color:var(--text)}
-.share-hl.on{border-color:var(--accent2);color:var(--accent2);background:rgba(var(--accent-rgb,25,195,125),.1)}
-.share-hl.on i{color:var(--accent2)}
-
-/* Footer */
-.share-ftr{padding:16px 22px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex-shrink:0}
-.share-ftr .spacer{flex:1}
-.btn-share-action{display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:var(--radius-md);font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:13px;font-weight:600;cursor:pointer;transition:all var(--transition-fast);border:none;white-space:nowrap}
-.btn-share-dl{background:var(--accent);color:#0b0f0c}
-.btn-share-dl:hover{opacity:.85}
-.btn-share-copy{background:none;border:1px solid var(--border);color:var(--text)}
-.btn-share-copy:hover{border-color:var(--accent2);color:var(--accent2)}
-.btn-share-native{background:none;border:1px solid var(--border);color:var(--text)}
-.btn-share-native:hover{border-color:var(--accent2);color:var(--accent2)}
-.share-generating{display:none;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
-.share-generating.show{display:flex}
-@keyframes spin{to{transform:rotate(360deg)}}
-.spin-icon{animation:spin 1s linear infinite}
-
-/* ─── Hidden share card (rendered offscreen) ─────────────────── */
-#shareCardRoot{position:fixed;top:-9999px;left:-9999px;width:800px;pointer-events:none;z-index:-1}
-.sc-card{width:800px;padding:44px 48px;background:#0d1411;font-family:'Space Grotesk','Inter',sans-serif;position:relative;overflow:hidden;box-sizing:border-box}
-.sc-card::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% -10%,rgba(25,195,125,.14) 0%,transparent 70%);pointer-events:none}
-.sc-card::after{content:'';position:absolute;top:-120px;right:-120px;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(25,195,125,.07) 0%,transparent 70%);pointer-events:none}
-.sc-brand-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:36px}
-.sc-brand{display:flex;align-items:center;gap:10px}
-.sc-brand-logo{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#19c37d,#0e8a57);display:flex;align-items:center;justify-content:center}
-.sc-brand-logo svg{width:18px;height:18px}
-.sc-brand-name{font-size:18px;font-weight:700;color:#e8f5f0;letter-spacing:-.3px}
-.sc-brand-name span{color:#19c37d}
-.sc-timestamp{font-size:11px;color:rgba(255,255,255,.35);letter-spacing:.5px;text-transform:uppercase}
-.sc-divider{height:1px;background:linear-gradient(90deg,rgba(25,195,125,.25),rgba(25,195,125,.08) 60%,transparent);margin-bottom:32px}
-.sc-metrics-grid{display:grid;gap:14px;margin-bottom:32px}
-.sc-metrics-grid.cols-2{grid-template-columns:1fr 1fr}
-.sc-metrics-grid.cols-3{grid-template-columns:1fr 1fr 1fr}
-.sc-metrics-grid.cols-4{grid-template-columns:1fr 1fr 1fr 1fr}
-.sc-metrics-grid.cols-1{grid-template-columns:1fr}
-.sc-metric{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:18px 20px;position:relative;overflow:hidden;transition:all .2s}
-.sc-metric.highlighted{background:rgba(25,195,125,.09);border-color:rgba(25,195,125,.3);box-shadow:0 0 24px rgba(25,195,125,.12),inset 0 1px 0 rgba(25,195,125,.15)}
-.sc-metric.highlighted::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#19c37d,transparent)}
-.sc-metric-lbl{font-size:10px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.9px;font-weight:500;margin-bottom:8px}
-.sc-metric-val{font-size:28px;font-weight:700;color:#e8f5f0;letter-spacing:-.5px;line-height:1}
-.sc-metric.highlighted .sc-metric-val{color:#19c37d;text-shadow:0 0 20px rgba(25,195,125,.4)}
-.sc-metric-val.positive{color:#19c37d}
-.sc-metric-val.negative{color:#ff5f6d}
-.sc-metric-val.neutral{color:#e8f5f0}
-.sc-footer-row{display:flex;align-items:center;justify-content:space-between;margin-top:8px}
-.sc-footer-text{font-size:10px;color:rgba(255,255,255,.22);letter-spacing:.4px}
-.sc-footer-badge{font-size:10px;color:rgba(25,195,125,.6);letter-spacing:.5px;font-weight:500}
-
 @media(max-width:768px){
   body{padding:10px}
   .topbar{flex-direction:column;align-items:stretch}
@@ -314,7 +231,6 @@ td:nth-child(9){width:64px}
   td{padding:4px 3px;font-size:11px}
   .filter-bar{gap:4px}
   .fb-btn{font-size:11px;padding:4px 9px}
-  .share-modal{max-width:100%;margin:8px}
 }
 </style>
 </head>
@@ -404,12 +320,6 @@ td:nth-child(9){width:64px}
 <div class="fd" id="fd-mood"><div class="fd-title">Mood</div><div class="fd-list" id="fd-mood-list"></div><button class="fd-apply" onclick="applyFD('mood')">Apply</button></div>
 
 <div class="abar" id="aBar">
-  <!-- Share button -->
-  <div class="abar-actions">
-    <button class="btn-share" onclick="openShareModal()">
-      <i class="fa-solid fa-arrow-up-from-bracket"></i> Share
-    </button>
-  </div>
   <div class="stat"><span class="slbl">Trades</span><span class="sval" id="sTrades">0</span></div>
   <div class="stat"><span class="slbl">Win Rate</span><span class="sval" id="sWR">—</span></div>
   <div class="stat"><span class="slbl">Wins</span><span class="sval g" id="sW">0</span></div>
@@ -438,7 +348,7 @@ td:nth-child(9){width:64px}
   </table>
 </div>
 
-<!-- Pill picker -->
+<!-- Pill picker — stopPropagation on the whole popup to prevent document click from closing it -->
 <div class="pp" id="pp" style="display:none" onmousedown="event.stopPropagation()" onclick="event.stopPropagation()">
   <div class="pp-header">
     <span class="pp-label" id="pp-field-label"></span>
@@ -467,111 +377,6 @@ td:nth-child(9){width:64px}
   <a href="/subscription" style="background:var(--accent);color:#0b0f0c;border:none;border-radius:var(--radius-md);padding:6px 12px;font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:12px;font-weight:700;cursor:pointer;text-decoration:none;white-space:nowrap">Upgrade to Pro</a>
 </div>
 
-</div><!-- .pw -->
-
-<!-- ═══════════════════════════════════════════════════════════
-     SHARE ANALYTICS MODAL
-═══════════════════════════════════════════════════════════ -->
-<div class="share-overlay" id="shareOverlay" onclick="if(event.target===this)closeShareModal()">
-  <div class="share-modal">
-    <div class="share-hdr">
-      <h3><i class="fa-solid fa-arrow-up-from-bracket"></i> Share Performance Snapshot</h3>
-      <button class="nmclose" onclick="closeShareModal()"><i class="fa-solid fa-xmark"></i></button>
-    </div>
-    <div class="share-body">
-
-      <!-- Live preview -->
-      <div>
-        <div class="share-section-lbl">Preview</div>
-        <div class="share-preview-wrap" id="sharePreviewWrap">
-          <div id="sharePreviewInner" class="share-preview-inner"></div>
-        </div>
-      </div>
-
-      <!-- Metric visibility toggles -->
-      <div>
-        <div class="share-section-lbl">Show Metrics</div>
-        <div class="share-toggles" id="shareToggles">
-          <div class="share-tog on" data-metric="totalPnl" onclick="toggleShareMetric(this)">
-            <span class="share-tog-chk"></span><span class="share-tog-lbl">Total PNL</span>
-          </div>
-          <div class="share-tog on" data-metric="winRate" onclick="toggleShareMetric(this)">
-            <span class="share-tog-chk"></span><span class="share-tog-lbl">Win Rate</span>
-          </div>
-          <div class="share-tog on" data-metric="totalTrades" onclick="toggleShareMetric(this)">
-            <span class="share-tog-chk"></span><span class="share-tog-lbl">Total Trades</span>
-          </div>
-          <div class="share-tog on" data-metric="wins" onclick="toggleShareMetric(this)">
-            <span class="share-tog-chk"></span><span class="share-tog-lbl">Wins</span>
-          </div>
-          <div class="share-tog on" data-metric="losses" onclick="toggleShareMetric(this)">
-            <span class="share-tog-chk"></span><span class="share-tog-lbl">Losses</span>
-          </div>
-          <div class="share-tog on" data-metric="avgR" onclick="toggleShareMetric(this)">
-            <span class="share-tog-chk"></span><span class="share-tog-lbl">Avg R</span>
-          </div>
-          <div class="share-tog on" data-metric="winStreak" onclick="toggleShareMetric(this)">
-            <span class="share-tog-chk"></span><span class="share-tog-lbl">Win Streak</span>
-          </div>
-          <div class="share-tog on" data-metric="lossStreak" onclick="toggleShareMetric(this)">
-            <span class="share-tog-chk"></span><span class="share-tog-lbl">Loss Streak</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Highlight specific metrics -->
-      <div>
-        <div class="share-section-lbl">Highlight</div>
-        <div class="share-highlights" id="shareHighlights">
-          <div class="share-hl" data-metric="totalPnl" onclick="toggleShareHighlight(this)">
-            <i class="fa-solid fa-star" style="font-size:9px"></i> PNL
-          </div>
-          <div class="share-hl" data-metric="winRate" onclick="toggleShareHighlight(this)">
-            <i class="fa-solid fa-star" style="font-size:9px"></i> Win Rate
-          </div>
-          <div class="share-hl" data-metric="totalTrades" onclick="toggleShareHighlight(this)">
-            <i class="fa-solid fa-star" style="font-size:9px"></i> Trades
-          </div>
-          <div class="share-hl" data-metric="wins" onclick="toggleShareHighlight(this)">
-            <i class="fa-solid fa-star" style="font-size:9px"></i> Wins
-          </div>
-          <div class="share-hl" data-metric="losses" onclick="toggleShareHighlight(this)">
-            <i class="fa-solid fa-star" style="font-size:9px"></i> Losses
-          </div>
-          <div class="share-hl" data-metric="avgR" onclick="toggleShareHighlight(this)">
-            <i class="fa-solid fa-star" style="font-size:9px"></i> Avg R
-          </div>
-          <div class="share-hl" data-metric="winStreak" onclick="toggleShareHighlight(this)">
-            <i class="fa-solid fa-star" style="font-size:9px"></i> Win Streak
-          </div>
-          <div class="share-hl" data-metric="lossStreak" onclick="toggleShareHighlight(this)">
-            <i class="fa-solid fa-star" style="font-size:9px"></i> Loss Streak
-          </div>
-        </div>
-      </div>
-
-    </div>
-    <div class="share-ftr">
-      <div class="share-generating" id="shareGenerating">
-        <i class="fa-solid fa-circle-notch spin-icon"></i> Generating…
-      </div>
-      <div class="spacer"></div>
-      <button class="btn-share-action btn-share-native" id="btnShareNative" onclick="doShareNative()" style="display:none">
-        <i class="fa-solid fa-share-nodes"></i> Share
-      </button>
-      <button class="btn-share-action btn-share-copy" onclick="doShareCopy()">
-        <i class="fa-regular fa-copy"></i> Copy
-      </button>
-      <button class="btn-share-action btn-share-dl" onclick="doShareDownload()">
-        <i class="fa-solid fa-download"></i> Download PNG
-      </button>
-    </div>
-  </div>
-</div>
-
-<!-- Hidden share card root (rendered off-screen for html2canvas) -->
-<div id="shareCardRoot">
-  <div class="sc-card" id="shareCard"></div>
 </div>
 
 <!-- Notes Modal -->
@@ -690,6 +495,7 @@ async function refreshTrades(){const r=await getTrades(jid);trades=r.map(dbToTra
 function moodStyle(m){const c=(settings?.mood_colors||{})[m];if(!c)return'';const[r,g,b]=[c.slice(1,3),c.slice(3,5),c.slice(5,7)].map(x=>parseInt(x,16));return`background:rgba(${r},${g},${b},.15);color:${c};border-color:rgba(${r},${g},${b},.35)`;}
 function getTags(field){const k={strategy:'strategies',timeframe:'timeframes',mood:'moods',pair:'pairs'}[field];return settings?.[k]||[];}
 function getPairSuggestions(){return[...new Set([...(settings?.pairs||[]),...trades.map(t=>(t.pair||'').toUpperCase()).filter(Boolean)])].sort();}
+// Hardcoded: positive = green, negative = red
 function fmtVal(v,type){const n=parseFloat(v);if(isNaN(n)||v==null||v==='')return'';return type==='pnl'?(n>=0?'+':'-')+'$'+Math.abs(n).toFixed(2):(n>=0?'+':'')+n.toFixed(2)+'R';}
 function pnlCol(v){const n=parseFloat(v);return n>0?G:n<0?R:'var(--muted)';}
 function esc(s){const d=document.createElement('div');d.textContent=String(s||'');return d.innerHTML;}
@@ -798,7 +604,8 @@ function getFilteredTrades(){
   items.sort((a,b)=>{const da=a.date||'',db=b.date||'';return sortDir==='asc'?da.localeCompare(db):db.localeCompare(da);});
   return items;
 }
-
+// FIX: Use a flag to track whether the click that opened the pill picker should be ignored
+// by the document-level close handler, preventing it from immediately closing.
 let _ppJustOpened=false;
 
 document.addEventListener('click',e=>{
@@ -828,6 +635,7 @@ function buildRow(t,num){
   const tr=document.createElement('tr');tr.dataset.id=t.id;
   const nb=buildNotesBtnHTML(t);
   const isLong=t.position!=='Short';
+  // Position: Long always green, Short always red
   const posColor=isLong?G:R;
   tr.innerHTML=`
     <td style="color:var(--muted);font-size:11px">${num}</td>
@@ -960,8 +768,14 @@ function hideSug(){setTimeout(()=>document.querySelectorAll('.sugs').forEach(s=>
 function hideSugImmediate(id){const box=document.getElementById('sug_'+id);if(box)box.style.display='none';}
 function pickPair(id,p){localUpd(id,'pair',p);const inp=document.getElementById('sug_'+id)?.previousElementSibling;if(inp)inp.value=p;document.getElementById('sug_'+id).style.display='none';scheduleSave(id,true);}
 
+// ─── Pill picker — multi-select ───────────────────────────────────────────
+// FIX 1: openPP uses stopPropagation so the document click handler below
+//         does NOT fire immediately and close the picker on the same event.
+// FIX 2: _ppToggle now calls scheduleSave(id, true) instead of commitSave(id)
+//         directly. commitSave checks _pending first, so calling it without
+//         first adding to _pending caused saves to silently no-op.
 function openPP(e,id,field){
-  e.stopPropagation();
+  e.stopPropagation(); // prevent document click from closing us immediately
   if(_ppCurrentId===id&&_ppCurrentField===field&&document.getElementById('pp').style.display!=='none'){closePP();return;}
   _ppCurrentId=id;_ppCurrentField=field;activePill={id,field};
   const pop=document.getElementById('pp'),searchEl=document.getElementById('pp-search');
@@ -1018,11 +832,15 @@ async function _ppToggle(id,field,val){
   if(!t[field])t[field]=[];
   const idx=t[field].indexOf(val);
   if(idx>-1)t[field].splice(idx,1);else t[field].push(val);
+  // Update the cell display
   const pre={strategy:'st_',timeframe:'tf_',mood:'md_'}[field]||'st_';
   const c=document.getElementById(pre+id);
   if(c)c.innerHTML=field==='mood'?buildMoodPills(t[field]):buildPills(t[field]);
   const currentSearch=document.getElementById('pp-search').value||'';
   _renderPPPills(currentSearch);_updatePPSelCount();
+  // FIX: Use scheduleSave(id, true) so the trade is added to _pending before
+  // commitSave runs — previously calling commitSave(id) directly would return
+  // early because _pending didn't include the id yet, silently skipping the save.
   scheduleSave(id,true);
 }
 async function _ppCreate(id,field,val){
@@ -1033,6 +851,8 @@ async function _ppCreate(id,field,val){
   const searchEl=document.getElementById('pp-search');searchEl.value='';_renderPPPills('');searchEl.focus();
 }
 function closePP(){document.getElementById('pp').style.display='none';activePill=null;_ppCurrentId=null;_ppCurrentField=null;}
+// FIX: Close pill picker only when clicking outside — the .pp popup itself
+// has onclick="event.stopPropagation()" so clicks inside won't reach here.
 document.addEventListener('click',e=>{
   const pop=document.getElementById('pp');
   if(pop.style.display!=='none'&&!pop.contains(e.target))closePP();
@@ -1129,9 +949,9 @@ document.getElementById('lb').addEventListener('click',e=>{if(e.target===documen
 document.addEventListener('keydown',e=>{if(!document.getElementById('lb').classList.contains('open'))return;if(e.key==='Escape')closeLb();if(e.key==='ArrowLeft')lbNav(-1);if(e.key==='ArrowRight')lbNav(1);});
 
 function applyAnalyticsState(){document.getElementById('aBar').classList.toggle('show',analyticsOn);}
-
-// ─── Analytics computation (shared between display and share card) ───────
-function computeAnalytics(src){
+function updateAnalytics(){
+  if(!analyticsOn)return;
+  const src=getFilteredTrades();
   const vld=src.filter(t=>t.pnl!==''&&!isNaN(parseFloat(t.pnl)));
   const wins=vld.filter(t=>parseFloat(t.pnl)>0),losses=vld.filter(t=>parseFloat(t.pnl)<0);
   const total=vld.reduce((s,t)=>s+parseFloat(t.pnl),0);
@@ -1140,226 +960,23 @@ function computeAnalytics(src){
   const wr=vld.length?wins.length/vld.length*100:0;
   let mxW=0,mxL=0,cW=0,cL=0;
   vld.forEach(t=>{const p=parseFloat(t.pnl);if(p>0){cW++;cL=0;if(cW>mxW)mxW=cW;}else if(p<0){cL++;cW=0;if(cL>mxL)mxL=cL;}else{cW=0;cL=0;}});
-  return{count:src.length,vldCount:vld.length,winCount:wins.length,lossCount:losses.length,totalPnl:total,wr,avgR,mxW,mxL,rv};
-}
-
-function updateAnalytics(){
-  if(!analyticsOn)return;
-  const src=getFilteredTrades();
-  const {count,vldCount,winCount,lossCount,totalPnl,wr,avgR,mxW,mxL}=computeAnalytics(src);
-  document.getElementById('sTrades').textContent=count;
+  document.getElementById('sTrades').textContent=src.length;
+  // Win rate — green if >= 50%, red if below
   const wrEl=document.getElementById('sWR');
-  wrEl.textContent=vldCount?wr.toFixed(1)+'%':'—';
-  wrEl.style.color=vldCount?(wr>=50?G:R):'';
-  document.getElementById('sW').textContent=winCount;
-  document.getElementById('sL').textContent=lossCount;
+  wrEl.textContent=vld.length?wr.toFixed(1)+'%':'—';
+  wrEl.style.color=vld.length?(wr>=50?G:R):'';
+  document.getElementById('sW').textContent=wins.length;
+  document.getElementById('sL').textContent=losses.length;
   document.getElementById('sWS').textContent=mxW;
   document.getElementById('sLS').textContent=mxL;
+  // Avg R — green/red
   const rEl=document.getElementById('sR');
-  rEl.textContent=avgR?(avgR>=0?'+':'')+avgR.toFixed(2)+'R':'—';
-  rEl.style.color=avgR?pnlCol(avgR):'';
+  rEl.textContent=rv.length?(avgR>=0?'+':'')+avgR.toFixed(2)+'R':'—';
+  rEl.style.color=rv.length?pnlCol(avgR):'';
+  // Total PNL — green/red
   const pe=document.getElementById('sP');
-  if(vldCount){pe.textContent=(totalPnl>=0?'+':'-')+'$'+Math.abs(totalPnl).toFixed(2);pe.style.color=pnlCol(totalPnl);}
+  if(vld.length){pe.textContent=(total>=0?'+':'-')+'$'+Math.abs(total).toFixed(2);pe.style.color=pnlCol(total);}
   else{pe.textContent='—';pe.style.color='';}
-}
-
-// ─── SHARE ANALYTICS ─────────────────────────────────────────────────────
-let _shareVisibility={totalPnl:true,winRate:true,totalTrades:true,wins:true,losses:true,avgR:true,winStreak:true,lossStreak:true};
-let _shareHighlighted=new Set();
-let _shareCanvas=null;
-
-const METRIC_DEFS={
-  totalPnl:{label:'Total PNL',format:(d)=>{const n=d.totalPnl;return{val:(n>=0?'+':'-')+'$'+Math.abs(n).toFixed(2),cls:n>0?'positive':n<0?'negative':'neutral'};}},
-  winRate:{label:'Win Rate',format:(d)=>{return{val:d.vldCount?d.wr.toFixed(1)+'%':'—',cls:d.vldCount?(d.wr>=50?'positive':'negative'):'neutral'};}},
-  totalTrades:{label:'Total Trades',format:(d)=>{return{val:String(d.count),cls:'neutral'};}},
-  wins:{label:'Wins',format:(d)=>{return{val:String(d.winCount),cls:'positive'};}},
-  losses:{label:'Losses',format:(d)=>{return{val:String(d.lossCount),cls:'negative'};}},
-  avgR:{label:'Avg R',format:(d)=>{return{val:d.rv&&d.rv.length?(d.avgR>=0?'+':'')+d.avgR.toFixed(2)+'R':'—',cls:d.avgR>0?'positive':d.avgR<0?'negative':'neutral'};}},
-  winStreak:{label:'Win Streak',format:(d)=>{return{val:String(d.mxW),cls:'positive'};}},
-  lossStreak:{label:'Loss Streak',format:(d)=>{return{val:String(d.mxL),cls:'negative'};}},
-};
-
-function openShareModal(){
-  // Web Share API availability check
-  document.getElementById('btnShareNative').style.display=navigator.share?'inline-flex':'none';
-  // Reset
-  _shareCanvas=null;
-  _shareHighlighted=new Set();
-  // Reset toggle UI to match internal state
-  document.querySelectorAll('.share-tog').forEach(el=>{
-    el.classList.toggle('on',_shareVisibility[el.dataset.metric]!==false);
-  });
-  document.querySelectorAll('.share-hl').forEach(el=>el.classList.remove('on'));
-  buildShareCard();
-  updateSharePreview();
-  document.getElementById('shareOverlay').classList.add('open');
-}
-function closeShareModal(){
-  document.getElementById('shareOverlay').classList.remove('open');
-  _shareCanvas=null;
-}
-
-function toggleShareMetric(el){
-  const m=el.dataset.metric;
-  _shareVisibility[m]=!_shareVisibility[m];
-  el.classList.toggle('on',_shareVisibility[m]);
-  // Disable highlight if metric hidden
-  if(!_shareVisibility[m]){
-    _shareHighlighted.delete(m);
-    const hlEl=document.querySelector(`.share-hl[data-metric="${m}"]`);
-    if(hlEl)hlEl.classList.remove('on');
-  }
-  buildShareCard();
-  updateSharePreview();
-}
-
-function toggleShareHighlight(el){
-  const m=el.dataset.metric;
-  if(!_shareVisibility[m])return;
-  if(_shareHighlighted.has(m)){_shareHighlighted.delete(m);el.classList.remove('on');}
-  else{_shareHighlighted.add(m);el.classList.add('on');}
-  buildShareCard();
-  updateSharePreview();
-}
-
-function _getTimestampLabel(){
-  const d=new Date();
-  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  return`Performance Summary — ${months[d.getMonth()]} ${d.getFullYear()}`;
-}
-
-function buildShareCard(){
-  const src=getFilteredTrades();
-  const data=computeAnalytics(src);
-  const card=document.getElementById('shareCard');
-
-  const visibleMetrics=Object.keys(METRIC_DEFS).filter(k=>_shareVisibility[k]);
-  const cols=visibleMetrics.length<=2?visibleMetrics.length:
-             visibleMetrics.length<=4?2:
-             visibleMetrics.length<=6?3:4;
-
-  const metricsHTML=visibleMetrics.map(k=>{
-    const def=METRIC_DEFS[k];
-    const {val,cls}=def.format(data);
-    const hl=_shareHighlighted.has(k);
-    return`<div class="sc-metric${hl?' highlighted':''}">
-      <div class="sc-metric-lbl">${def.label}</div>
-      <div class="sc-metric-val ${hl?'':cls}">${val}</div>
-    </div>`;
-  }).join('');
-
-  card.innerHTML=`
-    <div class="sc-brand-row">
-      <div class="sc-brand">
-        <div class="sc-brand-logo">
-          <svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M3 13L7 8L10 11L14 5" stroke="#0b0f0c" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-            <circle cx="14" cy="5" r="1.5" fill="#0b0f0c"/>
-          </svg>
-        </div>
-        <span class="sc-brand-name">Trade<span>Zona</span></span>
-      </div>
-      <span class="sc-timestamp">${_getTimestampLabel()}</span>
-    </div>
-    <div class="sc-divider"></div>
-    ${visibleMetrics.length>0
-      ? `<div class="sc-metrics-grid cols-${cols}">${metricsHTML}</div>`
-      : `<div style="text-align:center;color:rgba(255,255,255,.3);font-size:14px;padding:32px 0">No metrics selected</div>`}
-    <div class="sc-footer-row">
-      <span class="sc-footer-text">tradezone.app</span>
-      <span class="sc-footer-badge">tradezone.app</span>
-    </div>`;
-}
-
-function updateSharePreview(){
-  const card=document.getElementById('shareCard');
-  const previewWrap=document.getElementById('sharePreviewWrap');
-  const previewInner=document.getElementById('sharePreviewInner');
-
-  // Clone card into preview at reduced scale
-  const clone=card.cloneNode(true);
-  clone.style.cssText=card.style.cssText;
-  previewInner.innerHTML='';
-  previewInner.appendChild(clone);
-
-  // Scale to fit the preview pane
-  requestAnimationFrame(()=>{
-    const wrapW=previewWrap.clientWidth-32;
-    const cardW=800;
-    const scale=Math.min(1,wrapW/cardW);
-    previewInner.style.transform=`scale(${scale})`;
-    previewInner.style.transformOrigin='top left';
-    previewInner.style.width=cardW+'px';
-    previewWrap.style.minHeight=Math.round((card.offsetHeight||260)*scale+32)+'px';
-  });
-}
-
-async function _generateCanvas(){
-  const card=document.getElementById('shareCard');
-  setShareGenerating(true);
-  await document.fonts.ready;
-  // Brief paint frame
-  await new Promise(r=>setTimeout(r,60));
-  try{
-    const canvas=await html2canvas(card,{
-      scale:3,
-      useCORS:true,
-      backgroundColor:'#0d1411',
-      logging:false,
-      allowTaint:true,
-    });
-    _shareCanvas=canvas;
-    return canvas;
-  }finally{
-    setShareGenerating(false);
-  }
-}
-
-function setShareGenerating(on){
-  document.getElementById('shareGenerating').classList.toggle('show',on);
-}
-
-async function doShareDownload(){
-  try{
-    const canvas=await _generateCanvas();
-    const a=document.createElement('a');
-    a.href=canvas.toDataURL('image/png');
-    a.download=`tradezone-snapshot-${todayLocal()}.png`;
-    a.click();
-    showToast('Downloaded!','fa-solid fa-circle-check','green');
-  }catch(e){showToast('Export failed: '+e.message,'fa-solid fa-circle-exclamation','red');}
-}
-
-async function doShareCopy(){
-  try{
-    const canvas=await _generateCanvas();
-    canvas.toBlob(async blob=>{
-      try{
-        await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);
-        showToast('Copied to clipboard!','fa-solid fa-circle-check','green');
-      }catch(clipErr){
-        // Fallback: download if clipboard write fails
-        const a=document.createElement('a');
-        a.href=canvas.toDataURL('image/png');
-        a.download=`tradezone-snapshot-${todayLocal()}.png`;
-        a.click();
-        showToast('Clipboard unavailable — downloaded instead.','fa-solid fa-triangle-exclamation','');
-      }
-    },'image/png');
-  }catch(e){showToast('Export failed: '+e.message,'fa-solid fa-circle-exclamation','red');}
-}
-
-async function doShareNative(){
-  if(!navigator.share)return;
-  try{
-    const canvas=await _generateCanvas();
-    canvas.toBlob(async blob=>{
-      const file=new File([blob],`tradezone-${todayLocal()}.png`,{type:'image/png'});
-      try{
-        await navigator.share({files:[file],title:'My TradeZona Performance',text:'Check out my trading performance on TradeZona!'});
-      }catch(e){if(e.name!=='AbortError')showToast('Share failed.','fa-solid fa-circle-exclamation','red');}
-    },'image/png');
-  }catch(e){showToast('Export failed: '+e.message,'fa-solid fa-circle-exclamation','red');}
 }
 
 let _tt;
