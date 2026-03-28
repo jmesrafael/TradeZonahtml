@@ -6,7 +6,7 @@
 const SUPABASE_URL = "https://oixrpuqylidbunbttftg.supabase.co";
 const SUPABASE_ANON = "sb_publishable_0JIYopUpUp6DonOkOzWcJQ_KL0OyIho";
 
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+const { createClient } = supabase;
 
 const db = createClient(SUPABASE_URL, SUPABASE_ANON, {
   auth: {
@@ -16,6 +16,7 @@ const db = createClient(SUPABASE_URL, SUPABASE_ANON, {
     detectSessionInUrl: true,
   },
 });
+
 // ── Auth state watcher ────────────────────────────────────
 db.auth.onAuthStateChange(async (event, session) => {
   const publicPaths = ["/", "/auth", "/confirm", "/reset-password"];
@@ -28,12 +29,14 @@ db.auth.onAuthStateChange(async (event, session) => {
     }
   }
 
+  // Redirect to reset-password page when magic link is clicked
   if (event === "PASSWORD_RECOVERY") {
     if (!path.includes("reset-password")) {
       window.location.href = "/reset-password";
     }
   }
 
+  // 🧠 REFERRAL LOGIC (NEW)
   if (event === "SIGNED_IN" && session?.user) {
     try {
       const refCode = localStorage.getItem("ref_code");
@@ -55,6 +58,8 @@ db.auth.onAuthStateChange(async (event, session) => {
 
         const data = await res.json();
         console.log("Referral response:", data);
+
+        // ✅ Prevent reuse
         localStorage.removeItem("ref_code");
       }
     } catch (err) {
@@ -64,6 +69,7 @@ db.auth.onAuthStateChange(async (event, session) => {
 });
 
 // ── requireAuth ───────────────────────────────────────────
+// Server-validates the JWT. Call at the top of every protected page.
 async function requireAuth() {
   const {
     data: { user },
@@ -151,6 +157,7 @@ async function updateJournal(journalId, updates) {
 }
 
 async function deleteJournal(journalId) {
+  // trades and trade_images are deleted automatically via ON DELETE CASCADE
   const { error } = await db.from("journals").delete().eq("id", journalId);
   if (error) throw error;
 }
@@ -187,6 +194,7 @@ async function updateTrade(tradeId, updates) {
 }
 
 async function deleteTrade(tradeId) {
+  // trade_images rows are deleted automatically via ON DELETE CASCADE
   const { error } = await db.from("trades").delete().eq("id", tradeId);
   if (error) throw error;
 }
@@ -235,53 +243,35 @@ function dbToTrade(row) {
   };
 }
 
-// ── Trade Images — Supabase Storage Bucket ────────────────
-const TRADE_BUCKET = "trade-images"; // Supabase Storage bucket name
-
-async function addTradeImage(userId, tradeId, file) {
-  const fileName = `${tradeId}/${Date.now()}-${file.name}`;
-  const { data: uploadData, error: uploadError } = await db.storage
-    .from(TRADE_BUCKET)
-    .upload(fileName, file, { cacheControl: "3600", upsert: false });
-
-  if (uploadError) throw uploadError;
-
+// ── Trade Images — Supabase Storage ──────────────────────
+/**
+ * Save a base64 image to the trade_images table (data column).
+ * Works with the current schema — no Storage bucket or migration required.
+ */
+async function addTradeImage(userId, tradeId, base64DataUrl) {
   const { data, error } = await db
     .from("trade_images")
-    .insert({ trade_id: tradeId, user_id: userId, data: fileName })
+    .insert({ trade_id: tradeId, user_id: userId, data: base64DataUrl })
     .select()
     .single();
   if (error) throw error;
-
-  const url = db.storage.from(TRADE_BUCKET).getPublicUrl(fileName).data.publicUrl;
-  return { ...data, _previewUrl: url };
+  return { ...data, _previewUrl: base64DataUrl };
 }
 
+/**
+ * Get the display URL for an image.
+ * Images are stored as base64 in the data column — return directly.
+ */
 async function getImageUrl(img) {
   if (!img) return "";
   if (img._previewUrl) return img._previewUrl;
-  if (img.data) {
-    const { data } = db.storage.from(TRADE_BUCKET).getPublicUrl(img.data);
-    return data?.publicUrl || "";
-  }
-  return "";
+  return img.data || "";
 }
 
+/**
+ * Delete an image row from trade_images.
+ */
 async function deleteTradeImage(imageId) {
-  const { data: imgRow, error: fetchError } = await db
-    .from("trade_images")
-    .select("data")
-    .eq("id", imageId)
-    .single();
-  if (fetchError) throw fetchError;
-
-  if (imgRow?.data) {
-    const { error: delError } = await db.storage
-      .from(TRADE_BUCKET)
-      .remove([imgRow.data]);
-    if (delError) throw delError;
-  }
-
   const { error } = await db.from("trade_images").delete().eq("id", imageId);
   if (error) throw error;
 }
