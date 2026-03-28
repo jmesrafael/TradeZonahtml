@@ -1818,7 +1818,7 @@ async function doShareDownload(){
   _setExporting(true);await document.fonts.ready;
   try{
     const cv=_buildExportCanvas();
-    const a=document.createElement('a');a.href=cv.toDataURL('image/png');a.download=`tradezone-${todayLocal()}.png`;
+    const a=document.createElement('a');a.href=cv.toDataURL('image/png');a.download=`tradezona-${todayLocal()}.png`;
     document.body.appendChild(a);a.click();document.body.removeChild(a);
     showToast('Downloaded!','fa-solid fa-circle-check','green');
   }catch(e){showToast('Export failed: '+e.message,'fa-solid fa-circle-exclamation','red');}
@@ -1834,7 +1834,7 @@ async function doShareCopy(){
         showToast('Copied to clipboard!','fa-solid fa-circle-check','green');
       }catch(clipErr){
         const url=URL.createObjectURL(blob);
-        const a=document.createElement('a');a.href=url;a.download=`tradezone-${todayLocal()}.png`;
+        const a=document.createElement('a');a.href=url;a.download=`tradezona-${todayLocal()}.png`;
         document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
         showToast('Clipboard unavailable — downloaded instead.','fa-solid fa-triangle-exclamation','');
       }finally{_setExporting(false);}
@@ -1847,7 +1847,7 @@ async function doShareNative(){
   try{
     const cv=_buildExportCanvas();
     cv.toBlob(async blob=>{
-      const file=new File([blob],`tradezone-${todayLocal()}.png`,{type:'image/png'});
+      const file=new File([blob],`tradezona-${todayLocal()}.png`,{type:'image/png'});
       try{await navigator.share({files:[file],title:'My TradeZona Performance',text:'Check out my trading performance!'});}
       catch(e){if(e.name!=='AbortError')showToast('Share failed.','fa-solid fa-circle-exclamation','red');}
       finally{_setExporting(false);}
