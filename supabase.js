@@ -6,9 +6,9 @@
 const SUPABASE_URL = "https://oixrpuqylidbunbttftg.supabase.co";
 const SUPABASE_ANON = "sb_publishable_0JIYopUpUp6DonOkOzWcJQ_KL0OyIho";
 
-const { createClient } = supabase;
+import { createClient } from "@supabase/supabase-js"; // ✅ Proper import
 
-const db = createClient(SUPABASE_URL, SUPABASE_ANON, {
+export const db = createClient(SUPABASE_URL, SUPABASE_ANON, {
   auth: {
     storage: window.localStorage,
     autoRefreshToken: true,
@@ -16,7 +16,6 @@ const db = createClient(SUPABASE_URL, SUPABASE_ANON, {
     detectSessionInUrl: true,
   },
 });
-
 // ── Auth state watcher ────────────────────────────────────
 db.auth.onAuthStateChange(async (event, session) => {
   const publicPaths = ["/", "/auth", "/confirm", "/reset-password"];
