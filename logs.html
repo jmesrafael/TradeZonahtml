@@ -7,8 +7,12 @@
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <title>Logs</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://unpkg.com/dexie@3/dist/dexie.min.js"></script>
 <script src="theme.js"></script>
+<script src="db.js"></script>
 <script src="supabase.js"></script>
+<script src="sync.js"></script>
+<script src="offline-banner.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -241,6 +245,22 @@ td:nth-child(9){width:64px}
   <div class="tl">
     <button class="btn-primary" onclick="addRow()"><i class="fa-solid fa-plus"></i> Add Trade</button>
   </div>
+  <span id="syncStatus" style="
+  font-size:11px;
+  color:var(--muted);
+  display:flex;
+  align-items:center;
+  gap:5px;
+  padding:5px 10px;
+  border:1px solid var(--border);
+  border-radius:var(--radius-pill);
+">
+  <span id="syncDot" style="
+    width:7px;height:7px;border-radius:50%;
+    background:#8fa39a;display:inline-block;
+  "></span>
+  <span id="syncLabel">Offline</span>
+</span>
 </div>
 
 <div class="filter-bar" id="filterBar">
@@ -475,6 +495,11 @@ function fmt12(timeStr){if(!timeStr)return'';const[h,m]=timeStr.split(':').map(N
   const{data:{user}}=await db.auth.getUser();
   currentUser=user;
   if(!currentUser||!jid){showToast('Session expired.','fa-solid fa-circle-exclamation','red');return;}
+
+  // ── START offline-first sync engine ─────────────────────
+  await SyncEngine.init(currentUser.id, jid);
+  // ────────────────────────────────────────────────────────
+
   try{userIsPro=parent?._userIsPro||false;}catch(e){}
   if(!userIsPro){const p=await getProfile(currentUser.id);userIsPro=p?.plan==='pro';}
   settings=await getJournalSettings(jid);
@@ -988,6 +1013,21 @@ function showToast(msg,icon='fa-solid fa-circle-check',type=''){
 }
 document.getElementById('nOverlay').addEventListener('click',function(e){if(e.target===this)closeNotes();});
 document.getElementById('cOverlay').addEventListener('click',function(e){if(e.target===this)closeCon();});
+function updateSyncDot(){
+  const dot   = document.getElementById('syncDot');
+  const label = document.getElementById('syncLabel');
+  if(!dot) return;
+  if(navigator.onLine){
+    dot.style.background   = '#19c37d';
+    label.textContent      = 'Synced';
+  } else {
+    dot.style.background   = '#f59e0b';
+    label.textContent      = 'Offline';
+  }
+}
+window.addEventListener('online',  updateSyncDot);
+window.addEventListener('offline', updateSyncDot);
+updateSyncDot();
 </script>
 </body>
 </html>

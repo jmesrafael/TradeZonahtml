@@ -6,9 +6,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TradeZona — Journal</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<sc<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://unpkg.com/dexie@3/dist/dexie.min.js"></script>
 <script src="theme.js"></script>
+<script src="db.js"></script>
 <script src="supabase.js"></script>
+<script src="sync.js"></script>
+<script src="offline-banner.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -595,7 +599,9 @@ let exportScope='full', importMode='replace', importPayload=null;
 let _lastRemovedTag=null, _lastRemovedKey=null, _undoTimer=null;
 
 (async()=>{
-  currentUser=await requireAuth();if(!currentUser)return;
+  currentUser=await requireAuth();if(!currentUser)retur
+    // ── START offline-first sync engine ─────────────────────
+  SyncEngine.init(currentUser.id, journalId).catch(console.warn);n;
   if(!journalId){location.href='/dashboard';return;}
   const profile=await getProfile(currentUser.id);
   userIsPro=profile?.plan==='pro';
