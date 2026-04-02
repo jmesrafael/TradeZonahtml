@@ -1,7 +1,8 @@
 // supabase/functions/apply-referral/index.ts
 //
-// Called on SIGNED_IN from supabase.js when localStorage has a ref_code.
-// Creates the referral row and links referred_by on the new user's profile.
+// FIXED & ENHANCED — applies a referral code for a newly signed-in user.
+// Called from supabase.js on SIGNED_IN when localStorage has ref_code
+// OR when the user manually entered a code during signup.
 //
 // Deploy: supabase functions deploy apply-referral
 
@@ -23,10 +24,8 @@ serve(async (req) => {
     const refCode = (body.referral_code || body.refCode || "").trim().toUpperCase();
 
     if (!refCode) {
-      console.warn("[apply-referral] Missing referral_code in body");
       return new Response(JSON.stringify({ error: "Missing referral_code" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -35,85 +34,74 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // ── 1. Verify the calling user's JWT ─────────────────────
+    // ── 1. Verify JWT ────────────────────────────────────
     const token = req.headers.get("Authorization")?.replace("Bearer ", "");
     if (!token) {
-      return new Response(JSON.stringify({ error: "Missing Authorization header" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      return new Response(JSON.stringify({ error: "Missing Authorization" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const { data: userData, error: userError } = await supabase.auth.getUser(token);
     if (userError || !userData?.user) {
-      console.error("[apply-referral] Auth error:", userError);
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const user = userData.user;
     console.log(`[apply-referral] User ${user.id} applying code: ${refCode}`);
 
-    // ── 2. Find referrer by referral_code ─────────────────────
-    const { data: referrer, error: refError } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("referral_code", refCode)
-      .single();
-
-    if (refError || !referrer) {
-      console.warn(`[apply-referral] Invalid referral code: ${refCode}`);
-      return new Response(JSON.stringify({ error: "Invalid referral code" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // ── 3. Prevent self-referral ──────────────────────────────
-    if (referrer.id === user.id) {
-      console.warn(`[apply-referral] Self-referral attempt by user ${user.id}`);
-      return new Response(JSON.stringify({ error: "Cannot refer yourself" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // ── 4. Prevent duplicate referral ─────────────────────────
-    const { data: existing, error: existErr } = await supabase
+    // ── 2. Check user hasn't already been referred ───────
+    const { data: existing } = await supabase
       .from("referrals")
       .select("id")
       .eq("referred_user_id", user.id)
       .maybeSingle();
 
-    if (existErr) {
-      console.error("[apply-referral] DB error checking duplicates:", existErr);
-    }
-
     if (existing) {
-      console.log(`[apply-referral] User ${user.id} already has a referral record — skipping`);
-      return new Response(JSON.stringify({ skipped: true, reason: "already referred" }), {
+      console.log(`[apply-referral] User ${user.id} already has referral — skipping`);
+      return new Response(JSON.stringify({ skipped: true, reason: "already_referred" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // ── 5. Update new user's profile with referred_by ─────────
-    const { error: profileUpdateErr } = await supabase
+    // ── 3. Find referrer by code ─────────────────────────
+    const { data: referrer, error: refErr } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("referral_code", refCode)
+      .single();
+
+    if (refErr || !referrer) {
+      console.warn(`[apply-referral] Invalid code: ${refCode}`);
+      return new Response(JSON.stringify({ error: "Invalid referral code" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── 4. Prevent self-referral ─────────────────────────
+    if (referrer.id === user.id) {
+      return new Response(JSON.stringify({ error: "Cannot refer yourself" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── 5. Update new user's profile with referred_by ────
+    const { error: profileErr } = await supabase
       .from("profiles")
       .update({ referred_by: referrer.id })
       .eq("id", user.id);
 
-    if (profileUpdateErr) {
-      console.error("[apply-referral] Failed to update profile:", profileUpdateErr);
-      return new Response(JSON.stringify({ error: "Failed to update profile" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    if (profileErr) {
+      console.error("[apply-referral] Profile update failed:", profileErr);
+      return new Response(JSON.stringify({ error: "Profile update failed" }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // ── 6. Insert referral row ────────────────────────────────
-    const { error: insertError } = await supabase
+    // ── 6. Insert referral row ───────────────────────────
+    const { error: insertErr } = await supabase
       .from("referrals")
       .insert({
         referrer_id:      referrer.id,
@@ -122,17 +110,18 @@ serve(async (req) => {
         reward_granted:   false,
       });
 
-    if (insertError) {
-      console.error("[apply-referral] Failed to insert referral row:", insertError);
+    if (insertErr) {
+      console.error("[apply-referral] Insert failed:", insertErr);
       return new Response(JSON.stringify({ error: "Failed to record referral" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    console.log(
-      `[apply-referral] ✅ Referral recorded: referrer=${referrer.id}, referred=${user.id}, code=${refCode}`
-    );
+    // ── 7. Increment referrer's referral_count ───────────
+    // Using a Postgres RPC call so we don't need to fetch first
+    await supabase.rpc("increment_referral_count", { user_id: referrer.id });
+
+    console.log(`[apply-referral] ✅ Referral recorded: referrer=${referrer.id}, referred=${user.id}`);
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -141,8 +130,7 @@ serve(async (req) => {
   } catch (err) {
     console.error("[apply-referral] Unexpected error:", err);
     return new Response(JSON.stringify({ error: "Server error" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });

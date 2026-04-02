@@ -1,10 +1,10 @@
 // supabase/functions/grant-referral-reward/index.ts
 //
-// Called INTERNALLY by stripe-webhook when a referred user subscribes.
-// Grants the referrer +30 days of Pro (extending existing expiry if any).
+// FIXED & ENHANCED — grants the referrer +30 days Pro when their referred
+// user first subscribes. Called internally by stripe-webhook.
 //
 // Deploy: supabase functions deploy grant-referral-reward
-// No public trigger — internal only (service role key required).
+// Internal only — requires service role key in Authorization header.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -25,10 +25,8 @@ serve(async (req) => {
     const { referred_user_id } = await req.json();
 
     if (!referred_user_id) {
-      console.warn("[grant-reward] Missing referred_user_id");
       return new Response(JSON.stringify({ error: "Missing referred_user_id" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -39,7 +37,7 @@ serve(async (req) => {
 
     console.log(`[grant-reward] Processing reward for referred_user_id: ${referred_user_id}`);
 
-    // ── 1. Find referral row for this user ────────────────────
+    // ── 1. Find pending referral row ─────────────────────
     const { data: referral, error: refErr } = await supabase
       .from("referrals")
       .select("id, referrer_id, reward_granted, status")
@@ -47,28 +45,27 @@ serve(async (req) => {
       .maybeSingle();
 
     if (refErr) {
-      console.error("[grant-reward] DB error fetching referral:", refErr);
+      console.error("[grant-reward] DB error:", refErr);
       return new Response(JSON.stringify({ error: "DB error" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     if (!referral) {
-      console.log(`[grant-reward] No referral record found for user ${referred_user_id} — skipping`);
-      return new Response(JSON.stringify({ skipped: true, reason: "no referral found" }), {
+      console.log(`[grant-reward] No referral found for ${referred_user_id} — skipping`);
+      return new Response(JSON.stringify({ skipped: true, reason: "no_referral_found" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     if (referral.reward_granted) {
-      console.log(`[grant-reward] Reward already granted for referral ${referral.id} — skipping`);
-      return new Response(JSON.stringify({ skipped: true, reason: "reward already granted" }), {
+      console.log(`[grant-reward] Reward already granted for referral ${referral.id}`);
+      return new Response(JSON.stringify({ skipped: true, reason: "already_rewarded" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // ── 2. Get referrer's current profile ─────────────────────
+    // ── 2. Get referrer's current profile ─────────────────
     const { data: referrerProfile, error: profileErr } = await supabase
       .from("profiles")
       .select("id, plan, plan_type, subscription_expires_at, referral_count")
@@ -78,34 +75,25 @@ serve(async (req) => {
     if (profileErr || !referrerProfile) {
       console.error(`[grant-reward] Referrer ${referral.referrer_id} not found:`, profileErr);
       return new Response(JSON.stringify({ error: "Referrer not found" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // ── 3. Calculate new expiry (extend or start fresh) ───────
-    const now = new Date();
-    let baseDate = now;
+    // ── 3. Calculate new expiry ───────────────────────────
+    const now      = new Date();
+    let   baseDate = now;
 
     if (referrerProfile.subscription_expires_at) {
       const existing = new Date(referrerProfile.subscription_expires_at);
-      // Only extend from future expiry; if already expired, start from now
-      if (existing > now) {
-        baseDate = existing;
-        console.log(`[grant-reward] Extending existing expiry from ${existing.toISOString()}`);
-      } else {
-        console.log(`[grant-reward] Existing expiry ${existing.toISOString()} is in the past — starting from now`);
-      }
-    } else {
-      console.log(`[grant-reward] No existing expiry — starting from now`);
+      if (existing > now) baseDate = existing; // Extend from future expiry
     }
 
     const newExpiry = new Date(baseDate);
     newExpiry.setDate(newExpiry.getDate() + REWARD_DAYS);
 
-    console.log(`[grant-reward] New expiry for referrer ${referral.referrer_id}: ${newExpiry.toISOString()}`);
+    console.log(`[grant-reward] New expiry for ${referral.referrer_id}: ${newExpiry.toISOString()}`);
 
-    // ── 4. Update referrer profile (service role bypasses RLS) ─
+    // ── 4. Update referrer profile ────────────────────────
     const { error: updateErr } = await supabase
       .from("profiles")
       .update({
@@ -117,35 +105,30 @@ serve(async (req) => {
       .eq("id", referral.referrer_id);
 
     if (updateErr) {
-      console.error(`[grant-reward] Failed to update referrer profile:`, updateErr);
-      return new Response(JSON.stringify({ error: "Failed to update referrer" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      console.error(`[grant-reward] Profile update failed:`, updateErr);
+      return new Response(JSON.stringify({ error: "Profile update failed" }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // ── 5. Mark referral as rewarded ──────────────────────────
+    // ── 5. Mark referral as rewarded ──────────────────────
     const { error: markErr } = await supabase
       .from("referrals")
       .update({ status: "rewarded", reward_granted: true })
       .eq("id", referral.id);
 
     if (markErr) {
-      // Non-fatal — log but don't fail the response
-      console.error(`[grant-reward] Failed to mark referral ${referral.id} as rewarded:`, markErr);
+      console.error(`[grant-reward] Mark rewarded failed (non-fatal):`, markErr);
     }
 
-    console.log(
-      `[grant-reward] ✅ Granted ${REWARD_DAYS} days Pro to referrer ${referral.referrer_id}. ` +
-      `New expiry: ${newExpiry.toISOString()}`
-    );
+    console.log(`[grant-reward] ✅ Granted ${REWARD_DAYS} days Pro to ${referral.referrer_id}. New expiry: ${newExpiry.toISOString()}`);
 
     return new Response(
       JSON.stringify({
-        success:       true,
-        referrer_id:   referral.referrer_id,
-        days_granted:  REWARD_DAYS,
-        new_expiry:    newExpiry.toISOString(),
+        success:      true,
+        referrer_id:  referral.referrer_id,
+        days_granted: REWARD_DAYS,
+        new_expiry:   newExpiry.toISOString(),
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
@@ -153,8 +136,7 @@ serve(async (req) => {
   } catch (err) {
     console.error("[grant-reward] Unexpected error:", err);
     return new Response(JSON.stringify({ error: "Server error" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
