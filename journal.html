@@ -772,28 +772,25 @@ async function confirmExport(){
     const tradeRows=trades.map(dbToTrade);
 
     // Embed images as base64 when doing a full backup
-    if(isFull){
-      btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Embedding images…';
-      for(let i=0;i<tradeRows.length;i++){
-        const t=tradeRows[i];
-        if(t.images&&t.images.length>0){
-          const b64Imgs=[];
-          for(const imgUrl of t.images){
-            if(typeof imgUrl==='string'&&imgUrl.startsWith('data:')){
-              // already base64
-              b64Imgs.push(imgUrl);
-            } else if(typeof imgUrl==='string'&&imgUrl.startsWith('http')){
-              const b64=await urlToBase64(imgUrl);
-              b64Imgs.push(b64||imgUrl); // fall back to URL if fetch fails
-            } else {
-              b64Imgs.push(imgUrl);
-            }
-          }
-          tradeRows[i]={...t,images:b64Imgs};
+if(isFull){
+  btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Embedding images…';
+  for(let i=0;i<tradeRows.length;i++){
+    const t=tradeRows[i];
+    const rawImgs=await getTradeImages(t.id);
+    if(rawImgs.length>0){
+      const b64Imgs=[];
+      for(const img of rawImgs){
+        const signedUrl=await getImageUrl(img);
+        if(signedUrl){
+          const b64=await urlToBase64(signedUrl);
+          if(b64)b64Imgs.push(b64);
         }
       }
+      tradeRows[i]={...t,images:b64Imgs};
     }
-
+    btn.innerHTML=`<i class="fa-solid fa-spinner fa-spin"></i> Embedding images… (${i+1}/${tradeRows.length})`;
+  }
+}
     const payload={
       _meta:{
         version:'2.1',app:'TradeZona',journalName:journalObj.name,
