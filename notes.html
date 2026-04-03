@@ -355,7 +355,14 @@ function fmtPnl(v){const n=parseFloat(v);if(isNaN(n)||v==null||v==='')return nul
 function fmtR(v){const n=parseFloat(v);if(isNaN(n)||v==null||v==='')return null;return{str:(n>=0?'+':'')+n.toFixed(2)+'R',pos:n>0,neg:n<0};}
 const ALLOWED_IMG=['image/png','image/jpeg','image/jpg','image/gif','image/webp'];
 function validateImg(file){if(!ALLOWED_IMG.includes(file.type)){showToast('Only PNG, JPG, GIF, WebP allowed.','fa-solid fa-triangle-exclamation','r');return false;}if(file.size>5*1024*1024){showToast('Max 5MB per image.','fa-solid fa-triangle-exclamation','r');return false;}return true;}
-
+async function loadTradeWithImages(t) {
+  const rawImgs = await getTradeImages(t.id);
+  const imgs = await Promise.all(rawImgs.map(async img => {
+    const url = await getImageUrl(img);
+    return { ...img, _previewUrl: url };
+  }));
+  return { ...t, images: imgs };
+}
 (async()=>{
   if(!jid){
     document.getElementById('skelGrid').style.display='none';
@@ -368,20 +375,14 @@ function validateImg(file){if(!ALLOWED_IMG.includes(file.type)){showToast('Only 
   if(!userIsPro){document.getElementById('notesAdSlot').classList.add('visible');try{(adsbygoogle=window.adsbygoogle||[]).push({});}catch(e){}}
   settings=await getJournalSettings(jid);
   const raw=await getTrades(jid);
-  allTrades=await Promise.all(raw.map(dbToTrade).map(async t=>{
-    const imgs=await Promise.all((t.images||[]).map(async img=>{const url=img._previewUrl||img.data||(typeof getImageUrl==='function'?await getImageUrl(img):null);return{...img,_previewUrl:url};}));
-    return{...t,images:imgs};
-  }));
+allTrades=await Promise.all(raw.map(dbToTrade).map(loadTradeWithImages));
   document.getElementById('skelGrid').style.display='none';
   document.getElementById('notesGrid').style.display='';
   applyFilters();
   document.body.style.visibility='visible';
   subscribeTrades(jid,async()=>{
     const r=await getTrades(jid);
-    allTrades=await Promise.all(r.map(dbToTrade).map(async t=>{
-      const imgs=await Promise.all((t.images||[]).map(async img=>{const url=img._previewUrl||img.data||(typeof getImageUrl==='function'?await getImageUrl(img):null);return{...img,_previewUrl:url};}));
-      return{...t,images:imgs};
-    }));
+allTrades=await Promise.all(r.map(dbToTrade).map(loadTradeWithImages));
     applyFilters();
     if(currentTradeId&&document.getElementById('overlay').classList.contains('open')){const u=allTrades.find(t=>t.id===currentTradeId);if(u)_refreshModalMeta(u);}
   });
@@ -479,7 +480,12 @@ function buildCard(t,i){
 
 async function openModal(id){
   const t=allTrades.find(x=>x.id===id);if(!t)return;
-  currentTradeId=id;modalImgBuffer=[...(t.images||[]).filter(img=>img._previewUrl)];
+  currentTradeId=id;
+  const rawImgs=await getTradeImages(id);
+  modalImgBuffer=await Promise.all(rawImgs.map(async img=>{
+    const url=img._previewUrl||await getImageUrl(img);
+    return{...img,_previewUrl:url};
+  }));
   _refreshModalMeta(t);
   renderImgGallery();
   document.getElementById('modalNote').value=t.notes||'';
