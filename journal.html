@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TradeZona — Journal</title>
+<title>TradeZona | Journal</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="theme.js"></script>
@@ -576,7 +576,7 @@ let _lastRemovedTag=null, _lastRemovedKey=null, _undoTimer=null;
   journalObj=journals.find(j=>j.id===journalId);
   if(!journalObj){location.href='/dashboard';return;}
   document.getElementById('jnameHdr').textContent=journalObj.name;
-  document.title='TradeZona — '+journalObj.name;
+  document.title='TradeZona | '+journalObj.name;
   settings=await getJournalSettings(journalId);
   bcast({type:'tz_plan',isPro:userIsPro});
   // Show pro duration in settings
@@ -671,7 +671,7 @@ async function saveJournalSettings(){
     if(pinNew!==pinConf){document.getElementById('pinMismatch').style.display='block';return;}
     upd.pin_hash=await hashPin(pinNew);document.getElementById('pinMismatch').style.display='none';
   }
-  try{await updateJournal(journalId,upd);Object.assign(journalObj,upd);if(name){document.getElementById('jnameHdr').textContent=name;document.title='TradeZona — '+name;}renderPinSection();clearDirty();showToast('Settings saved!','fa-solid fa-circle-check','green');}
+  try{await updateJournal(journalId,upd);Object.assign(journalObj,upd);if(name){document.getElementById('jnameHdr').textContent=name;document.title='TradeZona | '+name;}renderPinSection();clearDirty();showToast('Settings saved!','fa-solid fa-circle-check','green');}
   catch(e){showToast('Save failed: '+e.message,'fa-solid fa-circle-exclamation','red');}
 }
 async function toggleFlag(field){const cur=journalObj[field]!==false;journalObj[field]=!cur;document.getElementById(field==='show_pnl'?'showPnlToggle':'showCapToggle').classList.toggle('on',!cur);await updateJournal(journalId,{[field]:!cur});showToast('Display setting updated.','fa-solid fa-circle-check','green');}
@@ -926,7 +926,7 @@ async function confirmImport(){
       if(s.pairs)su.pairs=s.pairs;if(s.moods)su.moods=s.moods;if(s.mood_colors)su.mood_colors=s.mood_colors;
       await updateJournalSettings(journalId,su);settings={...settings,...su};
       const ju={};if(s.capital)ju.capital=s.capital;if(s.journalName)ju.name=s.journalName;
-      if(Object.keys(ju).length){await updateJournal(journalId,ju);Object.assign(journalObj,ju);if(s.journalName){document.getElementById('jnameHdr').textContent=s.journalName;document.title='TradeZona — '+s.journalName;}}
+      if(Object.keys(ju).length){await updateJournal(journalId,ju);Object.assign(journalObj,ju);if(s.journalName){document.getElementById('jnameHdr').textContent=s.journalName;document.title='TradeZona | '+s.journalName;}}
     }
     sp(100,'Done!');await new Promise(r=>setTimeout(r,600));
     closeImport();
