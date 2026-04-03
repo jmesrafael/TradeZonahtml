@@ -535,27 +535,29 @@ async function loadReferrals() {
     return;
   }
 
-  wrap.innerHTML = `
-    <table class="ref-table">
-      <thead><tr><th>Date Joined</th><th>Status</th><th>Reward</th></tr></thead>
-      <tbody>
-        ${referrals.map(r => {
-          const date = new Date(r.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-          let statusClass = 'status-pending', statusLabel = 'Pending';
-          if (r.status === 'rewarded')  { statusClass = 'status-rewarded';  statusLabel = 'Rewarded'; }
-          else if (r.status === 'converted') { statusClass = 'status-converted'; statusLabel = 'Subscribed'; }
-          return `<tr>
-            <td>${date}</td>
-            <td><span class="status-badge ${statusClass}">${statusLabel}</span></td>
-            <td style="color:${r.reward_granted ? 'var(--accent2)' : 'var(--muted)'}">
-              ${r.reward_granted
-                ? '<i class="fa-solid fa-circle-check" style="margin-right:5px"></i>+30 days Pro'
-                : '<i class="fa-solid fa-clock" style="margin-right:5px;opacity:.5"></i>Waiting'}
-            </td>
-          </tr>`;
-        }).join('')}
-      </tbody>
-    </table>`;
+wrap.innerHTML = `
+  <table class="ref-table">
+    <thead><tr><th>User</th><th>Date Joined</th><th>Status</th><th>Reward</th></tr></thead>
+    <tbody>
+      ${referrals.map(r => {
+        const date = new Date(r.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        const name = r.referred_profile?.name || 'Anonymous';
+        let statusClass = 'status-pending', statusLabel = 'Pending';
+        if (r.status === 'rewarded')   { statusClass = 'status-rewarded';  statusLabel = 'Rewarded'; }
+        if (r.status === 'converted')  { statusClass = 'status-converted'; statusLabel = 'Subscribed'; }
+        return `<tr>
+          <td style="font-weight:500">${name}</td>
+          <td>${date}</td>
+          <td><span class="status-badge ${statusClass}">${statusLabel}</span></td>
+          <td style="color:${r.reward_granted ? 'var(--accent2)' : 'var(--muted)'}">
+            ${r.reward_granted
+              ? '<i class="fa-solid fa-circle-check" style="margin-right:5px"></i>+30 days Pro'
+              : '<i class="fa-solid fa-clock" style="margin-right:5px;opacity:.5"></i>Waiting'}
+          </td>
+        </tr>`;
+      }).join('')}
+    </tbody>
+  </table>`;
 }
 
 // ── Copy helpers ─────────────────────────────────────────

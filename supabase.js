@@ -119,7 +119,12 @@ async function updateJournalPositions(orderedIds) {
 async function getReferrals(userId) {
   const { data, error } = await db
     .from('referrals')
-    .select('*')
+    .select(`
+      *,
+      referred_profile:profiles!referrals_referred_user_id_fkey (
+        name
+      )
+    `)
     .eq('referrer_id', userId)
     .order('created_at', { ascending: false });
   if (error) console.error('[supabase] getReferrals error:', error);
