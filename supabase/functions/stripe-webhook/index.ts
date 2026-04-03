@@ -32,15 +32,87 @@ function calcExpiresAt(sub: Stripe.Subscription): string {
   return d.toISOString();
 }
 
+/**
+ * Resolve Supabase user ID from a checkout session.
+ * Priority order:
+ *  1. session.metadata.supabase_user_id  (set by create-checkout function)
+ *  2. client_reference_id               (another common convention)
+ *  3. Email lookup via admin API
+ */
 async function resolveUserId(session: Stripe.CheckoutSession): Promise<string | null> {
-  if (session.metadata?.supabase_user_id) return session.metadata.supabase_user_id;
+  // 1. Explicit metadata — most reliable
+  if (session.metadata?.supabase_user_id) {
+    console.log("[webhook] resolveUserId: found in metadata →", session.metadata.supabase_user_id);
+    return session.metadata.supabase_user_id;
+  }
 
+  // 2. client_reference_id — set this in create-checkout if not already
+  if (session.client_reference_id) {
+    console.log("[webhook] resolveUserId: found in client_reference_id →", session.client_reference_id);
+    return session.client_reference_id;
+  }
+
+  // 3. Email fallback
   const email = session.customer_details?.email ?? session.customer_email;
   if (email) {
-    const { data } = await supabase.auth.admin.listUsers();
-    const match = data?.users?.find(u => u.email === email);
-    if (match) return match.id;
+    console.log("[webhook] resolveUserId: falling back to email lookup →", email);
+    const { data, error } = await supabase.auth.admin.listUsers();
+    if (error) {
+      console.error("[webhook] listUsers error:", error);
+      return null;
+    }
+    const match = data?.users?.find(u => u.email?.toLowerCase() === email.toLowerCase());
+    if (match) {
+      console.log("[webhook] resolveUserId: email match found →", match.id);
+      return match.id;
+    }
+    console.error("[webhook] resolveUserId: no user found with email:", email);
   }
+
+  console.error("[webhook] resolveUserId: all strategies failed. Session:", JSON.stringify({
+    metadata: session.metadata,
+    client_reference_id: session.client_reference_id,
+    customer_details: session.customer_details,
+    customer_email: session.customer_email,
+  }));
+  return null;
+}
+
+/**
+ * Resolve Supabase user ID from a Stripe customer ID.
+ * Used for invoice/subscription events where we only have customer ID.
+ */
+async function resolveUserIdFromCustomer(customerId: string): Promise<string | null> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("stripe_customer_id", customerId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("[webhook] resolveUserIdFromCustomer DB error:", error);
+    return null;
+  }
+
+  if (data?.id) return data.id;
+
+  // Fallback: look up email from Stripe customer, then match in Supabase
+  try {
+    const customer = await stripe.customers.retrieve(customerId);
+    if (customer.deleted) return null;
+    const email = (customer as Stripe.Customer).email;
+    if (email) {
+      const { data: users } = await supabase.auth.admin.listUsers();
+      const match = users?.users?.find(u => u.email?.toLowerCase() === email.toLowerCase());
+      if (match) {
+        console.log("[webhook] resolveUserIdFromCustomer: email fallback matched →", match.id);
+        return match.id;
+      }
+    }
+  } catch (e) {
+    console.error("[webhook] resolveUserIdFromCustomer Stripe lookup error:", e);
+  }
+
   return null;
 }
 
@@ -64,6 +136,31 @@ async function triggerReferralReward(userId: string): Promise<void> {
   }
 }
 
+// ── Upgrade a user to Pro by their Supabase user ID ───────
+async function upgradeUserToPro(
+  userId: string,
+  planType: "monthly" | "yearly",
+  expiresAt: string,
+  stripeCustomerId: string | null,
+  stripeSubscriptionId: string | null,
+): Promise<boolean> {
+  const { error } = await supabase.from("profiles").update({
+    plan:                    "pro",
+    plan_type:               planType,
+    stripe_customer_id:      stripeCustomerId,
+    stripe_subscription_id:  stripeSubscriptionId,
+    subscription_expires_at: expiresAt,
+  }).eq("id", userId);
+
+  if (error) {
+    console.error(`[webhook] upgradeUserToPro failed for ${userId}:`, error);
+    return false;
+  }
+
+  console.log(`[webhook] ✅ Upgraded user ${userId} → Pro (${planType}, expires: ${expiresAt})`);
+  return true;
+}
+
 // ── Main ──────────────────────────────────────────────────
 
 serve(async (req) => {
@@ -80,23 +177,25 @@ serve(async (req) => {
     return new Response(`Webhook Error: ${err.message}`, { status: 400 });
   }
 
-  console.log(`[webhook] Event: ${event.type}`);
+  console.log(`[webhook] ─── Event: ${event.type} ───`);
 
   try {
     switch (event.type) {
 
       // ── Checkout completed (new subscription) ─────────────
       case "checkout.session.completed": {
-        const session  = event.data.object as Stripe.CheckoutSession;
-        const userId   = await resolveUserId(session);
+        const session = event.data.object as Stripe.CheckoutSession;
+        console.log("[webhook] checkout.session.completed — session id:", session.id);
 
+        const userId = await resolveUserId(session);
         if (!userId) {
-          console.error("[webhook] Cannot resolve user ID");
+          // Return 200 so Stripe doesn't retry endlessly, but log the failure
+          console.error("[webhook] ❌ Cannot resolve user ID — upgrade skipped");
           break;
         }
 
         let planType: "monthly" | "yearly" = "monthly";
-        let expiresAt: string | null = null;
+        let expiresAt: string;
 
         if (session.subscription) {
           try {
@@ -105,37 +204,40 @@ serve(async (req) => {
             expiresAt = calcExpiresAt(sub);
           } catch (e) {
             console.error("[webhook] Could not retrieve subscription:", e);
-            // Fallback from metadata
             const meta = session.metadata?.plan_type;
             planType  = meta === "yearly" ? "yearly" : "monthly";
             const d   = new Date();
             d.setDate(d.getDate() + (planType === "yearly" ? 365 : 30));
             expiresAt = d.toISOString();
           }
-        }
-
-        const { error } = await supabase.from("profiles").update({
-          plan:                    "pro",
-          plan_type:               planType,
-          stripe_customer_id:      session.customer as string ?? null,
-          stripe_subscription_id:  session.subscription as string ?? null,
-          subscription_expires_at: expiresAt,
-        }).eq("id", userId);
-
-        if (error) {
-          console.error(`[webhook] Profile update failed for ${userId}:`, error);
         } else {
-          console.log(`[webhook] ✅ Upgraded ${userId} → Pro (${planType}, expires: ${expiresAt})`);
+          // One-time payment (no subscription object)
+          const d = new Date();
+          d.setDate(d.getDate() + 30);
+          expiresAt = d.toISOString();
         }
 
-        // Trigger referral reward
-        await triggerReferralReward(userId);
+        const upgraded = await upgradeUserToPro(
+          userId,
+          planType,
+          expiresAt,
+          session.customer as string ?? null,
+          session.subscription as string ?? null,
+        );
+
+        if (upgraded) {
+          await triggerReferralReward(userId);
+        }
         break;
       }
 
-      // ── Invoice paid — renewal, keep expiry fresh ─────────
+      // ── Invoice paid — handles BOTH first payment and renewals ──
+      // NOTE: For new subscriptions, Stripe fires invoice.payment_succeeded
+      // BEFORE checkout.session.completed. We handle both so neither is missed.
       case "invoice.payment_succeeded": {
         const invoice = event.data.object as Stripe.Invoice;
+        console.log("[webhook] invoice.payment_succeeded — billing_reason:", invoice.billing_reason);
+
         if (!invoice.subscription) break;
 
         try {
@@ -144,16 +246,41 @@ serve(async (req) => {
           const planType   = detectPlanType(sub);
           const expiresAt  = calcExpiresAt(sub);
 
-          // Only update if the subscription is active (auto-renew)
-          if (["active", "trialing"].includes(sub.status)) {
+          if (!["active", "trialing"].includes(sub.status)) {
+            console.log("[webhook] Subscription not active, skipping:", sub.status);
+            break;
+          }
+
+          // Try to find user by stripe_customer_id first
+          const { data: existingProfile } = await supabase
+            .from("profiles")
+            .select("id, plan")
+            .eq("stripe_customer_id", customerId)
+            .maybeSingle();
+
+          if (existingProfile) {
+            // User already has customer ID linked — just refresh their expiry
             const { error } = await supabase.from("profiles").update({
               plan:                    "pro",
               plan_type:               planType,
+              stripe_subscription_id:  sub.id,
               subscription_expires_at: expiresAt,
             }).eq("stripe_customer_id", customerId);
 
-            if (error) console.error(`[webhook] Renewal update failed:`, error);
-            else console.log(`[webhook] Renewed ${customerId} (${planType}, expires: ${expiresAt})`);
+            if (error) console.error(`[webhook] invoice renewal update failed:`, error);
+            else console.log(`[webhook] ✅ Renewed ${customerId} (${planType}, expires: ${expiresAt})`);
+          } else if (invoice.billing_reason === "subscription_create") {
+            // First invoice for a NEW subscription — customer_id not stored yet.
+            // checkout.session.completed should also fire, but handle here as backup.
+            console.log("[webhook] First invoice — attempting user resolution for new customer:", customerId);
+            const userId = await resolveUserIdFromCustomer(customerId);
+            if (userId) {
+              await upgradeUserToPro(userId, planType, expiresAt, customerId, sub.id);
+            } else {
+              console.warn("[webhook] invoice.payment_succeeded: Could not resolve user for new customer:", customerId);
+            }
+          } else {
+            console.warn("[webhook] invoice.payment_succeeded: No profile found for customer:", customerId);
           }
         } catch (e) {
           console.error("[webhook] invoice.payment_succeeded error:", e);
@@ -188,7 +315,6 @@ serve(async (req) => {
         const sub        = event.data.object as Stripe.Subscription;
         const customerId = sub.customer as string;
 
-        // When subscription is deleted, downgrade to free immediately
         const { error } = await supabase.from("profiles").update({
           plan:                    "free",
           plan_type:               "none",
@@ -206,8 +332,8 @@ serve(async (req) => {
         const invoice    = event.data.object as Stripe.Invoice;
         const customerId = invoice.customer as string;
         console.warn(`[webhook] ⚠️ Payment failed for ${customerId}`);
-        // Don't downgrade immediately — Stripe retries. 
-        // subscription.deleted fires if all retries fail.
+        // Don't downgrade immediately — Stripe retries.
+        // customer.subscription.deleted fires if all retries fail.
         break;
       }
 

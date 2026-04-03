@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
 
     const userId    = userData.id;
     const userEmail = userData.email;
-    console.log("User:", userEmail);
+    console.log("User:", userId, userEmail);
 
     // ── Parse body: get lookup_key or plan ───────────────────
     let lookupKey = "tradezona_pro_monthly";
@@ -61,7 +61,7 @@ Deno.serve(async (req) => {
       }
     } catch (_) { /* default to monthly */ }
 
-    const priceId = PRICE_MAP[lookupKey];
+    const priceId  = PRICE_MAP[lookupKey];
     const planType = lookupKey === "tradezona_pro_annual" ? "yearly" : "monthly";
     console.log("Plan:", planType, "Price:", priceId);
 
@@ -77,7 +77,7 @@ Deno.serve(async (req) => {
 
     let customerId = profile?.stripe_customer_id || null;
 
-    // ── Create Stripe customer if needed ──────────────────────
+    // ── Create or reuse Stripe customer ───────────────────────
     if (!customerId) {
       const custRes = await fetch("https://api.stripe.com/v1/customers", {
         method: "POST",
@@ -85,6 +85,7 @@ Deno.serve(async (req) => {
           "Authorization": `Bearer ${stripeKey}`,
           "Content-Type": "application/x-www-form-urlencoded",
         },
+        // Store supabase_user_id in Stripe customer metadata too — used as fallback in webhook
         body: `email=${encodeURIComponent(userEmail)}&metadata[supabase_user_id]=${userId}`,
       });
       const cust = await custRes.json();
@@ -92,6 +93,7 @@ Deno.serve(async (req) => {
       customerId = cust.id;
       console.log("Created Stripe customer:", customerId);
 
+      // Save stripe_customer_id to profile immediately so invoice events can match it
       await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${userId}`, {
         method: "PATCH",
         headers: {
@@ -102,20 +104,23 @@ Deno.serve(async (req) => {
         },
         body: JSON.stringify({ stripe_customer_id: customerId }),
       });
+      console.log("Saved stripe_customer_id to profile");
+    } else {
+      console.log("Reusing existing Stripe customer:", customerId);
     }
 
     // ── Create Checkout Session ───────────────────────────────
-    const body = new URLSearchParams({
+    const checkoutBody = new URLSearchParams({
       "customer":                   customerId,
+      "client_reference_id":        userId,          // ← ADDED: webhook fallback #2
       "mode":                       "subscription",
       "line_items[0][price]":       priceId,
       "line_items[0][quantity]":    "1",
       "success_url":                `${appUrl}/subscription?upgraded=1`,
       "cancel_url":                 `${appUrl}/subscription?cancelled=1`,
-      "metadata[supabase_user_id]": userId,
+      "metadata[supabase_user_id]": userId,          // ← webhook fallback #1
       "metadata[plan_type]":        planType,
       "metadata[lookup_key]":       lookupKey,
-      // Allow promo codes
       "allow_promotion_codes":      "true",
     });
 
@@ -125,7 +130,7 @@ Deno.serve(async (req) => {
         "Authorization": `Bearer ${stripeKey}`,
         "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: body.toString(),
+      body: checkoutBody.toString(),
     });
     const sess = await sessRes.json();
     console.log("Session status:", sessRes.status, sess.url ? "url:ok" : "url:MISSING");
