@@ -10,7 +10,7 @@ const CORS = {
 // Price lookup keys → Price IDs
 const PRICE_MAP: Record<string, string> = {
   tradezona_pro_monthly: "price_1THxzd2M4x5JbTTvTRiX7Yys",
-  tradezona_pro_annual:  "price_1THy0b2M4x5JbTTvUBB5Llaj",
+  tradezona_pro_annual:  "price_1TI1CV2M4x5JbTTvnBjbMF51",
 };
 
 function ok(data: unknown) {
