@@ -1,14 +1,6 @@
 // supabase/functions/stripe-webhook/index.ts
-//
-// FIXED & ENHANCED — handles plan upgrades, renewals, cancellations,
-// and triggers referral reward on first successful subscription.
-//
 // Deploy: supabase functions deploy stripe-webhook
-// Required secrets (supabase secrets set):
-//   STRIPE_WEBHOOK_SECRET
-//   STRIPE_SECRET_KEY
-//   SUPABASE_URL         (auto-injected)
-//   SUPABASE_SERVICE_ROLE_KEY (auto-injected)
+// Required secrets: STRIPE_WEBHOOK_SECRET, STRIPE_SECRET_KEY
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@12.18.0?target=deno&no-check";
@@ -19,7 +11,6 @@ const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, {
   httpClient: Stripe.createFetchHttpClient(),
 });
 
-// ── Supabase admin client (bypasses RLS) ─────────────────
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL")!,
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -27,60 +18,41 @@ const supabase = createClient(
 
 // ── Helpers ───────────────────────────────────────────────
 
-function detectPlanType(sub: Stripe.Subscription): "monthly" | "yearly" | "lifetime" {
-  const item     = sub.items?.data?.[0];
-  const interval = item?.price?.recurring?.interval;
-  if (!interval)          return "monthly";
-  if (interval === "year") return "yearly";
-  return "monthly";
+function detectPlanType(sub: Stripe.Subscription): "monthly" | "yearly" {
+  const interval = sub.items?.data?.[0]?.price?.recurring?.interval;
+  return interval === "year" ? "yearly" : "monthly";
 }
 
-function calcExpiresAt(sub: Stripe.Subscription, planType: string): string {
+function calcExpiresAt(sub: Stripe.Subscription): string {
   if (sub.current_period_end) {
     return new Date(sub.current_period_end * 1000).toISOString();
   }
-  const days   = planType === "yearly" ? 365 : 30;
-  const expiry = new Date();
-  expiry.setDate(expiry.getDate() + days);
-  return expiry.toISOString();
+  const d = new Date();
+  d.setDate(d.getDate() + 30);
+  return d.toISOString();
 }
 
-/**
- * Find the Supabase user ID from a Stripe session.
- * Priority: session.metadata.supabase_user_id → customer email lookup
- */
-async function resolveUserId(
-  session: Stripe.CheckoutSession
-): Promise<string | null> {
-  // 1. Prefer metadata (most reliable)
-  if (session.metadata?.supabase_user_id) {
-    return session.metadata.supabase_user_id;
-  }
+async function resolveUserId(session: Stripe.CheckoutSession): Promise<string | null> {
+  if (session.metadata?.supabase_user_id) return session.metadata.supabase_user_id;
 
-  // 2. Fallback: look up by email via auth admin API
   const email = session.customer_details?.email ?? session.customer_email;
   if (email) {
-    console.log(`[webhook] Trying email lookup for: ${email}`);
-    const { data, error } = await supabase.auth.admin.listUsers();
-    if (!error && data?.users) {
-      const match = data.users.find(u => u.email === email);
-      if (match) return match.id;
-    }
+    const { data } = await supabase.auth.admin.listUsers();
+    const match = data?.users?.find(u => u.email === email);
+    if (match) return match.id;
   }
-
   return null;
 }
 
-/** Trigger referral reward for the newly subscribed user (fire-and-forget) */
 async function triggerReferralReward(userId: string): Promise<void> {
   try {
     const res = await fetch(
       `${Deno.env.get("SUPABASE_URL")}/functions/v1/grant-referral-reward`,
       {
-        method:  "POST",
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization:  `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+          Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
         },
         body: JSON.stringify({ referred_user_id: userId }),
       }
@@ -88,11 +60,12 @@ async function triggerReferralReward(userId: string): Promise<void> {
     const result = await res.json();
     console.log(`[webhook] grant-referral-reward for ${userId}:`, result);
   } catch (e) {
-    console.error(`[webhook] grant-referral-reward failed for ${userId}:`, e);
+    console.error(`[webhook] grant-referral-reward failed:`, e);
   }
 }
 
-// ── Main handler ──────────────────────────────────────────
+// ── Main ──────────────────────────────────────────────────
+
 serve(async (req) => {
   const sig  = req.headers.get("stripe-signature");
   const body = await req.text();
@@ -100,9 +73,7 @@ serve(async (req) => {
   let event: Stripe.Event;
   try {
     event = await stripe.webhooks.constructEventAsync(
-      body,
-      sig!,
-      Deno.env.get("STRIPE_WEBHOOK_SECRET")!
+      body, sig!, Deno.env.get("STRIPE_WEBHOOK_SECRET")!
     );
   } catch (err) {
     console.error("[webhook] Signature verification failed:", err.message);
@@ -114,35 +85,31 @@ serve(async (req) => {
   try {
     switch (event.type) {
 
-      // ── ① Checkout completed ─────────────────────────────
+      // ── Checkout completed (new subscription) ─────────────
       case "checkout.session.completed": {
-        const session = event.data.object as Stripe.CheckoutSession;
-        const userId  = await resolveUserId(session);
+        const session  = event.data.object as Stripe.CheckoutSession;
+        const userId   = await resolveUserId(session);
 
         if (!userId) {
-          console.error("[webhook] checkout.session.completed: cannot resolve user — missing supabase_user_id in metadata and no email match");
+          console.error("[webhook] Cannot resolve user ID");
           break;
         }
 
-        let planType: "monthly" | "yearly" | "lifetime" = "monthly";
+        let planType: "monthly" | "yearly" = "monthly";
         let expiresAt: string | null = null;
 
-        if (session.mode === "payment") {
-          // One-time payment → lifetime
-          planType  = "lifetime";
-          expiresAt = null;
-        } else if (session.subscription) {
+        if (session.subscription) {
           try {
             const sub = await stripe.subscriptions.retrieve(session.subscription as string);
             planType  = detectPlanType(sub);
-            expiresAt = calcExpiresAt(sub, planType);
+            expiresAt = calcExpiresAt(sub);
           } catch (e) {
             console.error("[webhook] Could not retrieve subscription:", e);
+            // Fallback from metadata
             const meta = session.metadata?.plan_type;
-            if (meta === "yearly") planType = "yearly";
-            const days = planType === "yearly" ? 365 : 30;
-            const d = new Date();
-            d.setDate(d.getDate() + days);
+            planType  = meta === "yearly" ? "yearly" : "monthly";
+            const d   = new Date();
+            d.setDate(d.getDate() + (planType === "yearly" ? 365 : 30));
             expiresAt = d.toISOString();
           }
         }
@@ -161,29 +128,40 @@ serve(async (req) => {
           console.log(`[webhook] ✅ Upgraded ${userId} → Pro (${planType}, expires: ${expiresAt})`);
         }
 
-        // Trigger referral reward (new subscriber)
+        // Trigger referral reward
         await triggerReferralReward(userId);
         break;
       }
 
-      // ── ② Subscription deleted (cancelled) ───────────────
-      case "customer.subscription.deleted": {
-        const sub        = event.data.object as Stripe.Subscription;
-        const customerId = sub.customer as string;
+      // ── Invoice paid — renewal, keep expiry fresh ─────────
+      case "invoice.payment_succeeded": {
+        const invoice = event.data.object as Stripe.Invoice;
+        if (!invoice.subscription) break;
 
-        const { error } = await supabase.from("profiles").update({
-          plan:                    "free",
-          plan_type:               "none",
-          stripe_subscription_id:  null,
-          subscription_expires_at: null,
-        }).eq("stripe_customer_id", customerId);
+        try {
+          const sub        = await stripe.subscriptions.retrieve(invoice.subscription as string);
+          const customerId = sub.customer as string;
+          const planType   = detectPlanType(sub);
+          const expiresAt  = calcExpiresAt(sub);
 
-        if (error) console.error(`[webhook] Downgrade failed for customer ${customerId}:`, error);
-        else console.log(`[webhook] Downgraded customer ${customerId} to Free`);
+          // Only update if the subscription is active (auto-renew)
+          if (["active", "trialing"].includes(sub.status)) {
+            const { error } = await supabase.from("profiles").update({
+              plan:                    "pro",
+              plan_type:               planType,
+              subscription_expires_at: expiresAt,
+            }).eq("stripe_customer_id", customerId);
+
+            if (error) console.error(`[webhook] Renewal update failed:`, error);
+            else console.log(`[webhook] Renewed ${customerId} (${planType}, expires: ${expiresAt})`);
+          }
+        } catch (e) {
+          console.error("[webhook] invoice.payment_succeeded error:", e);
+        }
         break;
       }
 
-      // ── ③ Subscription updated (plan change / renewal) ───
+      // ── Subscription updated ──────────────────────────────
       case "customer.subscription.updated": {
         const sub        = event.data.object as Stripe.Subscription;
         const customerId = sub.customer as string;
@@ -194,54 +172,47 @@ serve(async (req) => {
           : null;
 
         const { error } = await supabase.from("profiles").update({
-          plan:                    isActive ? "pro"  : "free",
+          plan:                    isActive ? "pro" : "free",
           plan_type:               isActive ? planType : "none",
           subscription_expires_at: isActive ? expiresAt : null,
+          stripe_subscription_id:  isActive ? sub.id : null,
         }).eq("stripe_customer_id", customerId);
 
-        if (error) console.error(`[webhook] subscription.updated failed for ${customerId}:`, error);
+        if (error) console.error(`[webhook] subscription.updated failed:`, error);
         else console.log(`[webhook] Updated ${customerId} → ${isActive ? "pro/" + planType : "free"}`);
         break;
       }
 
-      // ── ④ Invoice paid (renewal keeps expiry fresh) ───────
-      case "invoice.payment_succeeded": {
-        const invoice = event.data.object as Stripe.Invoice;
-        if (!invoice.subscription) break;
+      // ── Subscription cancelled ────────────────────────────
+      case "customer.subscription.deleted": {
+        const sub        = event.data.object as Stripe.Subscription;
+        const customerId = sub.customer as string;
 
-        try {
-          const sub        = await stripe.subscriptions.retrieve(invoice.subscription as string);
-          const customerId = sub.customer as string;
-          const planType   = detectPlanType(sub);
-          const expiresAt  = sub.current_period_end
-            ? new Date(sub.current_period_end * 1000).toISOString()
-            : null;
+        // When subscription is deleted, downgrade to free immediately
+        const { error } = await supabase.from("profiles").update({
+          plan:                    "free",
+          plan_type:               "none",
+          stripe_subscription_id:  null,
+          subscription_expires_at: null,
+        }).eq("stripe_customer_id", customerId);
 
-          const { error } = await supabase.from("profiles").update({
-            plan:                    "pro",
-            plan_type:               planType,
-            subscription_expires_at: expiresAt,
-          }).eq("stripe_customer_id", customerId);
-
-          if (error) console.error(`[webhook] Renewal update failed for ${customerId}:`, error);
-          else console.log(`[webhook] Renewed ${customerId} (${planType}, expires: ${expiresAt})`);
-        } catch (e) {
-          console.error("[webhook] invoice.payment_succeeded error:", e);
-        }
+        if (error) console.error(`[webhook] Downgrade failed:`, error);
+        else console.log(`[webhook] Downgraded ${customerId} → Free`);
         break;
       }
 
-      // ── ⑤ Invoice payment failed ─────────────────────────
+      // ── Payment failed ────────────────────────────────────
       case "invoice.payment_failed": {
         const invoice    = event.data.object as Stripe.Invoice;
         const customerId = invoice.customer as string;
-        // Optional: mark as past_due but don't fully downgrade yet
-        console.warn(`[webhook] ⚠️ Payment failed for customer ${customerId}`);
+        console.warn(`[webhook] ⚠️ Payment failed for ${customerId}`);
+        // Don't downgrade immediately — Stripe retries. 
+        // subscription.deleted fires if all retries fail.
         break;
       }
 
       default:
-        console.log(`[webhook] Unhandled event: ${event.type}`);
+        console.log(`[webhook] Unhandled: ${event.type}`);
     }
   } catch (err) {
     console.error("[webhook] Processing error:", err);

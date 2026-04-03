@@ -1,5 +1,5 @@
 // supabase/functions/create-checkout/index.ts
-// Deploy: supabase functions deploy create-checkout
+// Deploy: supabase functions deploy create-checkout --no-verify-jwt
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -7,12 +7,18 @@ const CORS = {
   "Content-Type": "application/json",
 };
 
-function ok(data) {
+// Price lookup keys → Price IDs
+const PRICE_MAP: Record<string, string> = {
+  tradezona_pro_monthly: "price_1THxzd2M4x5JbTTvTRiX7Yys",
+  tradezona_pro_annual:  "price_1THy0b2M4x5JbTTvUBB5Llaj",
+};
+
+function ok(data: unknown) {
   return new Response(JSON.stringify(data), { status: 200, headers: CORS });
 }
-function fail(msg, status) {
+function fail(msg: string, status = 500) {
   console.error("ERROR", status, msg);
-  return new Response(JSON.stringify({ error: msg }), { status: status || 500, headers: CORS });
+  return new Response(JSON.stringify({ error: msg }), { status, headers: CORS });
 }
 
 Deno.serve(async (req) => {
@@ -23,79 +29,82 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceKey  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const stripeKey   = Deno.env.get("STRIPE_SECRET_KEY");
-    const priceId     = Deno.env.get("STRIPE_PRICE_ID");
     const appUrl      = Deno.env.get("APP_URL") || "https://tradezona.vercel.app";
 
-    console.log("Env — url:", !!supabaseUrl, "svc:", !!serviceKey, "stripe:", !!stripeKey, "price:", priceId?.slice(0,10));
+    if (!supabaseUrl) return fail("SUPABASE_URL not set");
+    if (!serviceKey)  return fail("SUPABASE_SERVICE_ROLE_KEY not set");
+    if (!stripeKey)   return fail("STRIPE_SECRET_KEY not set");
 
-    if (!supabaseUrl) return fail("SUPABASE_URL not set", 500);
-    if (!serviceKey)  return fail("SUPABASE_SERVICE_ROLE_KEY not set", 500);
-    if (!stripeKey)   return fail("STRIPE_SECRET_KEY not set", 500);
-    if (!priceId)     return fail("STRIPE_PRICE_ID not set", 500);
-    if (!priceId.startsWith("price_")) return fail("STRIPE_PRICE_ID must start with 'price_' not '" + priceId.slice(0,6) + "'", 500);
-
-    // ── Auth: use service role key as apikey — this always works ──
+    // ── Auth ──────────────────────────────────────────────────
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) return fail("No Authorization header", 401);
 
     const token = authHeader.replace("Bearer ", "").trim();
-    console.log("Verifying token, length:", token.length);
-
     const userRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
-      headers: {
-        "Authorization": `Bearer ${token}`,
-        "apikey": serviceKey,   // service role key works for admin JWT verification
-      },
+      headers: { "Authorization": `Bearer ${token}`, "apikey": serviceKey },
     });
     const userData = await userRes.json();
-    console.log("Auth result:", userRes.status, "id:", userData.id || "NONE", "err:", userData.message || "none");
-
-    if (!userData.id) return fail("Auth failed: " + (userData.message || userData.error_description || "invalid token"), 401);
+    if (!userData.id) return fail("Auth failed: " + (userData.message || "invalid token"), 401);
 
     const userId    = userData.id;
     const userEmail = userData.email;
     console.log("User:", userEmail);
+
+    // ── Parse body: get lookup_key or plan ───────────────────
+    let lookupKey = "tradezona_pro_monthly";
+    try {
+      const body = await req.json();
+      if (body.lookup_key && PRICE_MAP[body.lookup_key]) {
+        lookupKey = body.lookup_key;
+      } else if (body.plan === "annual" || body.plan === "yearly") {
+        lookupKey = "tradezona_pro_annual";
+      }
+    } catch (_) { /* default to monthly */ }
+
+    const priceId = PRICE_MAP[lookupKey];
+    const planType = lookupKey === "tradezona_pro_annual" ? "yearly" : "monthly";
+    console.log("Plan:", planType, "Price:", priceId);
 
     // ── Profile ───────────────────────────────────────────────
     const profRes = await fetch(
       `${supabaseUrl}/rest/v1/profiles?id=eq.${userId}&select=plan,stripe_customer_id`,
       { headers: { "Authorization": `Bearer ${serviceKey}`, "apikey": serviceKey } }
     );
-    const profText = await profRes.text();
-    console.log("Profile:", profRes.status, profText.slice(0, 150));
+    const profRows = await profRes.json();
+    const profile  = Array.isArray(profRows) ? profRows[0] : null;
 
-    let plan = null, customerId = null;
-    try {
-      const rows = JSON.parse(profText);
-      if (Array.isArray(rows) && rows[0]) {
-        plan       = rows[0].plan || null;
-        customerId = rows[0].stripe_customer_id || null;
-      }
-    } catch(_) {}
+    if (profile?.plan === "pro") return fail("Already on Pro", 400);
 
-    if (plan === "pro") return fail("Already on Pro", 400);
+    let customerId = profile?.stripe_customer_id || null;
 
-    // ── Stripe customer ───────────────────────────────────────
+    // ── Create Stripe customer if needed ──────────────────────
     if (!customerId) {
       const custRes = await fetch("https://api.stripe.com/v1/customers", {
         method: "POST",
-        headers: { "Authorization": `Bearer ${stripeKey}`, "Content-Type": "application/x-www-form-urlencoded" },
+        headers: {
+          "Authorization": `Bearer ${stripeKey}`,
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
         body: `email=${encodeURIComponent(userEmail)}&metadata[supabase_user_id]=${userId}`,
       });
       const cust = await custRes.json();
-      console.log("Stripe customer:", custRes.status, cust.id || cust.error?.message);
-      if (!cust.id) return fail("Stripe customer error: " + (cust.error?.message || JSON.stringify(cust)), 500);
+      if (!cust.id) return fail("Stripe customer error: " + (cust.error?.message || "unknown"), 500);
       customerId = cust.id;
+      console.log("Created Stripe customer:", customerId);
 
       await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${userId}`, {
         method: "PATCH",
-        headers: { "Authorization": `Bearer ${serviceKey}`, "apikey": serviceKey, "Content-Type": "application/json", "Prefer": "return=minimal" },
+        headers: {
+          "Authorization": `Bearer ${serviceKey}`,
+          "apikey": serviceKey,
+          "Content-Type": "application/json",
+          "Prefer": "return=minimal",
+        },
         body: JSON.stringify({ stripe_customer_id: customerId }),
       });
     }
 
-    // ── Checkout session ──────────────────────────────────────
-    console.log("Creating session, price:", priceId);
+    // ── Create Checkout Session ───────────────────────────────
     const body = new URLSearchParams({
       "customer":                   customerId,
       "mode":                       "subscription",
@@ -104,22 +113,29 @@ Deno.serve(async (req) => {
       "success_url":                `${appUrl}/subscription?upgraded=1`,
       "cancel_url":                 `${appUrl}/subscription?cancelled=1`,
       "metadata[supabase_user_id]": userId,
+      "metadata[plan_type]":        planType,
+      "metadata[lookup_key]":       lookupKey,
+      // Allow promo codes
+      "allow_promotion_codes":      "true",
     });
 
     const sessRes = await fetch("https://api.stripe.com/v1/checkout/sessions", {
       method: "POST",
-      headers: { "Authorization": `Bearer ${stripeKey}`, "Content-Type": "application/x-www-form-urlencoded" },
+      headers: {
+        "Authorization": `Bearer ${stripeKey}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
       body: body.toString(),
     });
     const sess = await sessRes.json();
-    console.log("Session:", sessRes.status, sess.url ? "url:ok" : "url:MISSING", sess.error?.message || "");
+    console.log("Session status:", sessRes.status, sess.url ? "url:ok" : "url:MISSING");
 
-    if (!sess.url) return fail("Stripe session failed: " + (sess.error?.message || sess.error?.code || JSON.stringify(sess)), 500);
+    if (!sess.url) return fail("Stripe session failed: " + (sess.error?.message || JSON.stringify(sess)), 500);
 
     return ok({ url: sess.url });
 
-  } catch (e) {
+  } catch (e: any) {
     console.error("EXCEPTION:", e.message);
-    return fail(e.message || "Internal server error", 500);
+    return fail(e.message || "Internal server error");
   }
 });

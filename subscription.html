@@ -1,613 +1,836 @@
-<!-- subscription.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<title>TradeZona — Subscription</title>
+<title>TradeZona — Pro</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="theme.js"></script>
 <script src="supabase.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{height:100%}
+html{scroll-behavior:smooth}
 
-/* ── CSS Variables (dark defaults, overridden by theme.js) ── */
 :root{
-  --bg:#0b0f0c;--panel:#111816;
-  --accent:#00ff88;--accent2:#19c37d;
-  --accent-rgb:0,255,136;--accent2-rgb:25,195,125;
-  --border:#1c2a25;--text:#e6f2ec;--muted:#8fa39a;
-  --red:#ff5f6d;--amber:#f59e0b;
-  --radius-sm:6px;--radius-md:8px;--radius-lg:12px;--radius-xl:16px;--radius-pill:999px;
-  --transition-base:.2s ease;--transition-fast:.15s ease;
-  --font-heading:'Space Grotesk',sans-serif;
-  --font-body:'Inter',sans-serif;
-  --font-mono:'Space Mono',monospace;
+  --bg:#070c09;--panel:#0e1611;--panel2:#141f18;
+  --accent:#00ff88;--accent2:#19c37d;--accent-rgb:0,255,136;
+  --border:#1a2820;--border2:rgba(0,255,136,.15);
+  --text:#e8f5ee;--muted:#6a8a7a;--red:#ff5f6d;--amber:#f59e0b;
+  --radius-sm:6px;--radius-md:10px;--radius-lg:14px;--radius-xl:20px;--radius-pill:999px;
+  --font-h:'Space Grotesk',sans-serif;
+  --font-b:'Inter',sans-serif;
+  --glow:0 0 80px rgba(0,255,136,.07);
 }
-
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500&family=Space+Mono&display=swap');
 
 @keyframes spin{to{transform:rotate(360deg)}}
-@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
-@keyframes confettiFall{
-  0%{transform:translateY(-10px) rotate(0deg);opacity:1}
-  100%{transform:translateY(100vh) rotate(720deg);opacity:0}
-}
-@keyframes popIn{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
-@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+@keyframes popIn{from{transform:scale(.88) translateY(10px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
+@keyframes shimmer{0%{background-position:-300% 0}100%{background-position:300% 0}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
+@keyframes floatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
 
 body{
   background:var(--bg);color:var(--text);
-  font-family:var(--font-body,'Inter',sans-serif);
-  min-height:100vh;
-  transition:background .3s,color .3s;
+  font-family:var(--font-b);min-height:100vh;
+  overflow-x:hidden;
 }
 
-/* ── Page Loader ── */
-.page-loader{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9999;transition:opacity .4s}
+/* ── Ambient background ── */
+.bg-orb{position:fixed;border-radius:50%;pointer-events:none;z-index:0;filter:blur(120px)}
+.bg-orb1{width:600px;height:600px;background:rgba(0,255,136,.045);top:-160px;right:-100px}
+.bg-orb2{width:500px;height:500px;background:rgba(25,195,125,.03);bottom:-120px;left:-80px}
+
+/* ── Page loader ── */
+.page-loader{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9999;transition:opacity .45s}
 .page-loader.gone{opacity:0;pointer-events:none}
-.pl-logo{font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:26px;font-weight:700;color:var(--text);margin-bottom:20px;text-align:center}
+.pl-inner{text-align:center}
+.pl-logo{font-family:var(--font-h);font-size:28px;font-weight:800;margin-bottom:20px}
 .pl-logo span{color:var(--accent)}
 .pl-spin{width:32px;height:32px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto}
 
 /* ── Header ── */
 header{
+  position:sticky;top:0;z-index:100;
   display:flex;align-items:center;justify-content:space-between;
-  padding:14px 28px;border-bottom:1px solid var(--border);
-  background:var(--panel);position:sticky;top:0;z-index:100;
-  backdrop-filter:blur(12px);
+  padding:14px 32px;
+  background:rgba(7,12,9,.85);
+  border-bottom:1px solid var(--border);
+  backdrop-filter:blur(16px);
 }
-.logo{font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:18px;font-weight:700;cursor:pointer;user-select:none;display:flex;align-items:center;gap:6px}
+.logo{font-family:var(--font-h);font-size:18px;font-weight:700;cursor:pointer;user-select:none;text-decoration:none;color:var(--text)}
 .logo span{color:var(--accent)}
+.header-right{display:flex;align-items:center;gap:8px}
 .btn-ghost{
   background:none;border:1px solid var(--border);color:var(--muted);
   border-radius:var(--radius-md);padding:8px 14px;
-  font-family:var(--font-body,'Inter',sans-serif);font-size:13px;cursor:pointer;
-  transition:all var(--transition-base);display:inline-flex;align-items:center;gap:6px;
+  font-family:var(--font-b);font-size:13px;cursor:pointer;
+  transition:all .2s;display:inline-flex;align-items:center;gap:6px;
 }
-.btn-ghost:hover{border-color:var(--accent2);color:var(--text)}
+.btn-ghost:hover{border-color:var(--border2);color:var(--text)}
 
 /* ── Main ── */
-main{max-width:960px;margin:0 auto;padding:48px 24px 80px}
+main{position:relative;z-index:1;max-width:1000px;margin:0 auto;padding:56px 24px 100px}
 
 /* ── Hero ── */
-.page-hero{text-align:center;margin-bottom:48px;animation:fadeUp .5s ease both}
-.hero-eyebrow{display:inline-flex;align-items:center;gap:6px;background:rgba(var(--accent-rgb,0,255,136),.08);border:1px solid rgba(var(--accent-rgb,0,255,136),.2);border-radius:var(--radius-pill);padding:5px 14px;font-size:11px;font-weight:600;color:var(--accent2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:16px}
-.page-hero h1{font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:38px;font-weight:700;margin-bottom:12px;letter-spacing:-.5px;line-height:1.15}
-.page-hero h1 span{color:var(--accent)}
-.page-hero p{font-size:15px;color:var(--muted);line-height:1.7;max-width:480px;margin:0 auto}
-
-/* ── Current plan banner ── */
-.current-plan-banner{
-  display:flex;align-items:center;justify-content:space-between;
-  background:rgba(var(--accent-rgb,0,255,136),.04);
-  border:1px solid rgba(var(--accent-rgb,0,255,136),.15);
-  border-radius:var(--radius-xl);padding:16px 22px;
-  margin-bottom:40px;flex-wrap:wrap;gap:12px;
-  animation:fadeUp .5s .1s ease both;
+.hero{text-align:center;margin-bottom:56px;animation:fadeUp .55s ease both}
+.hero-pill{
+  display:inline-flex;align-items:center;gap:7px;
+  background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2);
+  border-radius:var(--radius-pill);padding:6px 16px;
+  font-size:11px;font-weight:700;color:var(--accent2);
+  text-transform:uppercase;letter-spacing:1px;margin-bottom:20px;
 }
-.cpb-left{display:flex;align-items:center;gap:12px}
-.cpb-icon{width:40px;height:40px;background:rgba(var(--accent-rgb,0,255,136),.12);border-radius:var(--radius-lg);display:flex;align-items:center;justify-content:center;color:var(--accent2);font-size:18px}
-.cpb-text .lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:3px}
-.cpb-text .val{font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:16px;font-weight:700;color:var(--accent2)}
-.cpb-text .val.pro{color:var(--accent)}
-.plan-expiry{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:5px}
+.hero h1{
+  font-family:var(--font-h);font-size:46px;font-weight:800;
+  line-height:1.1;letter-spacing:-.5px;margin-bottom:14px;
+}
+.hero h1 .hl{
+  color:var(--accent);
+  text-shadow:0 0 40px rgba(0,255,136,.3);
+}
+.hero p{font-size:16px;color:var(--muted);line-height:1.7;max-width:500px;margin:0 auto}
+@media(max-width:640px){.hero h1{font-size:32px}}
+
+/* ── Current plan strip ── */
+.plan-strip{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  background:var(--panel);border:1px solid var(--border);
+  border-radius:var(--radius-xl);padding:16px 22px;
+  margin-bottom:40px;flex-wrap:wrap;
+  animation:fadeUp .55s .1s ease both;
+}
+.ps-left{display:flex;align-items:center;gap:12px}
+.ps-icon{
+  width:40px;height:40px;border-radius:var(--radius-lg);
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;flex-shrink:0;
+}
+.ps-icon.free{background:rgba(143,163,154,.1);color:var(--muted)}
+.ps-icon.pro{background:rgba(0,255,136,.12);color:var(--accent2)}
+.ps-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:3px}
+.ps-val{font-family:var(--font-h);font-size:16px;font-weight:700}
+.ps-val.pro{color:var(--accent2)}
+.ps-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.ps-meta{font-size:13px;color:var(--muted)}
+.ps-meta.warn{color:var(--amber)}
+.ps-meta.danger{color:var(--red)}
+.manage-btn{
+  background:none;border:1px solid var(--border2);color:var(--accent2);
+  border-radius:var(--radius-md);padding:8px 14px;font-family:var(--font-b);font-size:12px;
+  font-weight:600;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:5px;
+}
+.manage-btn:hover{background:rgba(0,255,136,.08)}
+
+/* ── Billing toggle ── */
+.billing-toggle{
+  display:flex;align-items:center;justify-content:center;gap:0;
+  background:var(--panel);border:1px solid var(--border);
+  border-radius:var(--radius-pill);padding:4px;
+  margin:0 auto 40px;width:fit-content;
+  animation:fadeUp .55s .15s ease both;
+}
+.btog-btn{
+  padding:9px 24px;border:none;border-radius:var(--radius-pill);
+  font-family:var(--font-h);font-size:13px;font-weight:600;
+  cursor:pointer;transition:all .25s;color:var(--muted);background:none;
+  display:flex;align-items:center;gap:7px;white-space:nowrap;
+}
+.btog-btn.active{background:var(--accent);color:#070c09;box-shadow:0 2px 16px rgba(0,255,136,.3)}
+.save-pill{
+  background:rgba(245,158,11,.15);color:var(--amber);
+  border:1px solid rgba(245,158,11,.3);
+  border-radius:var(--radius-pill);padding:2px 8px;font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.5px;
+}
 
 /* ── Plans grid ── */
-.plans-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:48px;animation:fadeUp .5s .15s ease both}
-@media(max-width:660px){.plans-grid{grid-template-columns:1fr}}
+.plans{
+  display:grid;grid-template-columns:1fr 1fr;gap:20px;
+  margin-bottom:56px;animation:fadeUp .55s .2s ease both;
+}
+@media(max-width:640px){.plans{grid-template-columns:1fr}}
 
 .plan-card{
   background:var(--panel);border:1px solid var(--border);
   border-radius:var(--radius-xl);padding:32px;position:relative;
-  transition:transform var(--transition-base),box-shadow var(--transition-base);
+  transition:transform .2s,box-shadow .2s,border-color .2s;
 }
-.plan-card:hover{transform:translateY(-3px);box-shadow:0 16px 48px rgba(0,0,0,.25)}
-.plan-card.pro-card{
-  border-color:rgba(var(--accent-rgb,0,255,136),.3);
-  background:linear-gradient(145deg,rgba(var(--accent-rgb,0,255,136),.04),var(--panel));
+.plan-card:hover{transform:translateY(-4px);box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.plan-card.pro{
+  border-color:rgba(0,255,136,.25);
+  background:linear-gradient(150deg,rgba(0,255,136,.05) 0%,var(--panel) 60%);
+  box-shadow:var(--glow);
 }
-.plan-badge-top{
-  position:absolute;top:-13px;left:50%;transform:translateX(-50%);
-  background:var(--accent);color:#0b0f0c;
-  font-family:var(--font-heading,'Space Grotesk',sans-serif);
-  font-size:10px;font-weight:700;padding:4px 16px;
-  border-radius:var(--radius-pill);text-transform:uppercase;letter-spacing:.7px;white-space:nowrap;
+.plan-card.pro:hover{box-shadow:0 20px 60px rgba(0,0,0,.35),0 0 80px rgba(0,255,136,.1)}
+
+.popular-tag{
+  position:absolute;top:-14px;left:50%;transform:translateX(-50%);
+  background:linear-gradient(90deg,var(--accent),var(--accent2));
+  color:#070c09;font-family:var(--font-h);font-size:10px;font-weight:800;
+  padding:4px 18px;border-radius:var(--radius-pill);
+  text-transform:uppercase;letter-spacing:.8px;white-space:nowrap;
 }
-.plan-name{font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:14px}
-.plan-price{display:flex;align-items:baseline;gap:4px;margin-bottom:8px}
-.price-amt{font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:52px;font-weight:700;line-height:1}
+
+.plan-tier{
+  font-family:var(--font-h);font-size:11px;font-weight:700;
+  text-transform:uppercase;letter-spacing:1.2px;
+  color:var(--muted);margin-bottom:16px;
+}
+.plan-tier.pro{color:var(--accent2)}
+
+.price-wrap{margin-bottom:10px}
+.price-row{display:flex;align-items:baseline;gap:3px}
+.price-currency{font-family:var(--font-h);font-size:22px;font-weight:700;color:var(--muted)}
+.price-amt{
+  font-family:var(--font-h);font-size:56px;font-weight:800;
+  line-height:1;letter-spacing:-2px;
+}
 .price-amt.pro{
-  color:var(--accent);
-  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  background:linear-gradient(135deg,var(--accent) 0%,var(--accent2) 100%);
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
 }
-.price-period{font-size:14px;color:var(--muted)}
-.plan-desc{font-size:13px;color:var(--muted);line-height:1.65;margin-bottom:22px}
-.divider{border:none;border-top:1px solid var(--border);margin:18px 0}
+.price-period{font-size:14px;color:var(--muted);margin-left:4px}
+.price-annual-note{
+  font-size:12px;color:var(--muted);margin-top:4px;min-height:18px;
+  transition:opacity .3s;
+}
+.price-annual-note .save{color:var(--amber);font-weight:600}
+
+.plan-desc{font-size:13px;color:var(--muted);line-height:1.7;margin:16px 0 20px}
+
+hr.pdiv{border:none;border-top:1px solid var(--border);margin:18px 0}
 
 .feat-list{list-style:none;display:flex;flex-direction:column;gap:10px;margin-bottom:28px}
-.feat-list li{display:flex;align-items:flex-start;gap:10px;font-size:13px;color:var(--text);line-height:1.5}
-.feat-list li i.yes{color:var(--accent2);margin-top:2px;flex-shrink:0;font-size:12px}
-.feat-list li i.no{color:var(--muted);opacity:.35;margin-top:2px;flex-shrink:0;font-size:12px}
-.feat-list li.locked{color:var(--muted)}
-.feat-note{font-size:11px;color:var(--muted);display:block;margin-top:1px;line-height:1.4}
+.feat-list li{display:flex;align-items:flex-start;gap:10px;font-size:13px;line-height:1.5}
+.feat-list li .ico{font-size:11px;margin-top:2px;flex-shrink:0}
+.feat-list li .ico.y{color:var(--accent2)}
+.feat-list li .ico.n{color:var(--muted);opacity:.35}
+.feat-list li.dim{color:var(--muted)}
+.feat-note{display:block;font-size:11px;color:var(--muted);margin-top:1px;line-height:1.4}
 
+/* Plan buttons */
 .plan-btn{
-  display:block;width:100%;text-align:center;
-  padding:13px;border-radius:var(--radius-lg);
-  font-family:var(--font-heading,'Space Grotesk',sans-serif);
+  display:block;width:100%;padding:14px;text-align:center;
+  border-radius:var(--radius-lg);font-family:var(--font-h);
   font-size:14px;font-weight:700;cursor:pointer;
-  transition:all .22s;letter-spacing:.2px;border:none;
+  transition:all .22s;border:none;letter-spacing:.2px;
 }
-.plan-btn.free{background:none;border:1px solid var(--border);color:var(--text)}
-.plan-btn.free:hover:not(:disabled){border-color:rgba(var(--accent-rgb,0,255,136),.3)}
-.plan-btn.pro-btn{
-  background:var(--accent);color:#0b0f0c;
-  box-shadow:0 4px 20px rgba(var(--accent-rgb,0,255,136),.25);
+.plan-btn.ghost{
+  background:none;border:1px solid var(--border);color:var(--text);
 }
-.plan-btn.pro-btn:hover:not(:disabled){
-  background:#00e67a;
-  box-shadow:0 6px 28px rgba(var(--accent-rgb,0,255,136),.45);
-  transform:translateY(-1px);
-}
-.plan-btn:disabled{opacity:.5;cursor:default;transform:none!important}
-
-/* Shimmer on pro btn */
-.plan-btn.pro-btn:not(:disabled){
+.plan-btn.ghost:hover:not(:disabled){border-color:var(--border2);background:rgba(0,255,136,.04)}
+.plan-btn.cta{
+  background:var(--accent);color:#070c09;
+  box-shadow:0 4px 24px rgba(0,255,136,.25);
   background-size:200% auto;
-  background-image:linear-gradient(135deg,var(--accent) 0%,#00e67a 50%,var(--accent) 100%);
-  animation:shimmer 3s linear infinite;
+  background-image:linear-gradient(135deg,#00ff88 0%,#00e67a 50%,#19c37d 100%);
+  animation:shimmer 3.5s linear infinite;
+}
+.plan-btn.cta:hover:not(:disabled){
+  box-shadow:0 6px 32px rgba(0,255,136,.45);transform:translateY(-1px);
+}
+.plan-btn:disabled{opacity:.5;cursor:default;transform:none!important;animation:none}
+.plan-btn.current{
+  background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2);
+  color:var(--accent2);cursor:default;
 }
 
-/* ── Comparison Table ── */
-.cmp-section{margin-bottom:48px;animation:fadeUp .5s .2s ease both}
-.cmp-title{font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:20px;font-weight:700;margin-bottom:20px;text-align:center}
+/* ── Days remaining bar ── */
+.days-bar-wrap{
+  margin-top:16px;padding:12px 14px;
+  background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);
+}
+.days-bar-labels{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:6px}
+.days-bar-track{height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+.days-bar-fill{height:100%;border-radius:2px;transition:width .6s ease,background .3s}
+
+/* ── Comparison table ── */
+.cmp-sec{margin-bottom:56px;animation:fadeUp .55s .25s ease both}
+.sec-title{
+  font-family:var(--font-h);font-size:22px;font-weight:700;
+  text-align:center;margin-bottom:24px;
+}
 .cmp-wrap{border:1px solid var(--border);border-radius:var(--radius-xl);overflow:hidden}
 .cmp-table{width:100%;border-collapse:collapse}
 .cmp-table th{
-  padding:14px 18px;font-size:11px;font-weight:700;text-align:left;
+  padding:14px 20px;font-size:10px;font-weight:700;text-align:left;
   color:var(--muted);background:var(--panel);
-  border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:.8px;
+  border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:.9px;
 }
-.cmp-table th.pro-col{
-  color:var(--accent2);
-  background:rgba(var(--accent-rgb,0,255,136),.05);
-}
-.cmp-table td{
-  padding:12px 18px;font-size:13px;
-  border-bottom:1px solid var(--border);background:var(--bg);
-}
+.cmp-table th.pro{color:var(--accent2);background:rgba(0,255,136,.04)}
+.cmp-table td{padding:13px 20px;font-size:13px;border-bottom:1px solid var(--border);background:var(--bg)}
 .cmp-table tr:last-child td{border-bottom:none}
-.cmp-table td.pro-col{
-  background:rgba(var(--accent-rgb,0,255,136),.025);
-  color:var(--accent2);font-weight:600;
-}
+.cmp-table td.pro{background:rgba(0,255,136,.025);color:var(--accent2);font-weight:600}
 .cmp-table td.no{color:var(--muted)}
-.cmp-table i.yes{color:var(--accent2)}
-.cmp-table i.no{color:var(--muted);opacity:.35}
-.cmp-table .cat-row td{
+.cmp-table .cat td{
   background:var(--panel);
-  font-family:var(--font-heading,'Space Grotesk',sans-serif);
-  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;
-  color:var(--muted);padding:8px 18px;border-bottom:1px solid var(--border);
+  font-family:var(--font-h);font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.9px;color:var(--muted);
+  padding:8px 20px;border-bottom:1px solid var(--border);
 }
-.cmp-table .cat-row td.pro-col{background:rgba(var(--accent-rgb,0,255,136),.04)}
+.cmp-table .cat td.pro{background:rgba(0,255,136,.04)}
+.cmp-table i.y{color:var(--accent2)}.cmp-table i.n{color:var(--muted);opacity:.3}
 
 /* ── FAQ ── */
-.faq{margin-bottom:40px;animation:fadeUp .5s .25s ease both}
-.faq-title{font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:20px;font-weight:700;margin-bottom:20px;text-align:center}
-.faq-item{border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:8px;overflow:hidden;transition:border-color var(--transition-base)}
-.faq-item.open{border-color:rgba(var(--accent-rgb,0,255,136),.3)}
-.faq-q{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;cursor:pointer;font-size:14px;font-weight:500;user-select:none;gap:12px;transition:color var(--transition-fast)}
-.faq-q i{color:var(--muted);font-size:12px;transition:transform .25s;flex-shrink:0}
+.faq-sec{margin-bottom:48px;animation:fadeUp .55s .3s ease both}
+.faq-item{border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:8px;overflow:hidden;transition:border-color .2s}
+.faq-item.open{border-color:rgba(0,255,136,.25)}
+.faq-q{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 20px;cursor:pointer;font-size:14px;font-weight:500;
+  user-select:none;gap:12px;transition:color .15s;background:var(--panel);
+}
+.faq-q i{color:var(--muted);font-size:11px;transition:transform .25s,color .2s;flex-shrink:0}
 .faq-item.open .faq-q i{transform:rotate(180deg);color:var(--accent2)}
-.faq-a{max-height:0;overflow:hidden;transition:max-height .3s ease,padding .3s ease;font-size:13px;color:var(--muted);line-height:1.75;padding:0 18px}
-.faq-item.open .faq-a{max-height:240px;padding:0 18px 18px}
+.faq-a{
+  max-height:0;overflow:hidden;transition:max-height .3s ease,padding .3s;
+  font-size:13px;color:var(--muted);line-height:1.8;padding:0 20px;background:var(--bg);
+}
+.faq-item.open .faq-a{max-height:200px;padding:14px 20px 18px}
 
 /* ── Footer note ── */
-.footer-note{text-align:center;font-size:12px;color:var(--muted);animation:fadeUp .5s .3s ease both}
-.footer-note i{color:var(--accent2);margin-right:4px}
-
-/* ── Ad slot ── */
-#subAdSlot{margin-top:32px;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
-.ad-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;padding:6px 12px 0;opacity:.5}
-
-/* ── Confetti canvas ── */
-#confettiCanvas{
-  position:fixed;inset:0;width:100%;height:100%;
-  pointer-events:none;z-index:99998;
+.footer-note{
+  text-align:center;font-size:12px;color:var(--muted);
+  display:flex;align-items:center;justify-content:center;gap:16px;
+  flex-wrap:wrap;animation:fadeUp .55s .35s ease both;
 }
+.footer-note a{color:var(--muted);text-decoration:underline;text-underline-offset:2px}
+.footer-note a:hover{color:var(--text)}
+.footer-sep{opacity:.3}
 
-/* ── Pro celebration modal ── */
-.pro-celebration{
-  display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);
-  z-index:99999;align-items:center;justify-content:center;padding:20px;
+/* ── Celebration modal ── */
+.cel-overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,.8);z-index:9999;
+  align-items:center;justify-content:center;padding:20px;
 }
-.pro-celebration.show{display:flex}
-.pro-cel-box{
-  background:var(--panel);border:1px solid rgba(var(--accent-rgb,0,255,136),.3);
-  border-radius:var(--radius-xl);padding:40px 32px;text-align:center;
-  max-width:440px;width:100%;animation:popIn .4s cubic-bezier(.34,1.56,.64,1) both;
+.cel-overlay.show{display:flex}
+.cel-box{
+  background:var(--panel);border:1px solid rgba(0,255,136,.3);
+  border-radius:var(--radius-xl);padding:44px 36px;text-align:center;
+  max-width:460px;width:100%;
+  animation:popIn .4s cubic-bezier(.34,1.56,.64,1) both;
   position:relative;overflow:hidden;
 }
-.pro-cel-box::before{
+.cel-box::before{
   content:'';position:absolute;inset:0;
-  background:radial-gradient(ellipse at 50% -20%,rgba(var(--accent-rgb,0,255,136),.12),transparent 70%);
+  background:radial-gradient(ellipse at 50% -10%,rgba(0,255,136,.14),transparent 65%);
   pointer-events:none;
 }
-.pro-cel-icon{font-size:52px;margin-bottom:16px;display:block}
-.pro-cel-box h2{font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:26px;font-weight:700;margin-bottom:8px}
-.pro-cel-box h2 span{color:var(--accent)}
-.pro-cel-box p{font-size:14px;color:var(--muted);line-height:1.7;margin-bottom:24px}
-.pro-cel-list{display:flex;flex-direction:column;gap:8px;margin-bottom:26px;text-align:left}
-.pro-cel-item{display:flex;align-items:center;gap:10px;font-size:13px;padding:8px 12px;background:rgba(var(--accent-rgb,0,255,136),.06);border-radius:var(--radius-md)}
-.pro-cel-item i{color:var(--accent2);flex-shrink:0}
-.btn-cel{
-  background:var(--accent);color:#0b0f0c;border:none;
-  border-radius:var(--radius-lg);padding:13px 28px;
-  font-family:var(--font-heading,'Space Grotesk',sans-serif);
-  font-size:15px;font-weight:700;cursor:pointer;
-  transition:all .2s;display:inline-flex;align-items:center;gap:8px;
+.cel-emoji{font-size:56px;margin-bottom:16px;display:block;animation:floatY 2s ease-in-out infinite}
+.cel-box h2{font-family:var(--font-h);font-size:28px;font-weight:800;margin-bottom:10px}
+.cel-box h2 em{color:var(--accent);font-style:normal}
+.cel-box p{font-size:14px;color:var(--muted);line-height:1.7;margin-bottom:24px}
+.cel-perks{display:flex;flex-direction:column;gap:8px;margin-bottom:28px;text-align:left}
+.cel-perk{
+  display:flex;align-items:center;gap:10px;font-size:13px;
+  padding:9px 14px;background:rgba(0,255,136,.06);border-radius:var(--radius-md);
 }
-.btn-cel:hover{background:#00e67a;transform:translateY(-1px);box-shadow:0 8px 24px rgba(var(--accent-rgb,0,255,136),.35)}
+.cel-perk i{color:var(--accent2);flex-shrink:0}
+.btn-cel{
+  background:var(--accent);color:#070c09;border:none;
+  border-radius:var(--radius-lg);padding:14px 32px;
+  font-family:var(--font-h);font-size:15px;font-weight:700;
+  cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:8px;
+}
+.btn-cel:hover{background:#00e67a;transform:translateY(-1px);box-shadow:0 8px 28px rgba(0,255,136,.35)}
+
+/* ── Confetti ── */
+#confettiCanvas{position:fixed;inset:0;pointer-events:none;z-index:99998}
 
 /* ── Toast ── */
 #toast{
   position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-20px);
   background:var(--panel);border:1px solid var(--border);
-  border-radius:var(--radius-lg);padding:11px 18px;
-  font-size:13px;color:var(--text);
-  box-shadow:0 8px 28px rgba(0,0,0,.45);
-  z-index:99999;opacity:0;pointer-events:none;
-  transition:opacity .25s,transform .25s;
-  white-space:nowrap;display:flex;align-items:center;gap:8px;max-width:92vw;
+  border-radius:var(--radius-lg);padding:11px 18px;font-size:13px;color:var(--text);
+  box-shadow:0 8px 32px rgba(0,0,0,.5);z-index:99999;opacity:0;pointer-events:none;
+  transition:opacity .25s,transform .25s;white-space:nowrap;
+  display:flex;align-items:center;gap:8px;max-width:92vw;
 }
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-#toast.toast-green{border-color:rgba(var(--accent-rgb,0,255,136),.45);background:rgba(var(--accent-rgb,0,255,136),.08)}
-#toast.toast-red{border-color:rgba(255,95,109,.45);background:rgba(255,95,109,.08)}
+#toast.g{border-color:rgba(0,255,136,.4);background:rgba(0,255,136,.08)}
+#toast.r{border-color:rgba(255,95,109,.4);background:rgba(255,95,109,.08)}
 
 @media(max-width:600px){
-  .page-hero h1{font-size:28px}
   header{padding:12px 16px}
-  main{padding:32px 16px 60px}
+  main{padding:36px 16px 80px}
   .plan-card{padding:24px}
-  .price-amt{font-size:40px}
-  .cmp-table th,.cmp-table td{padding:10px 12px;font-size:12px}
+  .price-amt{font-size:44px}
 }
 </style>
 </head>
 <body>
 
 <canvas id="confettiCanvas" style="display:none"></canvas>
+<div class="bg-orb bg-orb1"></div>
+<div class="bg-orb bg-orb2"></div>
 
 <div class="page-loader" id="pageLoader">
-  <div><div class="pl-logo">Trade<span>Zona</span></div><div class="pl-spin"></div></div>
+  <div class="pl-inner">
+    <div class="pl-logo">Trade<span>Zona</span></div>
+    <div class="pl-spin"></div>
+  </div>
 </div>
 
-<!-- Pro Celebration Modal -->
-<div class="pro-celebration" id="proCelebration">
-  <div class="pro-cel-box">
-    <span class="pro-cel-icon">🎉</span>
-    <h2>Welcome to <span>Pro!</span></h2>
-    <p>Your account has been upgraded. You now have access to all TradeZona Pro features.</p>
-    <div class="pro-cel-list">
-      <div class="pro-cel-item"><i class="fa-solid fa-circle-check"></i> Multiple journals unlocked</div>
-      <div class="pro-cel-item"><i class="fa-solid fa-circle-check"></i> Full analytics suite enabled</div>
-      <div class="pro-cel-item"><i class="fa-solid fa-circle-check"></i> Theme & font customization active</div>
-      <div class="pro-cel-item"><i class="fa-solid fa-circle-check"></i> Export & import backup ready</div>
+<!-- Pro Celebration -->
+<div class="cel-overlay" id="celOverlay">
+  <div class="cel-box">
+    <span class="cel-emoji">🚀</span>
+    <h2>You're now <em>Pro!</em></h2>
+    <p>Your account is upgraded. All Pro features are now active and ready to go.</p>
+    <div class="cel-perks">
+      <div class="cel-perk"><i class="fa-solid fa-circle-check"></i>Unlimited journals unlocked</div>
+      <div class="cel-perk"><i class="fa-solid fa-circle-check"></i>Full analytics suite enabled</div>
+      <div class="cel-perk"><i class="fa-solid fa-circle-check"></i>Export, import &amp; themes active</div>
+      <div class="cel-perk"><i class="fa-solid fa-circle-check"></i>No ads — ever</div>
     </div>
-    <button class="btn-cel" onclick="closeCelebration()"><i class="fa-solid fa-rocket"></i> Start Trading</button>
+    <button class="btn-cel" onclick="closeCel()"><i class="fa-solid fa-rocket"></i> Start Trading</button>
   </div>
 </div>
 
 <header>
-  <div class="logo" onclick="window.location.href='/dashboard'">Trade<span>Zona</span></div>
-  <button class="btn-ghost" onclick="window.location.href='/dashboard'"><i class="fa-solid fa-chevron-left"></i> Dashboard</button>
+  <a href="/dashboard" class="logo">Trade<span>Zona</span></a>
+  <div class="header-right">
+    <button class="btn-ghost" onclick="location.href='/dashboard'"><i class="fa-solid fa-chevron-left"></i> Dashboard</button>
+  </div>
 </header>
 
 <main>
-  <div class="page-hero">
-    <div class="hero-eyebrow"><i class="fa-solid fa-star"></i> Pricing</div>
-    <h1>Simple, honest <span>pricing.</span></h1>
-    <p>Start free and upgrade when your trading gets serious. No hidden fees.</p>
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-pill"><i class="fa-solid fa-star"></i> TradeZona Pro</div>
+    <h1>Level up your<br><span class="hl">trading edge.</span></h1>
+    <p>Start free. Upgrade when your trading gets serious. No hidden fees, cancel anytime.</p>
   </div>
 
-  <div class="current-plan-banner">
-    <div class="cpb-left">
-      <div class="cpb-icon"><i class="fa-solid fa-star"></i></div>
-      <div class="cpb-text">
-        <div class="lbl">Your current plan</div>
-        <div class="val" id="currentPlanLabel">Free Plan</div>
+  <!-- Current plan strip -->
+  <div class="plan-strip" id="planStrip">
+    <div class="ps-left">
+      <div class="ps-icon free" id="psIcon"><i class="fa-solid fa-circle-user"></i></div>
+      <div>
+        <div class="ps-label">Your current plan</div>
+        <div class="ps-val" id="psVal">Free Plan</div>
       </div>
     </div>
-    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-      <div class="plan-expiry" id="planStatusText" style="font-size:13px;color:var(--muted)">Upgrade to unlock all features</div>
-      <div class="plan-expiry" id="proExpiry" style="display:none"><i class="fa-solid fa-calendar-check"></i><span id="proExpiryText"></span></div>
-    </div>
-  </div>
-
-  <div class="plans-grid">
-    <!-- Free -->
-    <div class="plan-card">
-      <div class="plan-name">Free</div>
-      <div class="plan-price">
-        <span class="price-amt">$0</span>
-        <span class="price-period">/ forever</span>
-      </div>
-      <p class="plan-desc">Everything you need to start building a journaling habit.</p>
-      <hr class="divider">
-      <ul class="feat-list">
-        <li><i class="fa-solid fa-check yes"></i><span>1 Trading journal</span></li>
-        <li><i class="fa-solid fa-check yes"></i><span>Unlimited trade logs</span></li>
-        <li><i class="fa-solid fa-check yes"></i><span>1 image per trade</span></li>
-        <li><i class="fa-solid fa-check yes"></i><span>Basic analytics<span class="feat-note">Total PNL, Win Rate, Streaks, Equity Curve</span></span></li>
-        <li><i class="fa-solid fa-check yes"></i><span>Limited calendar lookback</span></li>
-        <li class="locked"><i class="fa-solid fa-xmark no"></i><span>Multiple journals</span></li>
-        <li class="locked"><i class="fa-solid fa-xmark no"></i><span>Advanced analytics</span></li>
-        <li class="locked"><i class="fa-solid fa-xmark no"></i><span>Theme & font customization</span></li>
-        <li class="locked"><i class="fa-solid fa-xmark no"></i><span>Export / Import backup</span></li>
-        <li class="locked"><i class="fa-solid fa-xmark no"></i><span>Notes collection</span></li>
-        <li class="locked"><i class="fa-solid fa-xmark no"></i><span>Ads shown</span></li>
-      </ul>
-      <button class="plan-btn free" id="freePlanBtn" disabled>Current Plan</button>
-    </div>
-
-    <!-- Pro -->
-    <div class="plan-card pro-card">
-      <div class="plan-badge-top">Most Popular</div>
-      <div class="plan-name" style="color:var(--accent2)">Pro</div>
-      <div class="plan-price">
-        <span class="price-amt pro">$5</span>
-        <span class="price-period">/ month</span>
-      </div>
-      <p class="plan-desc">For traders serious about tracking every edge and building real consistency.</p>
-      <hr class="divider">
-      <ul class="feat-list">
-        <li><i class="fa-solid fa-check yes"></i><span>Unlimited journals<span class="feat-note">Forex, Crypto, Futures — all separate</span></span></li>
-        <li><i class="fa-solid fa-check yes"></i><span>Unlimited trade logs</span></li>
-        <li><i class="fa-solid fa-check yes"></i><span>Multiple images per trade<span class="feat-note">Compare before/after, chart screenshots</span></span></li>
-        <li><i class="fa-solid fa-check yes"></i><span>Full analytics suite<span class="feat-note">Hour heatmap, Mood, Confidence, Timeframe, Day-of-week</span></span></li>
-        <li><i class="fa-solid fa-check yes"></i><span>Full calendar — unlimited lookback</span></li>
-        <li><i class="fa-solid fa-check yes"></i><span>Notes collection<span class="feat-note">Study and annotate every trade you take</span></span></li>
-        <li><i class="fa-solid fa-check yes"></i><span>Export / Import backup</span></li>
-        <li><i class="fa-solid fa-check yes"></i><span>Color & font theme customization</span></li>
-        <li><i class="fa-solid fa-check yes"></i><span>PIN-protected journals</span></li>
-        <li><i class="fa-solid fa-check yes"></i><span>No ads</span></li>
-      </ul>
-      <button class="plan-btn pro-btn" id="proPlanBtn" onclick="upgradeToPro()">
-        <i class="fa-solid fa-rocket" style="margin-right:7px"></i>Upgrade to Pro — $5/mo
+    <div class="ps-right">
+      <span class="ps-meta" id="psMeta">Upgrade to unlock all features</span>
+      <button class="manage-btn" id="manageBtn" style="display:none" onclick="openBillingPortal()">
+        <i class="fa-solid fa-gear"></i> Manage Billing
       </button>
     </div>
   </div>
 
-  <!-- Comparison Table -->
-  <div class="cmp-section">
-    <div class="cmp-title">Full Feature Comparison</div>
+  <!-- Days remaining bar (Pro users only) -->
+  <div class="days-bar-wrap" id="daysBarWrap" style="display:none;margin-bottom:24px">
+    <div class="days-bar-labels">
+      <span id="daysBarLeft">Days remaining</span>
+      <span id="daysBarRight"></span>
+    </div>
+    <div class="days-bar-track">
+      <div class="days-bar-fill" id="daysBarFill"></div>
+    </div>
+  </div>
+
+  <!-- Billing toggle -->
+  <div class="billing-toggle" id="billingToggle">
+    <button class="btog-btn active" id="btnMonthly" onclick="setPlan('monthly')">Monthly</button>
+    <button class="btog-btn" id="btnAnnual" onclick="setPlan('annual')">
+      Annual <span class="save-pill">Save $30</span>
+    </button>
+  </div>
+
+  <!-- Plans -->
+  <div class="plans">
+
+    <!-- Free -->
+    <div class="plan-card">
+      <div class="plan-tier">Free</div>
+      <div class="price-wrap">
+        <div class="price-row">
+          <span class="price-currency">$</span>
+          <span class="price-amt">0</span>
+          <span class="price-period">/ forever</span>
+        </div>
+        <div class="price-annual-note">&nbsp;</div>
+      </div>
+      <p class="plan-desc">Everything to start building a journaling habit. No card needed.</p>
+      <hr class="pdiv">
+      <ul class="feat-list">
+        <li><i class="fa-solid fa-check ico y"></i><span>1 Trading journal</span></li>
+        <li><i class="fa-solid fa-check ico y"></i><span>Unlimited trade logs</span></li>
+        <li><i class="fa-solid fa-check ico y"></i><span>1 image per trade</span></li>
+        <li><i class="fa-solid fa-check ico y"></i><span>Basic analytics</span></li>
+        <li><i class="fa-solid fa-check ico y"></i><span>Limited calendar lookback</span></li>
+        <li class="dim"><i class="fa-solid fa-xmark ico n"></i><span>Multiple journals</span></li>
+        <li class="dim"><i class="fa-solid fa-xmark ico n"></i><span>Advanced analytics</span></li>
+        <li class="dim"><i class="fa-solid fa-xmark ico n"></i><span>Themes &amp; fonts</span></li>
+        <li class="dim"><i class="fa-solid fa-xmark ico n"></i><span>Export / import</span></li>
+        <li class="dim"><i class="fa-solid fa-xmark ico n"></i><span>Ads shown</span></li>
+      </ul>
+      <button class="plan-btn ghost" id="freePlanBtn" disabled>Current Plan</button>
+    </div>
+
+    <!-- Pro -->
+    <div class="plan-card pro">
+      <div class="popular-tag">Most Popular</div>
+      <div class="plan-tier pro">Pro</div>
+      <div class="price-wrap">
+        <div class="price-row">
+          <span class="price-currency" style="color:var(--accent2)">$</span>
+          <span class="price-amt pro" id="displayPrice">15</span>
+          <span class="price-period" id="displayPeriod">/ month</span>
+        </div>
+        <div class="price-annual-note" id="annualNote">&nbsp;</div>
+      </div>
+      <p class="plan-desc">For serious traders who want every edge tracked and every insight unlocked.</p>
+      <hr class="pdiv">
+      <ul class="feat-list">
+        <li><i class="fa-solid fa-check ico y"></i><span>Unlimited journals<span class="feat-note">Forex, Crypto, Futures — all separate</span></span></li>
+        <li><i class="fa-solid fa-check ico y"></i><span>Unlimited trade logs</span></li>
+        <li><i class="fa-solid fa-check ico y"></i><span>Multiple images per trade</span></li>
+        <li><i class="fa-solid fa-check ico y"></i><span>Full analytics suite<span class="feat-note">Heatmap, Mood, Confidence, Timeframe</span></span></li>
+        <li><i class="fa-solid fa-check ico y"></i><span>Unlimited calendar lookback</span></li>
+        <li><i class="fa-solid fa-check ico y"></i><span>Notes collection</span></li>
+        <li><i class="fa-solid fa-check ico y"></i><span>Export &amp; import backup</span></li>
+        <li><i class="fa-solid fa-check ico y"></i><span>Color &amp; font themes</span></li>
+        <li><i class="fa-solid fa-check ico y"></i><span>PIN-protected journals</span></li>
+        <li><i class="fa-solid fa-check ico y"></i><span>No ads — ever</span></li>
+      </ul>
+      <button class="plan-btn cta" id="proPlanBtn" onclick="upgradeToPro()">
+        <i class="fa-solid fa-rocket"></i>
+        <span id="proBtnText">Upgrade to Pro — $15/mo</span>
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Comparison table -->
+  <div class="cmp-sec">
+    <div class="sec-title">Everything compared</div>
     <div class="cmp-wrap">
       <table class="cmp-table">
         <thead>
           <tr>
             <th>Feature</th>
             <th>Free</th>
-            <th class="pro-col"><i class="fa-solid fa-star" style="margin-right:5px;font-size:10px"></i>Pro</th>
+            <th class="pro"><i class="fa-solid fa-star" style="margin-right:5px;font-size:9px"></i>Pro</th>
           </tr>
         </thead>
         <tbody>
-          <tr class="cat-row"><td colspan="2">Journals & Logs</td><td class="pro-col"></td></tr>
-          <tr><td>Journals</td><td>1</td><td class="pro-col">Unlimited</td></tr>
-          <tr><td>Trade logs</td><td>Unlimited</td><td class="pro-col">Unlimited</td></tr>
-          <tr><td>Images per trade</td><td>1</td><td class="pro-col">Multiple</td></tr>
-          <tr><td>PIN-protected journals</td><td class="no"><i class="fa-solid fa-xmark no"></i></td><td class="pro-col"><i class="fa-solid fa-check yes"></i></td></tr>
-
-          <tr class="cat-row"><td colspan="2">Analytics</td><td class="pro-col"></td></tr>
-          <tr><td>Total PNL, Win Rate, Streaks</td><td><i class="fa-solid fa-check yes"></i></td><td class="pro-col"><i class="fa-solid fa-check yes"></i></td></tr>
-          <tr><td>Equity Curve</td><td><i class="fa-solid fa-check yes"></i></td><td class="pro-col"><i class="fa-solid fa-check yes"></i></td></tr>
-          <tr><td>Hour heatmap</td><td class="no"><i class="fa-solid fa-xmark no"></i></td><td class="pro-col"><i class="fa-solid fa-check yes"></i></td></tr>
-          <tr><td>Mood & Confidence analytics</td><td class="no"><i class="fa-solid fa-xmark no"></i></td><td class="pro-col"><i class="fa-solid fa-check yes"></i></td></tr>
-          <tr><td>Timeframe & Day-of-week breakdown</td><td class="no"><i class="fa-solid fa-xmark no"></i></td><td class="pro-col"><i class="fa-solid fa-check yes"></i></td></tr>
-
-          <tr class="cat-row"><td colspan="2">Calendar</td><td class="pro-col"></td></tr>
-          <tr><td>Trade calendar view</td><td><i class="fa-solid fa-check yes"></i></td><td class="pro-col"><i class="fa-solid fa-check yes"></i></td></tr>
-          <tr><td>Calendar lookback</td><td>Limited</td><td class="pro-col">Unlimited</td></tr>
-
-          <tr class="cat-row"><td colspan="2">Tools & Customization</td><td class="pro-col"></td></tr>
-          <tr><td>Notes collection</td><td class="no"><i class="fa-solid fa-xmark no"></i></td><td class="pro-col"><i class="fa-solid fa-check yes"></i></td></tr>
-          <tr><td>Export / Import (.json, .csv)</td><td class="no"><i class="fa-solid fa-xmark no"></i></td><td class="pro-col"><i class="fa-solid fa-check yes"></i></td></tr>
-          <tr><td>Color theme customization</td><td class="no"><i class="fa-solid fa-xmark no"></i></td><td class="pro-col"><i class="fa-solid fa-check yes"></i></td></tr>
-          <tr><td>Font theme customization</td><td class="no"><i class="fa-solid fa-xmark no"></i></td><td class="pro-col"><i class="fa-solid fa-check yes"></i></td></tr>
-          <tr><td>Ads</td><td>Shown</td><td class="pro-col">None</td></tr>
+          <tr class="cat"><td colspan="2">Journals &amp; Logs</td><td class="pro"></td></tr>
+          <tr><td>Journals</td><td>1</td><td class="pro">Unlimited</td></tr>
+          <tr><td>Trade logs</td><td>Unlimited</td><td class="pro">Unlimited</td></tr>
+          <tr><td>Images per trade</td><td>1</td><td class="pro">Multiple</td></tr>
+          <tr><td>PIN-protected journals</td><td class="no"><i class="fa-solid fa-xmark n"></i></td><td class="pro"><i class="fa-solid fa-check y"></i></td></tr>
+          <tr class="cat"><td colspan="2">Analytics</td><td class="pro"></td></tr>
+          <tr><td>Total PNL, Win Rate, Streaks</td><td><i class="fa-solid fa-check y"></i></td><td class="pro"><i class="fa-solid fa-check y"></i></td></tr>
+          <tr><td>Equity Curve</td><td><i class="fa-solid fa-check y"></i></td><td class="pro"><i class="fa-solid fa-check y"></i></td></tr>
+          <tr><td>Hour-of-day heatmap</td><td class="no"><i class="fa-solid fa-xmark n"></i></td><td class="pro"><i class="fa-solid fa-check y"></i></td></tr>
+          <tr><td>Mood &amp; Confidence analytics</td><td class="no"><i class="fa-solid fa-xmark n"></i></td><td class="pro"><i class="fa-solid fa-check y"></i></td></tr>
+          <tr><td>Timeframe &amp; Day-of-week breakdown</td><td class="no"><i class="fa-solid fa-xmark n"></i></td><td class="pro"><i class="fa-solid fa-check y"></i></td></tr>
+          <tr class="cat"><td colspan="2">Calendar</td><td class="pro"></td></tr>
+          <tr><td>Trade calendar view</td><td><i class="fa-solid fa-check y"></i></td><td class="pro"><i class="fa-solid fa-check y"></i></td></tr>
+          <tr><td>Calendar lookback</td><td>Limited</td><td class="pro">Unlimited</td></tr>
+          <tr class="cat"><td colspan="2">Tools &amp; Customization</td><td class="pro"></td></tr>
+          <tr><td>Notes collection</td><td class="no"><i class="fa-solid fa-xmark n"></i></td><td class="pro"><i class="fa-solid fa-check y"></i></td></tr>
+          <tr><td>Export / Import (.json, .csv)</td><td class="no"><i class="fa-solid fa-xmark n"></i></td><td class="pro"><i class="fa-solid fa-check y"></i></td></tr>
+          <tr><td>Color theme customization</td><td class="no"><i class="fa-solid fa-xmark n"></i></td><td class="pro"><i class="fa-solid fa-check y"></i></td></tr>
+          <tr><td>Font customization</td><td class="no"><i class="fa-solid fa-xmark n"></i></td><td class="pro"><i class="fa-solid fa-check y"></i></td></tr>
+          <tr><td>Ads</td><td>Shown</td><td class="pro">None</td></tr>
+          <tr class="cat"><td colspan="2">Referrals</td><td class="pro"></td></tr>
+          <tr><td>Referral program</td><td><i class="fa-solid fa-check y"></i></td><td class="pro"><i class="fa-solid fa-check y"></i></td></tr>
+          <tr><td>Earn free Pro days</td><td><i class="fa-solid fa-check y"></i></td><td class="pro"><i class="fa-solid fa-check y"></i></td></tr>
         </tbody>
       </table>
     </div>
   </div>
 
   <!-- FAQ -->
-  <div class="faq">
-    <div class="faq-title">Questions &amp; Answers</div>
+  <div class="faq-sec">
+    <div class="sec-title">Common questions</div>
     <div class="faq-item">
       <div class="faq-q" onclick="toggleFaq(this)">Is the free plan really free forever? <i class="fa-solid fa-chevron-down"></i></div>
-      <div class="faq-a">Yes. The free plan is free forever with no credit card required. You get 1 journal, unlimited trade logs, basic analytics, and a limited calendar view — no strings attached.</div>
+      <div class="faq-a">Yes. The free plan is free forever with no credit card required. You get 1 journal, unlimited trade logs, basic analytics, and limited calendar — no strings attached.</div>
     </div>
     <div class="faq-item">
-      <div class="faq-q" onclick="toggleFaq(this)">Can I cancel my Pro plan? <i class="fa-solid fa-chevron-down"></i></div>
-      <div class="faq-a">Yes. You can cancel your Pro subscription anytime from the Stripe billing portal. After cancellation, you keep Pro access until the end of your current billing period, then revert to the Free plan. Your trades and data are never deleted.</div>
+      <div class="faq-q" onclick="toggleFaq(this)">What's the difference between Monthly and Annual? <i class="fa-solid fa-chevron-down"></i></div>
+      <div class="faq-a">Monthly is $15/month billed each month. Annual is $150/year — that's $12.50/month, saving you $30 compared to monthly. Both include the exact same Pro features.</div>
     </div>
     <div class="faq-item">
-      <div class="faq-q" onclick="toggleFaq(this)">What happens to my extra journals if I cancel? <i class="fa-solid fa-chevron-down"></i></div>
-      <div class="faq-a">If you downgrade from Pro to Free, your extra journals become read-only. All your data is preserved — you just can't add new trades to those journals until you re-upgrade. Your primary journal continues to work normally.</div>
+      <div class="faq-q" onclick="toggleFaq(this)">Can I cancel anytime? <i class="fa-solid fa-chevron-down"></i></div>
+      <div class="faq-a">Yes. Cancel anytime from Manage Billing. You keep Pro access until the end of your current billing period, then revert to Free. Your trades and data are never deleted.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">What happens to extra journals if I cancel? <i class="fa-solid fa-chevron-down"></i></div>
+      <div class="faq-a">Extra journals become read-only after downgrade. All data is preserved — you just can't add new trades until you re-upgrade. Your primary journal works normally.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">How does the referral program work? <i class="fa-solid fa-chevron-down"></i></div>
+      <div class="faq-a">Share your referral link from your Profile page. When someone signs up through your link and subscribes to Pro, you get 30 free days of Pro added to your account automatically.</div>
     </div>
     <div class="faq-item">
       <div class="faq-q" onclick="toggleFaq(this)">Where is my data stored? <i class="fa-solid fa-chevron-down"></i></div>
-      <div class="faq-a">All your data is stored securely in our database powered by Supabase. Row-level security ensures only you can access your journals and trades. Your data belongs to you — export it anytime with a Pro plan.</div>
-    </div>
-    <div class="faq-item">
-      <div class="faq-q" onclick="toggleFaq(this)">What analytics does Pro unlock? <i class="fa-solid fa-chevron-down"></i></div>
-      <div class="faq-a">Pro gives you the full analytics suite: hour-of-day heatmap (discover your best trading times), day-of-week performance, mood vs. PNL correlation, confidence tracking, timeframe breakdown, and much more. These insights help you identify and sharpen your trading edge.</div>
-    </div>
-    <div class="faq-item">
-      <div class="faq-q" onclick="toggleFaq(this)">Can I backup and transfer my trade data? <i class="fa-solid fa-chevron-down"></i></div>
-      <div class="faq-a">Yes — Pro users can export their entire journal as a .json backup (including images) or a .csv file for Excel/Google Sheets. You can also import a backup to restore all your trades, settings, tags, and preferences.</div>
+      <div class="faq-a">Securely in Supabase with row-level security — only you can access your data. Pro users can export everything as a .json backup (including images) or .csv for spreadsheet analysis.</div>
     </div>
   </div>
 
   <div class="footer-note">
-    <i class="fa-solid fa-shield-halved"></i>
-    Cancel anytime &nbsp;·&nbsp; Your data is always yours &nbsp;·&nbsp; No hidden fees
-    &nbsp;·&nbsp;
-    <a href="/terms" style="color:var(--muted);text-decoration:underline;text-underline-offset:2px">Terms of Service</a>
-    &nbsp;·&nbsp;
-    <a href="/privacy" style="color:var(--muted);text-decoration:underline;text-underline-offset:2px">Privacy Policy</a>
+    <span><i class="fa-solid fa-shield-halved" style="color:var(--accent2);margin-right:5px"></i>Cancel anytime</span>
+    <span class="footer-sep">·</span>
+    <span>Your data is always yours</span>
+    <span class="footer-sep">·</span>
+    <span>No hidden fees</span>
+    <span class="footer-sep">·</span>
+    <a href="/terms">Terms</a>
+    <span class="footer-sep">·</span>
+    <a href="/privacy">Privacy</a>
   </div>
 
-  <!-- Ad slot — Free users only -->
-  <div id="subAdSlot" style="display:none">
-    <div class="ad-label">Advertisement</div>
-    <div style="min-height:90px;display:flex;align-items:center;justify-content:center">
-      <ins class="adsbygoogle" style="display:block;width:100%;min-height:90px" data-ad-client="ca-pub-XXXXXXXXXXXXXXXX" data-ad-slot="XXXXXXXXXX" data-ad-format="horizontal" data-full-width-responsive="true"></ins>
-    </div>
-  </div>
 </main>
 
-<div id="toast"><i id="toastIcon" class="fa-solid fa-circle-check"></i><span id="toastMsg"></span></div>
+<div id="toast"><i id="toastIcon"></i><span id="toastMsg"></span></div>
 
 <script>
-/* ── Confetti ── */
-function launchConfetti(){
-  const canvas=document.getElementById('confettiCanvas');
-  canvas.style.display='block';
-  const ctx=canvas.getContext('2d');
-  canvas.width=window.innerWidth;canvas.height=window.innerHeight;
-  const colors=['#00ff88','#19c37d','#00e67a','#ffffff','#f59e0b','#a78bfa'];
-  const pieces=[];
-  for(let i=0;i<180;i++){
-    pieces.push({
-      x:Math.random()*canvas.width,
-      y:Math.random()*canvas.height-canvas.height,
-      r:Math.random()*6+3,
-      d:Math.random()*10+5,
-      color:colors[Math.floor(Math.random()*colors.length)],
-      tilt:Math.random()*10-10,
-      tiltAngleIncrement:Math.random()*.07+.05,
-      tiltAngle:0,
-      shape:Math.random()>.5?'circle':'rect',
-    });
+// ── State ─────────────────────────────────────────────────
+let selectedPlan = 'monthly'; // 'monthly' | 'annual'
+let currentProfile = null;
+
+const PRICES = {
+  monthly: { display: 15, period: '/ month', note: '\u00a0', btnText: 'Upgrade to Pro — $15/mo', lookupKey: 'tradezona_pro_monthly' },
+  annual:  { display: 150, period: '/ year',  note: '<span class="save">$30 savings</span> vs monthly · $12.50/mo', btnText: 'Upgrade to Pro — $150/yr', lookupKey: 'tradezona_pro_annual' },
+};
+
+// ── Billing toggle ────────────────────────────────────────
+function setPlan(plan) {
+  selectedPlan = plan;
+  document.getElementById('btnMonthly').classList.toggle('active', plan === 'monthly');
+  document.getElementById('btnAnnual').classList.toggle('active',  plan === 'annual');
+
+  const p = PRICES[plan];
+  document.getElementById('displayPrice').textContent  = p.display;
+  document.getElementById('displayPeriod').textContent = p.period;
+  document.getElementById('annualNote').innerHTML       = p.note;
+
+  const btn = document.getElementById('proPlanBtn');
+  if (!btn.disabled) {
+    document.getElementById('proBtnText').textContent = p.btnText;
   }
-  let angle=0,frame=0,maxFrames=240;
-  function draw(){
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    angle+=.01;
-    pieces.forEach(p=>{
-      p.tiltAngle+=p.tiltAngleIncrement;
-      p.y+=(Math.cos(angle+p.d)+p.d/4)/2.5;
-      p.x+=Math.sin(angle)*1.5;
-      p.tilt=Math.sin(p.tiltAngle)*12;
+}
+
+// ── FAQ ───────────────────────────────────────────────────
+function toggleFaq(btn) {
+  const item = btn.closest('.faq-item');
+  const open = item.classList.contains('open');
+  document.querySelectorAll('.faq-item.open').forEach(i => i.classList.remove('open'));
+  if (!open) item.classList.add('open');
+}
+
+// ── Upgrade ───────────────────────────────────────────────
+async function upgradeToPro() {
+  const btn = document.getElementById('proPlanBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Redirecting…</span>';
+
+  try {
+    const { data: { session } } = await db.auth.getSession();
+    if (!session) { location.href = '/auth'; return; }
+
+    const lookupKey = PRICES[selectedPlan].lookupKey;
+
+    const res  = await fetch(SUPABASE_URL + '/functions/v1/create-checkout', {
+      method:  'POST',
+      headers: { 'Authorization': 'Bearer ' + session.access_token, 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ lookup_key: lookupKey }),
+    });
+    const data = await res.json();
+
+    if (data.url) {
+      window.location.href = data.url;
+    } else {
+      throw new Error(data.error || 'Could not create checkout session.');
+    }
+  } catch (err) {
+    showToast('Checkout error: ' + err.message, 'fa-solid fa-circle-exclamation', 'r');
+    const btn2 = document.getElementById('proPlanBtn');
+    btn2.disabled = false;
+    btn2.innerHTML = '<i class="fa-solid fa-rocket"></i> <span id="proBtnText">' + PRICES[selectedPlan].btnText + '</span>';
+  }
+}
+
+// ── Manage billing portal ─────────────────────────────────
+async function openBillingPortal() {
+  const btn = document.getElementById('manageBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Loading…';
+  try {
+    const { data: { session } } = await db.auth.getSession();
+    if (!session) throw new Error('Not authenticated');
+
+    const res  = await fetch(SUPABASE_URL + '/functions/v1/billing-portal', {
+      method:  'POST',
+      headers: { 'Authorization': 'Bearer ' + session.access_token, 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ return_url: window.location.href }),
+    });
+    const data = await res.json();
+    if (data.url) window.location.href = data.url;
+    else throw new Error(data.error || 'Could not open billing portal.');
+  } catch (err) {
+    showToast('Billing portal error: ' + err.message, 'fa-solid fa-circle-exclamation', 'r');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-gear"></i> Manage Billing';
+  }
+}
+
+// ── Confetti ──────────────────────────────────────────────
+function launchConfetti() {
+  const canvas = document.getElementById('confettiCanvas');
+  canvas.style.display = 'block';
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  const colors = ['#00ff88','#19c37d','#00e67a','#ffffff','#f59e0b','#a78bfa','#38bdf8'];
+  const pieces = Array.from({ length: 200 }, () => ({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height - canvas.height,
+    r: Math.random() * 6 + 2,
+    d: Math.random() * 10 + 4,
+    color: colors[Math.floor(Math.random() * colors.length)],
+    tiltAngle: Math.random() * Math.PI * 2,
+    tiltInc: Math.random() * .08 + .04,
+    shape: Math.random() > .5 ? 'circle' : 'rect',
+  }));
+  let angle = 0, frame = 0;
+  const MAX = 260;
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    angle += .01;
+    pieces.forEach(p => {
+      p.tiltAngle += p.tiltInc;
+      p.y += (Math.cos(angle + p.d) + p.d / 4) / 2.2;
+      p.x += Math.sin(angle) * 1.8;
+      ctx.fillStyle = p.color;
       ctx.beginPath();
-      ctx.lineWidth=p.r/2;
-      ctx.strokeStyle=p.color;
-      ctx.fillStyle=p.color;
-      if(p.shape==='circle'){ctx.arc(p.x,p.y,p.r,0,2*Math.PI);ctx.fill();}
-      else{ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.tilt*Math.PI/180);ctx.fillRect(-p.r/2,-p.r/2,p.r,p.r*2);ctx.restore();}
+      if (p.shape === 'circle') {
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.tiltAngle);
+        ctx.fillRect(-p.r / 2, -p.r / 2, p.r, p.r * 2);
+        ctx.restore();
+      }
     });
     frame++;
-    if(frame<maxFrames)requestAnimationFrame(draw);
-    else{ctx.clearRect(0,0,canvas.width,canvas.height);canvas.style.display='none';}
+    if (frame < MAX) requestAnimationFrame(draw);
+    else { ctx.clearRect(0, 0, canvas.width, canvas.height); canvas.style.display = 'none'; }
   }
   draw();
 }
 
-function showCelebration(){
-  launchConfetti();
-  document.getElementById('proCelebration').classList.add('show');
-}
-function closeCelebration(){
-  document.getElementById('proCelebration').classList.remove('show');
-  window.history.replaceState({},'',window.location.pathname);
+function showCel() { launchConfetti(); document.getElementById('celOverlay').classList.add('show'); }
+function closeCel() {
+  document.getElementById('celOverlay').classList.remove('show');
+  window.history.replaceState({}, '', window.location.pathname);
 }
 
-/* ── Toast ── */
+// ── Toast ─────────────────────────────────────────────────
 let _tt;
-function showToast(msg,icon,type){
-  const t=document.getElementById('toast');
-  document.getElementById('toastIcon').className=icon;
-  document.getElementById('toastMsg').textContent=msg;
-  t.className='show'+(type==='green'?' toast-green':type==='red'?' toast-red':'');
-  clearTimeout(_tt);_tt=setTimeout(()=>t.className='',3500);
+function showToast(msg, icon, type) {
+  const t = document.getElementById('toast');
+  document.getElementById('toastIcon').className = icon;
+  document.getElementById('toastMsg').textContent = msg;
+  t.className = 'show' + (type ? ' ' + type : '');
+  clearTimeout(_tt);
+  _tt = setTimeout(() => t.className = '', 3500);
 }
 
-/* ── FAQ ── */
-function toggleFaq(btn){
-  const item=btn.closest('.faq-item');
-  const isOpen=item.classList.contains('open');
-  document.querySelectorAll('.faq-item.open').forEach(i=>i.classList.remove('open'));
-  if(!isOpen)item.classList.add('open');
-}
+// ── Init ──────────────────────────────────────────────────
+(async () => {
+  const user = await requireAuth();
+  if (!user) return;
 
-/* ── Upgrade ── */
-async function upgradeToPro(){
-  const btn=document.getElementById('proPlanBtn');
-  btn.disabled=true;
-  btn.innerHTML='<i class="fa-solid fa-spinner fa-spin" style="margin-right:7px"></i>Redirecting to checkout…';
-  try{
-    const{data:{session}}=await db.auth.getSession();
-    if(!session){window.location.href='/auth';return;}
-    const res=await fetch(SUPABASE_URL+'/functions/v1/create-checkout',{
-      method:'POST',
-      headers:{'Authorization':'Bearer '+session.access_token,'Content-Type':'application/json'}
-    });
-    const data=await res.json();
-    if(data.url)window.location.href=data.url;
-    else throw new Error(data.error||'Could not create checkout session.');
-  }catch(err){
-    showToast('Checkout error: '+err.message,'fa-solid fa-circle-exclamation','red');
-    btn.disabled=false;
-    btn.innerHTML='<i class="fa-solid fa-rocket" style="margin-right:7px"></i>Upgrade to Pro — $5/mo';
-  }
-}
+  currentProfile = await getProfile(user.id);
+  applyProfileTheme(currentProfile);
 
-/* ── Init ── */
-(async()=>{
-  const user=await requireAuth();if(!user)return;
-  const profile=await getProfile(user.id);
-  const isPro=profile?.plan==='pro';
-  const planLabel=document.getElementById('currentPlanLabel');
-  planLabel.textContent=isPro?'Pro Plan':'Free Plan';
-  if(isPro)planLabel.classList.add('pro');
+  const isPro    = currentProfile?.plan === 'pro';
+  const subStatus = getSubscriptionStatus(currentProfile);
+  const planType  = currentProfile?.plan_type || 'none';
 
-  document.getElementById('planStatusText').textContent=isPro?'You have access to all features':'Upgrade to unlock all Pro features';
+  // Plan strip
+  const psIcon = document.getElementById('psIcon');
+  const psVal  = document.getElementById('psVal');
+  const psMeta = document.getElementById('psMeta');
 
-  // Show pro expiry if available
-  if(isPro&&profile?.pro_expires_at){
-    const exp=new Date(profile.pro_expires_at);
-    document.getElementById('proExpiry').style.display='flex';
-    document.getElementById('proExpiryText').textContent='Renews '+exp.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
-  }
+  if (isPro) {
+    psIcon.className = 'ps-icon pro';
+    psIcon.innerHTML = '<i class="fa-solid fa-star"></i>';
+    psVal.textContent = 'Pro Plan';
+    psVal.className   = 'ps-val pro';
 
-  if(isPro){
-    document.getElementById('freePlanBtn').textContent='On Free Plan';
-    document.getElementById('freePlanBtn').disabled=true;
-    document.getElementById('proPlanBtn').innerHTML='<i class="fa-solid fa-circle-check" style="margin-right:7px"></i>Current Plan';
-    document.getElementById('proPlanBtn').disabled=true;
+    if (subStatus.expired) {
+      psMeta.textContent  = 'Your subscription has expired';
+      psMeta.className    = 'ps-meta danger';
+    } else if (subStatus.expiring) {
+      psMeta.textContent = subStatus.label;
+      psMeta.className   = 'ps-meta warn';
+    } else {
+      psMeta.textContent = subStatus.label;
+    }
+
+    // Show manage billing + days bar
+    document.getElementById('manageBtn').style.display = 'inline-flex';
+
+    if (currentProfile?.subscription_expires_at && planType !== 'lifetime') {
+      const totalDays = planType === 'yearly' ? 365 : 30;
+      const daysLeft  = subStatus.daysLeft ?? 0;
+      const pct       = Math.max(0, Math.min(100, (daysLeft / totalDays) * 100));
+      const fillColor = subStatus.expired ? 'var(--red)' : subStatus.expiring ? 'var(--amber)' : 'var(--accent2)';
+
+      document.getElementById('daysBarFill').style.width      = pct + '%';
+      document.getElementById('daysBarFill').style.background = fillColor;
+      document.getElementById('daysBarLeft').textContent      = daysLeft + ' days remaining';
+      document.getElementById('daysBarRight').textContent     = totalDays + '-day cycle';
+      document.getElementById('daysBarWrap').style.display    = 'block';
+    }
+
+    // Pro plan button state
+    const proBtn = document.getElementById('proPlanBtn');
+    proBtn.disabled = true;
+    proBtn.className = 'plan-btn current';
+    proBtn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Current Plan';
+
+    // Hide billing toggle if already pro
+    document.getElementById('billingToggle').style.display = 'none';
+
+    // Free button
+    document.getElementById('freePlanBtn').textContent = 'Downgrade';
+    document.getElementById('freePlanBtn').disabled    = false;
+    document.getElementById('freePlanBtn').onclick     = openBillingPortal;
+
   } else {
-    document.getElementById('subAdSlot').style.display='block';
-    try{(adsbygoogle=window.adsbygoogle||[]).push({});}catch(e){}
+    // Free user — make sure toggle and CTA are visible
+    setPlan('monthly');
+    document.getElementById('freePlanBtn').disabled = true;
+    document.getElementById('freePlanBtn').textContent = 'Current Plan';
   }
 
-  document.getElementById('pageLoader').classList.add('gone');
-  setTimeout(()=>{const pl=document.getElementById('pageLoader');if(pl)pl.style.display='none';},400);
-})();
+  // Hide loader
+  const loader = document.getElementById('pageLoader');
+  loader.classList.add('gone');
+  setTimeout(() => { if (loader) loader.style.display = 'none'; }, 450);
 
-/* ── Handle return from Stripe ── */
-const _sp=new URLSearchParams(window.location.search);
-if(_sp.get('upgraded')==='1'){
-  setTimeout(showCelebration,600);
-}
-if(_sp.get('cancelled')==='1'){
-  setTimeout(()=>showToast('Checkout cancelled. You are still on the Free plan.','fa-solid fa-circle-info',''),600);
-}
+  // Handle Stripe return
+  const sp = new URLSearchParams(window.location.search);
+  if (sp.get('upgraded') === '1') setTimeout(showCel, 700);
+  if (sp.get('cancelled') === '1') setTimeout(() => showToast('Checkout cancelled — still on Free plan.', 'fa-solid fa-circle-info', ''), 600);
+})();
 </script>
 </body>
 </html>

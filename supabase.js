@@ -130,6 +130,7 @@ async function getReferrals(userId) {
   if (error) console.error('[supabase] getReferrals error:', error);
   return data || [];
 }
+ 
 
 function buildReferralUrl(code) {
   if (!code || code === '—') return window.location.origin + '/auth?ref=???';
@@ -141,31 +142,40 @@ function buildReferralUrl(code) {
 
 function getSubscriptionStatus(profile) {
   const isPro = profile?.plan === 'pro';
-
-  if (!isPro) return { isPro: false, expired: false, expiring: false, daysLeft: null, label: 'Free' };
-
-  if (profile?.plan_type === 'lifetime' || !profile?.subscription_expires_at) {
-    return { isPro: true, expired: false, expiring: false, daysLeft: null, label: 'Lifetime' };
+ 
+  if (!isPro) return {
+    isPro: false, expired: false, expiring: false,
+    daysLeft: null, label: 'Free', planType: 'none'
+  };
+ 
+  const planType = profile?.plan_type || 'none';
+ 
+  if (planType === 'lifetime' || !profile?.subscription_expires_at) {
+    return {
+      isPro: true, expired: false, expiring: false,
+      daysLeft: null, label: 'Lifetime', planType: 'lifetime'
+    };
   }
-
+ 
   const now      = new Date();
   const expires  = new Date(profile.subscription_expires_at);
   const msLeft   = expires - now;
   const daysLeft = Math.ceil(msLeft / (1000 * 60 * 60 * 24));
   const expired  = daysLeft <= 0;
   const expiring = !expired && daysLeft <= 7;
-
+ 
   let label;
   if (expired) {
-    label = `Expired ${expires.toLocaleDateString()}`;
+    label = `Expired ${expires.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
   } else if (expiring) {
     label = `Expires in ${daysLeft} day${daysLeft === 1 ? '' : 's'}`;
   } else {
     label = `Renews ${expires.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
   }
-
-  return { isPro: true, expired, expiring, daysLeft, label };
+ 
+  return { isPro: true, expired, expiring, daysLeft, label, planType };
 }
+ 
 
 
 // ── Theme / font helpers ──────────────────────────────────
