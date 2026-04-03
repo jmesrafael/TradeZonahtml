@@ -1,5 +1,5 @@
 // supabase/functions/delete-account/index.ts
-// Deploy: supabase functions deploy delete-account
+// Deploy with: supabase functions deploy delete-account --no-verify-jwt
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Use service role key as apikey — works for JWT verification
+    // ── 1. Verify the user token and get their ID ──────────────────────────
     const userRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
       headers: {
         "Authorization": `Bearer ${token}`,
@@ -39,10 +39,8 @@ Deno.serve(async (req) => {
     const userId = userData.id;
     console.log("Deleting account for user:", userId);
 
-    // Delete child tables first (user_id column), then profiles (id column)
-    const userIdTables = ["trade_images", "trades", "journal_settings", "journals", "referrals"];
-    for (const table of userIdTables) {
-      const col = table === "referrals" ? "referrer_id" : "user_id";
+    // ── 2. Helper: DELETE rows from a table by a given column ──────────────
+    const deleteRows = async (table: string, col: string) => {
       const res = await fetch(`${supabaseUrl}/rest/v1/${table}?${col}=eq.${userId}`, {
         method: "DELETE",
         headers: {
@@ -53,38 +51,48 @@ Deno.serve(async (req) => {
       });
       if (!res.ok) {
         const err = await res.text();
-        console.error(`Failed to delete from ${table}:`, err);
+        console.error(`Failed to delete from ${table} (${col}):`, err);
       } else {
-        console.log(`Deleted from ${table}`);
+        console.log(`Deleted from ${table} (${col})`);
       }
-    }
+    };
 
-    // Delete profile row (keyed on id, not user_id)
-    await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${userId}`, {
+    // ── 3. Delete data in dependency order ────────────────────────────────
+    // trade_images first (depends on trades)
+    await deleteRows("trade_images", "user_id");
+
+    // trades (depends on journals)
+    await deleteRows("trades", "user_id");
+
+    // journal_settings (depends on journals)
+    await deleteRows("journal_settings", "user_id");
+
+    // journals
+    await deleteRows("journals", "user_id");
+
+    // referrals — user can appear in EITHER column, delete both
+    await deleteRows("referrals", "referrer_id");
+    await deleteRows("referrals", "referred_user_id");
+
+    // profile (keyed on id, not user_id)
+    await deleteRows("profiles", "id");
+
+    // ── 4. Delete the auth user last ───────────────────────────────────────
+    const deleteAuthRes = await fetch(`${supabaseUrl}/auth/v1/admin/users/${userId}`, {
       method: "DELETE",
       headers: {
         "Authorization": `Bearer ${serviceKey}`,
         "apikey": serviceKey,
-        "Prefer": "return=minimal",
-      },
-    });
-    console.log("Deleted profile");
-
-    // Delete the auth user last
-    const deleteRes = await fetch(`${supabaseUrl}/auth/v1/admin/users/${userId}`, {
-      method: "DELETE",
-      headers: {
-        "Authorization": `Bearer ${serviceKey}`,
-        "apikey": serviceKey,
       },
     });
 
-    if (!deleteRes.ok) {
-      const err = await deleteRes.json().catch(() => ({ message: deleteRes.statusText }));
+    if (!deleteAuthRes.ok) {
+      const err = await deleteAuthRes.json().catch(() => ({ message: deleteAuthRes.statusText }));
       console.error("Auth user deletion failed:", JSON.stringify(err));
-      return new Response(JSON.stringify({ error: "Failed to delete auth user: " + (err.message || deleteRes.statusText) }), {
-        status: 500, headers: CORS,
-      });
+      return new Response(
+        JSON.stringify({ error: "Failed to delete auth user: " + (err.message || deleteAuthRes.statusText) }),
+        { status: 500, headers: CORS }
+      );
     }
 
     console.log("Account successfully deleted for user:", userId);

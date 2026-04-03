@@ -558,7 +558,8 @@ iframe.ready{opacity:1}
 <script>
 // ─── Tabs ───────────────────────────────────────────────────────────────────
 const TABS=['logs','calendar','notes','analytics','settings'];
-let activeTab='logs', journalId=sessionStorage.getItem('tz_current_journal');
+let activeTab='logs', journalId = sessionStorage.getItem('tz_current_journal') 
+             || localStorage.getItem('tz_current_journal');
 let journalObj=null, settings=null, currentUser=null, userIsPro=false, isDirty=false;
 let exportScope='full', importMode='replace', importPayload=null;
 let _lastRemovedTag=null, _lastRemovedKey=null, _undoTimer=null;
