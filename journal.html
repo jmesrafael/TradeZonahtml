@@ -735,14 +735,29 @@ async function refreshExpSummary(){
   const trades=await getTrades(journalId);
   const s=settings||{};const f=exportScope==='full';
   // Count trades with images
-  const withImgs=trades.filter(t=>t.images&&t.images.length>0).length;
-  el.innerHTML=`
+// Count trades with images from DB
+let withImgs=0;
+for(const t of trades){
+  const imgs=await getTradeImages(t.id);
+  if(imgs.length>0)withImgs++;
+}
+el.innerHTML=`
     <div class="es-row ok"><i class="fa-solid fa-check"></i> ${trades.length} trade${trades.length!==1?'s':''}</div>
     <div class="es-row ${f?'ok':''}"><i class="fa-solid fa-${f?'check':'xmark'}"></i> ${(s.strategies||[]).length} strategy tags</div>
     <div class="es-row ${f?'ok':''}"><i class="fa-solid fa-${f?'check':'xmark'}"></i> ${(s.moods||[]).length} mood tags</div>
     <div class="es-row ${f?'ok':''}"><i class="fa-solid fa-${f?'check':'xmark'}"></i> Capital &amp; name</div>
-    <div class="es-row ${f?'ok':''}"><i class="fa-solid fa-${f?'images':'xmark'}"></i> ${withImgs} trade${withImgs!==1?'s':''} with images${f?' (embedded in backup)':' (not included)'}</div>
+    <div class="es-row ${f?'ok':''}" id="imgCountRow"><i class="fa-solid fa-spinner fa-spin"></i> Counting images…</div>
   `;
+// Count images in background without blocking
+(async()=>{
+  let withImgs=0;
+  for(const t of trades){
+    const imgs=await getTradeImages(t.id);
+    if(imgs.length>0)withImgs++;
+  }
+  const row=document.getElementById('imgCountRow');
+  if(row)row.outerHTML=`<div class="es-row ${f?'ok':''}"><i class="fa-solid fa-${f?'images':'xmark'}"></i> ${withImgs} trade${withImgs!==1?'s':''} with images${f?' (embedded in backup)':' (not included)'}</div>`;
+})();
 }
 
 /**

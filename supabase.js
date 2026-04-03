@@ -378,8 +378,9 @@ async function deleteTrade(tradeId) {
 // ── Trade image helpers ───────────────────────────────────
 
 async function addTradeImage(userId, tradeId, dataUrl) {
-  // 1. Convert base64 dataUrl → Blob
-  const res      = await fetch(dataUrl);
+  // 1. Compress image before uploading
+  const compressed = await compressImage(dataUrl);
+  const res      = await fetch(compressed);
   const blob     = await res.blob();
   const ext      = blob.type.includes('png') ? 'png' : 'jpg';
   const fileName = `${userId}/${tradeId}/${Date.now()}.${ext}`;
@@ -430,22 +431,65 @@ async function deleteTradeImage(imageId) {
   if (error) throw error;
 }
  
+// ── Signed URL cache (55 min lifetime) ───────────────────
+const _urlCache = {};
+
 async function getImageUrl(img) {
   if (!img) return '';
- 
-  // NEW: Storage URL — fetch a signed URL (valid 1 hour)
+
+  // NEW: Storage URL — fetch a signed URL with caching
   if (img.storage_url && !img.data) {
+    const cacheKey = img.storage_url;
+    const cached = _urlCache[cacheKey];
+    if (cached && cached.expires > Date.now()) return cached.url;
     const { data, error } = await db.storage
       .from('trade-images')
       .createSignedUrl(img.storage_url, 60 * 60);
-    return error ? '' : data.signedUrl;
+    if (!error && data.signedUrl) {
+      _urlCache[cacheKey] = {
+        url: data.signedUrl,
+        expires: Date.now() + 55 * 60 * 1000
+      };
+      return data.signedUrl;
+    }
+    return '';
   }
- 
+
   // LEGACY: old base64 images still load fine
   if (img.data) return img.data;
   if (img.url)  return img.url;
- 
+
   return '';
+}
+
+// ── Image compression before upload ──────────────────────
+async function compressImage(dataUrl, maxWidth=1200, quality=0.82) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, maxWidth / img.width);
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = () => resolve(dataUrl); // fallback to original if fails
+    img.src = dataUrl;
+  });
+}
+
+// ── Bulk image count (1 query instead of N) ───────────────
+async function getImageCountsForJournal(userId) {
+  const { data } = await db
+    .from('trade_images')
+    .select('trade_id')
+    .eq('user_id', userId);
+  const counts = {};
+  (data || []).forEach(row => {
+    counts[row.trade_id] = (counts[row.trade_id] || 0) + 1;
+  });
+  return counts;
 }
 
 // Attach images to trade objects after loading
