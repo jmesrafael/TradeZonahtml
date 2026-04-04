@@ -983,7 +983,7 @@ td:nth-child(9){width:64px}
       <div class="img-pro-lock" id="imgProLock"><i class="fa-solid fa-lock" style="opacity:.5"></i><span>Image uploads on <a href="/subscription" style="color:var(--accent2);text-decoration:none;font-weight:600">Pro plan</a>.</span></div>
       <div class="img-grid" id="nmImgs"></div>
       <div class="nmlbl"><i class="fa-solid fa-note-sticky"></i> Notes</div>
-      <textarea class="nmta" id="nmText" placeholder="Analysis, observations, what you learned…"></textarea>
+      <textarea class="nmta" id="nmText" placeholder="Analysis, observations, what you learned…" autocomplete="off" spellcheck="true"></textarea>
     </div>
     <div class="nmftr"><button class="btn-ghost" onclick="closeNotes()">Cancel</button><button class="btn-primary" onclick="saveNotes()"><i class="fa-solid fa-floppy-disk"></i> Save Notes</button></div>
   </div>
@@ -1774,16 +1774,16 @@ function buildRow(t,num){
     <td><div class="dt-cell" id="dcel_${t.id}">
       <span class="dt-val${t.date?'':' empty'}" id="dval_${t.id}">${t.date||'—'}</span>
       <button class="dt-pencil" id="dpen_${t.id}" onclick="toggleDtEdit('${t.id}','date')"><i class="fa-solid fa-pencil"></i></button>
-      <input class="dt-input" type="date" id="dinp_${t.id}" value="${t.date||''}" onblur="commitDtEdit('${t.id}','date')" onkeydown="dtKey(event,'${t.id}','date')">
+      <input class="dt-input" type="date" id="dinp_${t.id}" value="${t.date||''}" autocomplete="off" onblur="commitDtEdit('${t.id}','date')" onkeydown="dtKey(event,'${t.id}','date')">
     </div></td>
     <td><div class="dt-cell" id="tcel_${t.id}">
       <span class="dt-val${t.time?'':' empty'}" id="tval_${t.id}">${t.time?fmt12(t.time):'—'}</span>
       <button class="dt-pencil" id="tpen_${t.id}" onclick="toggleDtEdit('${t.id}','time')"><i class="fa-solid fa-pencil"></i></button>
-      <input class="dt-input" type="time" id="tinp_${t.id}" value="${t.time||''}" onblur="commitDtEdit('${t.id}','time')" onkeydown="dtKey(event,'${t.id}','time')">
+      <input class="dt-input" type="time" id="tinp_${t.id}" value="${t.time||''}" autocomplete="off" onblur="commitDtEdit('${t.id}','time')" onkeydown="dtKey(event,'${t.id}','time')">
     </div></td>
     <td class="pw-cell">
       <input class="ci" value="${esc(t.pair||'')}" placeholder="EURUSD"
-        oninput="onPairInput(this,'${t.id}')" onfocus="showSugOnFocus(this,'${t.id}')"
+        oninput="onPairInput(this,'${t.id}')" onfocus="showSugOnFocus(this,'${t.id}')" autocomplete="off"
         onblur="confirmPair('${t.id}',this);hideSug()" style="min-width:80px">
       <div class="sugs" id="sug_${t.id}" style="display:none"></div>
     </td>
@@ -1796,14 +1796,14 @@ function buildRow(t,num){
     <td><div class="tc" id="st_${t.id}" onclick="openPP(event,'${t.id}','strategy')">${buildPills(t.strategy)}</div></td>
     <td><div class="tc" id="tf_${t.id}" onclick="openPP(event,'${t.id}','timeframe')">${buildPills(t.timeframe)}</div></td>
     <td><input class="ci" id="pnl_${t.id}" type="text" inputmode="decimal"
-      value="${fmtVal(t.pnl,'pnl')}" placeholder="0.00"
+      autocomplete="off" value="${fmtVal(t.pnl,'pnl')}" placeholder="0.00"
       onfocus="vFocus(this)"
       oninput="onValInput('${t.id}','pnl',this.value)"
       onkeydown="numericOnly(event)"
       onblur="vBlur(this,'${t.id}','pnl')"
       style="min-width:58px;font-weight:600;font-family:var(--font-mono,'Space Grotesk',sans-serif);color:${pnlCol(t.pnl)}"></td>
     <td><input class="ci" id="r_${t.id}" type="text" inputmode="decimal"
-      value="${fmtVal(t.r,'r')}" placeholder="+2R"
+      autocomplete="off" value="${fmtVal(t.r,'r')}" placeholder="+2R"
       onfocus="vFocus(this)"
       oninput="onValInput('${t.id}','r',this.value)"
       onkeydown="numericOnly(event)"
@@ -2142,13 +2142,72 @@ document.getElementById('cOverlay').addEventListener('click',function(e){if(e.ta
 document.getElementById('mDelOverlay').addEventListener('click',function(e){if(e.target===this)closeMDel();});
 window.addEventListener('resize',()=>{
   if(document.getElementById('shareOverlay').classList.contains('open'))_refreshPreview();
-  // On resize to mobile, reset filter modal position
   if(window.innerWidth<=520&&_fmOpen){
     const modal=document.getElementById('filterModal');
     modal.style.left='';modal.style.top='';
     _fmPosX=null;_fmPosY=null;
   }
 });
+
+// ── FIX: Suppress "unsaved changes" beforeunload prompt ──────────────────
+// The browser fires this when form inputs (textarea, text inputs) have been
+// modified since page load. We handle all saving ourselves via Supabase,
+// so we never want the native browser dialog to appear.
+window.addEventListener('beforeunload', e => {
+  // Remove the returnValue so no dialog appears
+  delete e.returnValue;
+  // Also prevent the event from bubbling to any parent frame listener
+  e.stopImmediatePropagation();
+});
+
+// Also mark the textarea as not needing browser-native save tracking
+// by resetting its defaultValue whenever we save or close notes
+const _origCloseNotes = closeNotes;
+closeNotes = function() {
+  const ta = document.getElementById('nmText');
+  if (ta) ta.defaultValue = ta.value; // sync so browser sees no "change"
+  _origCloseNotes();
+};
+
+// Keep all dynamic inputs in sync so the browser never detects a "dirty" form
+document.addEventListener('input', e => {
+  const el = e.target;
+  if (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') {
+    // Sync defaultValue = current value so browser thinks nothing changed
+    if ('defaultValue' in el) el.defaultValue = el.value;
+  }
+}, true);
+
+// ── Security: block view-source, devtools shortcuts, right-click, drag ───
+// Right-click context menu
+document.addEventListener('contextmenu', e => e.preventDefault());
+
+// Keyboard shortcuts: F12, Ctrl+U, Ctrl+Shift+I/J/C, Ctrl+S, Ctrl+P
+document.addEventListener('keydown', e => {
+  const ctrl = e.ctrlKey || e.metaKey;
+  const shift = e.shiftKey;
+  if (
+    e.key === 'F12' ||
+    (ctrl && e.key.toLowerCase() === 'u') ||
+    (ctrl && shift && ['i','j','c'].includes(e.key.toLowerCase())) ||
+    (ctrl && e.key.toLowerCase() === 's') ||
+    (ctrl && e.key.toLowerCase() === 'p')
+  ) {
+    e.preventDefault();
+    e.stopPropagation();
+    return false;
+  }
+}, true);
+
+// Block text selection outside of input/textarea (allow typing but not copy-scraping)
+document.addEventListener('selectstart', e => {
+  const tag = e.target.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return; // allow in inputs
+  e.preventDefault();
+});
+
+// Block drag (prevents image-saving by drag)
+document.addEventListener('dragstart', e => e.preventDefault());
 </script>
 </body>
 </html>
