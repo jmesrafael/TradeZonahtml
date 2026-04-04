@@ -768,18 +768,19 @@ el.innerHTML=`
  * Fetch an image URL and convert it to a base64 data URL.
  * Returns null if the fetch fails (don't abort the whole export).
  */
-async function urlToBase64(url){
-  try{
-    const resp=await fetch(url);
-    if(!resp.ok)return null;
-    const blob=await resp.blob();
-    return await new Promise(res=>{
-      const r=new FileReader();
-      r.onload=()=>res(r.result);
-      r.onerror=()=>res(null);
-      r.readAsDataURL(blob);
+async function storagePathToBase64(storagePath) {
+  try {
+    const { data, error } = await db.storage
+      .from('trade-images')
+      .download(storagePath);
+    if (error || !data) return null;
+    return await new Promise(res => {
+      const r = new FileReader();
+      r.onload = () => res(r.result);
+      r.onerror = () => res(null);
+      r.readAsDataURL(data);
     });
-  }catch{return null;}
+  } catch { return null; }
 }
 
 async function confirmExport(){
@@ -790,24 +791,26 @@ async function confirmExport(){
     const isFull=exportScope==='full';
     const tradeRows=trades.map(dbToTrade);
 
-    // Embed images as base64 when doing a full backup
-if(isFull){
-  btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Embedding images…';
-  for(let i=0;i<tradeRows.length;i++){
-    const t=tradeRows[i];
-    const rawImgs=await getTradeImages(t.id);
-    if(rawImgs.length>0){
-      const b64Imgs=[];
-      for(const img of rawImgs){
-        const signedUrl=await getImageUrl(img);
-        if(signedUrl){
-          const b64=await urlToBase64(signedUrl);
-          if(b64)b64Imgs.push(b64);
+if (isFull) {
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Embedding images…';
+  for (let i = 0; i < tradeRows.length; i++) {
+    const t = tradeRows[i];
+    const rawImgs = await getTradeImages(t.id);
+    if (rawImgs.length > 0) {
+      const b64Imgs = [];
+      for (const img of rawImgs) {
+        // Use storage path directly — no signed URL needed, avoids CORS
+        if (img.storage_url && !img.data) {
+          const b64 = await storagePathToBase64(img.storage_url);
+          if (b64) b64Imgs.push(b64);
+        } else if (img.data) {
+          // Legacy base64 stored directly in DB
+          b64Imgs.push(img.data);
         }
       }
-      tradeRows[i]={...t,images:b64Imgs};
+      tradeRows[i] = { ...t, images: b64Imgs };
     }
-    btn.innerHTML=`<i class="fa-solid fa-spinner fa-spin"></i> Embedding images… (${i+1}/${tradeRows.length})`;
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Embedding images… (${i+1}/${tradeRows.length})`;
   }
 }
     const payload={

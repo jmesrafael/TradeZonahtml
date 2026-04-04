@@ -292,12 +292,20 @@ async function getJournalSettings(journalId) {
 
   if (!data) {
     // Auto-create settings row if missing
-    const { data: newRow } = await db
+const { data: newRow } = await db
       .from('journal_settings')
       .upsert({
         journal_id: journalId,
         user_id: (await db.auth.getUser()).data.user?.id,
-        strategies: [], timeframes: [], pairs: [], moods: [], mood_colors: {}
+        strategies: ['Scalp', 'Breakout', 'FVG'],
+        timeframes:  ['1h', '4h', '1D'],
+        pairs:       ['EURUSD', 'BTCUSDT', 'XAUUSD'],
+        moods:       ['Confident', 'Neutral', 'Anxious'],
+        mood_colors: {
+          'Confident': '#19c37d',
+          'Neutral':   '#8fa39a',
+          'Anxious':   '#ff5f6d'
+        }
       }, { onConflict: 'journal_id' })
       .select('*')
       .maybeSingle();
