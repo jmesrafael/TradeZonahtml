@@ -45,7 +45,6 @@ nav::-webkit-scrollbar{display:none}
 .tab{padding:7px 13px;background:none;border:none;color:var(--muted);font-size:13px;font-family:var(--font-body,'Inter',sans-serif);cursor:pointer;border-radius:var(--radius-md);transition:all var(--transition-base);white-space:nowrap;display:flex;align-items:center;gap:5px}
 .tab:hover{color:var(--text);background:rgba(255,255,255,.04)}
 .tab.active{color:var(--accent);background:rgba(var(--accent-rgb,0,255,136),.08)}
-/* Settings tab — icon only */
 .tab.settings-tab{padding:7px 10px}
 .tab-spacer{flex:1}
 
@@ -160,55 +159,11 @@ iframe.ready{opacity:1}
 #calcDragHdr:active{cursor:grabbing}
 .calc-drag-title{font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;pointer-events:none;color:var(--text)}
 .calc-drag-title i{color:var(--accent2)}
-.calc-grip-hint{font-size:10px;color:var(--muted);display:flex;align-items:center;gap:4px;pointer-events:none}
 .calc-x{background:none;border:none;color:var(--muted);cursor:pointer;font-size:15px;width:28px;height:28px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;transition:all .15s}
 .calc-x:hover{background:var(--border);color:var(--text)}
-#calcModalBody{overflow-y:auto;padding:14px;flex:1;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
-#calcModalBody::-webkit-scrollbar{width:4px}
-#calcModalBody::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
-.calc-hero{background:linear-gradient(135deg,rgba(var(--accent-rgb,0,255,136),.06),rgba(var(--accent2-rgb,25,195,125),.02));border:1px solid rgba(var(--accent-rgb,0,255,136),.15);border-radius:var(--radius-xl);padding:12px 16px;margin-bottom:13px;display:flex;align-items:center;gap:12px}
-.calc-hero-icon{width:34px;height:34px;background:rgba(var(--accent-rgb,0,255,136),.12);border-radius:var(--radius-lg);display:flex;align-items:center;justify-content:center;color:var(--accent2);font-size:14px;flex-shrink:0}
-.calc-hero-text h2{font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:12px;font-weight:600;margin-bottom:2px}
-.calc-hero-text p{font-size:10px;color:var(--muted);line-height:1.5}
-.calc-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.ccol{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-xl);padding:13px}
-.ccol-title{font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;display:flex;align-items:center;gap:5px}
-.ccol-title i{color:var(--accent2)}
-.cfield{margin-bottom:9px}
-.cflbl{font-size:10px;color:var(--muted);margin-bottom:3px;display:flex;align-items:center;justify-content:space-between}
-.ctip{display:inline-flex;align-items:center;justify-content:center;width:12px;height:12px;border-radius:50%;background:var(--border);color:var(--muted);font-size:7px;cursor:help;position:relative;flex-shrink:0}
-.ctip:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 4px);right:0;background:#0b0f0c;color:#e6f2ec;font-size:9px;padding:4px 7px;border-radius:var(--radius-md);z-index:9999;max-width:170px;width:150px;line-height:1.4;pointer-events:none;border:1px solid var(--border);white-space:normal;text-align:left}
-.cinwrap{position:relative;display:flex;align-items:center}
-.cipre,.cisuf{position:absolute;font-size:10px;color:var(--muted);pointer-events:none;z-index:1}
-.cipre{left:8px}.cisuf{right:8px}
-.cin{width:100%;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-md);padding:6px 8px;color:var(--text);font-family:var(--font-body,'Inter',sans-serif);font-size:12px;outline:none;transition:border-color .15s;-moz-appearance:textfield}
-.cin::-webkit-outer-spin-button,.cin::-webkit-inner-spin-button{-webkit-appearance:none}
-.cin:focus{border-color:var(--accent2)}
-.cin.pre{padding-left:20px}.cin.suf{padding-right:20px}
-.csel{width:100%;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-md);padding:6px 8px;color:var(--text);font-family:var(--font-body,'Inter',sans-serif);font-size:12px;outline:none;cursor:pointer;-webkit-appearance:none;transition:border-color .15s}
-.csel:focus{border-color:var(--accent2)}
-.csel option{background:var(--panel)}
-.ctoggle{display:flex;gap:4px;margin-bottom:9px}
-.ctbtn{flex:1;padding:6px 4px;border:1px solid var(--border);border-radius:var(--radius-md);background:none;color:var(--muted);font-size:11px;font-family:var(--font-heading,'Space Grotesk',sans-serif);font-weight:600;cursor:pointer;transition:all .15s;text-align:center;white-space:nowrap}
-.ctbtn.active{border-color:var(--accent2);color:var(--accent2);background:rgba(var(--accent2-rgb,25,195,125),.07)}
-.cdiv{border:none;border-top:1px solid var(--border);margin:7px 0}
-.crg{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.crc{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-lg);padding:9px}
-.crc.hi{border-color:rgba(var(--accent-rgb,0,255,136),.3);background:rgba(var(--accent-rgb,0,255,136),.04)}
-.crc.dan{border-color:rgba(255,95,109,.25);background:rgba(255,95,109,.04)}
-.crl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;display:flex;align-items:center;gap:3px}
-.crv{font-family:var(--font-mono,'Space Grotesk',sans-serif);font-size:14px;font-weight:700;color:var(--text);line-height:1}
-.crv.pos{color:var(--accent)}.crv.neg{color:var(--red)}
-.crs{font-size:9px;color:var(--muted);margin-top:2px}
-.cpnl{margin-top:9px;padding-top:9px;border-top:1px solid var(--border)}
-.cpnltitle{font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;display:flex;align-items:center;gap:4px}
-.cpnltitle i{color:var(--accent2)}
-.crrwrap{height:4px;background:var(--border);border-radius:3px;overflow:hidden;margin:4px 0 2px}
-.crrbar{height:100%;border-radius:3px;transition:width .4s,background .2s}
-.cfbox{margin-top:9px;padding:7px 9px;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-md);font-size:9px;color:var(--muted);line-height:1.5}
-.cftitle{font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:9px;font-weight:600;color:var(--text);margin-bottom:2px}
-.cdis{font-size:9px;color:var(--muted);line-height:1.4;padding:6px 8px;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-md);margin-top:7px;opacity:.65}
-.cforex{display:none}.cforex.show{display:block}
+/* iframe fills modal body — no scroll needed in journal.html */
+#calcModalBody{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column}
+#calcFrame{flex:1;border:none;width:100%;min-height:0}
 
 /* ── Overlay modals ── */
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:600;align-items:center;justify-content:center;padding:20px}
@@ -252,33 +207,9 @@ iframe.ready{opacity:1}
 .file-badge .fn{font-size:13px;font-weight:500;color:var(--accent2);word-break:break-all}
 .file-badge .clr{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:2px 5px;border-radius:4px;transition:color var(--transition-fast);flex-shrink:0}
 .file-badge .clr:hover{color:var(--red)}
-.badge-expiring {
-  background: rgba(245,158,11,.12);
-  color: #fbbf24;
-  border: 1px solid rgba(245,158,11,.35);
-  animation: pulse 2s infinite;
-}
-.badge-pro {
-  background: linear-gradient(105deg, #7a5a00 0%, #c9973a 18%, #f5c842 35%, #ffe17a 50%, #f5c842 65%, #c9973a 82%, #7a5a00 100%);
-  background-size: 200% auto;
-  color: #3a2800;
-  border: 1px solid #c9973a;
-  text-shadow: 0 1px 0 rgba(255,230,100,.5);
-  box-shadow: 0 1px 4px rgba(0,0,0,.35), 0 0 0 1px rgba(255,220,80,.15) inset, 0 1px 0 rgba(255,255,180,.3) inset;
-  animation: goldShimmer 3.5s linear infinite;
-  overflow: hidden;
-  position: relative;
-}
-.badge-pro::after {
-  content: '';
-  position: absolute;
-  top: 0; left: -80%;
-  width: 45%; height: 100%;
-  background: linear-gradient(105deg, transparent 20%, rgba(255,255,255,.55) 50%, transparent 80%);
-  transform: skewX(-15deg);
-  animation: goldGlare 3.5s ease-in-out infinite;
-  pointer-events: none;
-}
+.badge-expiring{background:rgba(245,158,11,.12);color:#fbbf24;border:1px solid rgba(245,158,11,.35);animation:pulse 2s infinite}
+.badge-pro{background:linear-gradient(105deg,#7a5a00 0%,#c9973a 18%,#f5c842 35%,#ffe17a 50%,#f5c842 65%,#c9973a 82%,#7a5a00 100%);background-size:200% auto;color:#3a2800;border:1px solid #c9973a;text-shadow:0 1px 0 rgba(255,230,100,.5);box-shadow:0 1px 4px rgba(0,0,0,.35),0 0 0 1px rgba(255,220,80,.15) inset,0 1px 0 rgba(255,255,180,.3) inset;animation:goldShimmer 3.5s linear infinite;overflow:hidden;position:relative}
+.badge-pro::after{content:'';position:absolute;top:0;left:-80%;width:45%;height:100%;background:linear-gradient(105deg,transparent 20%,rgba(255,255,255,.55) 50%,transparent 80%);transform:skewX(-15deg);animation:goldGlare 3.5s ease-in-out infinite;pointer-events:none}
 .mode-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px}
 .mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
 .mode-opt{padding:11px 10px;background:var(--bg);border:2px solid var(--border);border-radius:var(--radius-md);cursor:pointer;text-align:center;transition:all var(--transition-fast)}
@@ -305,8 +236,6 @@ iframe.ready{opacity:1}
 .prog-bar{height:100%;background:var(--accent2);border-radius:3px;transition:width .3s;width:0}
 .prog-lbl{font-size:12px;color:var(--muted)}
 .del-journal-inner{background:var(--panel);border:1px solid rgba(255,95,109,.35);border-radius:var(--radius-xl);width:100%;max-width:400px;padding:26px}
-
-/* image-in-backup info note */
 .img-backup-note{font-size:11px;color:var(--muted);padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md);display:flex;align-items:flex-start;gap:7px;line-height:1.6;margin-top:10px}
 .img-backup-note i{color:var(--accent2);flex-shrink:0;margin-top:1px}
 
@@ -323,7 +252,6 @@ iframe.ready{opacity:1}
   .tab{padding:6px 9px;font-size:12px}
   .settings-grid{grid-template-columns:1fr}
   .settings-panel{padding:14px 12px 100px}
-  .calc-cols{grid-template-columns:1fr}
   #calcModal{width:96vw;max-height:88vh}
   .io-grid{grid-template-columns:1fr 1fr}
 }
@@ -332,9 +260,6 @@ iframe.ready{opacity:1}
   .tab-txt{display:none}
   .tab{gap:0;padding:7px 9px}
   .mbox{max-width:100%}
-}
-@media(max-width:400px){
-  .crg{grid-template-columns:1fr}
 }
 </style>
 </head>
@@ -364,7 +289,6 @@ iframe.ready{opacity:1}
   <button class="tab"        data-tab="notes"      onclick="switchTab('notes')"><i class="fa-solid fa-note-sticky"></i><span class="tab-txt"> Notes</span></button>
   <button class="tab"        data-tab="analytics"  onclick="switchTab('analytics')"><i class="fa-solid fa-chart-line"></i><span class="tab-txt"> Analytics</span></button>
   <div class="tab-spacer"></div>
-  <!-- Settings: icon only -->
   <button class="tab settings-tab" data-tab="settings" onclick="switchTab('settings')" title="Settings"><i class="fa-solid fa-gear"></i></button>
 </nav>
 
@@ -397,7 +321,6 @@ iframe.ready{opacity:1}
         <div class="ssec-title"><i class="fa-solid fa-book-open"></i>Journal Info</div>
         <div class="field-row"><div class="field-lbl">Journal Name</div><input type="text" class="field-input" id="js-name" maxlength="60" placeholder="My Journal" oninput="markDirty()"></div>
         <div class="field-row"><div class="field-lbl">Account Capital <span style="font-size:10px;color:var(--muted)">(optional)</span></div><div style="position:relative"><span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;pointer-events:none">$</span><input type="number" class="field-input" id="js-capital" placeholder="0.00" min="0" step="0.01" style="padding-left:26px" oninput="markDirty()"></div></div>
-        <!-- Pro plan duration row -->
         <div class="field-row" id="proDurationRow" style="display:none">
           <div class="field-lbl">Pro Plan</div>
           <div style="background:var(--bg);border:1px solid rgba(var(--accent-rgb,0,255,136),.2);border-radius:var(--radius-md);padding:9px 12px;display:flex;align-items:center;gap:8px">
@@ -432,7 +355,6 @@ iframe.ready{opacity:1}
 
       <div class="ssec full"><div class="ssec-title"><i class="fa-solid fa-database"></i>Export &amp; Import</div><div id="exportImportContent"></div></div>
 
-      <!-- Legal links -->
       <div class="ssec full" style="padding:14px 18px">
         <div class="ssec-title"><i class="fa-solid fa-scale-balanced"></i>Legal</div>
         <div class="legal-links">
@@ -459,78 +381,15 @@ iframe.ready{opacity:1}
 </button>
 <span id="calcFabTip">Risk Calculator</span>
 
-<!-- ══════════ CALCULATOR MODAL ══════════ -->
+<!-- ══════════ CALCULATOR MODAL (iframe → calculator.html) ══════════ -->
 <div id="calcModal">
   <div id="calcDragHdr">
     <div class="calc-drag-title"><i class="fa-solid fa-calculator"></i> Risk Calculator</div>
-    <div style="display:flex;align-items:center;gap:8px">
-      <span class="calc-grip-hint"><i class="fa-solid fa-up-down-left-right"></i> drag</span>
-      <button class="calc-x" onclick="toggleCalc()"><i class="fa-solid fa-xmark"></i></button>
-    </div>
+    <button class="calc-x" onclick="toggleCalc()"><i class="fa-solid fa-xmark"></i></button>
   </div>
   <div id="calcModalBody">
-    <div class="calc-hero">
-      <div class="calc-hero-icon"><i class="fa-solid fa-calculator"></i></div>
-      <div class="calc-hero-text"><h2>Trading Risk Calculator</h2><p>Correct position sizing for Crypto &amp; Forex. Live results.</p></div>
-    </div>
-    <div class="calc-cols">
-      <div class="ccol">
-        <div class="ccol-title"><i class="fa-solid fa-sliders"></i> Inputs</div>
-        <div class="ctoggle">
-          <button class="ctbtn active" id="cBtnCrypto" onclick="cSetAsset('crypto')"><i class="fa-brands fa-bitcoin" style="margin-right:3px"></i>Crypto</button>
-          <button class="ctbtn" id="cBtnForex" onclick="cSetAsset('forex')"><i class="fa-solid fa-dollar-sign" style="margin-right:3px"></i>Forex</button>
-        </div>
-        <div class="cfield cforex" id="cForexPairField">
-          <div class="cflbl">Pair <span class="ctip" data-tip="JPY: ×100 pip. Gold/Indices: direct price.">?</span></div>
-          <select class="csel" id="cPair" onchange="cCalc()">
-            <option value="EURUSD">EURUSD</option><option value="GBPUSD">GBPUSD</option>
-            <option value="AUDUSD">AUDUSD</option><option value="NZDUSD">NZDUSD</option>
-            <option value="USDCAD">USDCAD</option><option value="USDCHF">USDCHF</option>
-            <option value="USDJPY">USDJPY (JPY)</option><option value="EURJPY">EURJPY (JPY)</option>
-            <option value="GBPJPY">GBPJPY (JPY)</option><option value="XAUUSD">XAU/USD</option>
-            <option value="US30">US30</option><option value="NAS100">NAS100</option>
-          </select>
-        </div>
-        <div class="cfield">
-          <div class="cflbl">Balance <span class="ctip" data-tip="Total account balance in USD">?</span></div>
-          <div class="cinwrap"><span class="cipre">$</span><input class="cin pre" type="number" id="cBalance" value="1000" min="0" oninput="cCalc()"></div>
-        </div>
-        <div class="cfield">
-          <div class="cflbl">Risk % <span class="ctip" data-tip="% of balance risked. Pros: 1–2%">?</span></div>
-          <div class="cinwrap"><input class="cin suf" type="number" id="cRiskPct" value="1" min="0.01" max="100" step="0.1" oninput="cCalc()"><span class="cisuf">%</span></div>
-        </div>
-        <hr class="cdiv">
-        <div class="cfield"><div class="cflbl">Entry Price</div><input class="cin" type="number" id="cEntry" placeholder="70116.1" step="any" oninput="cCalc()"></div>
-        <div class="cfield"><div class="cflbl">Stop Loss <span class="ctip" data-tip="SL hit = exact risk amount">?</span></div><input class="cin" type="number" id="cSL" placeholder="70007.1" step="any" oninput="cCalc()"></div>
-        <div class="cfield"><div class="cflbl">Take Profit <span style="font-size:8px;color:var(--muted)">(optional)</span></div><input class="cin" type="number" id="cTP" placeholder="70500" step="any" oninput="cCalc()"></div>
-      </div>
-      <div class="ccol">
-        <div class="ccol-title"><i class="fa-solid fa-chart-bar"></i> Results</div>
-        <div class="crg">
-          <div class="crc hi"><div class="crl"><i class="fa-solid fa-shield-halved"></i> Risk $</div><div class="crv pos" id="cRiskAmt">—</div><div class="crs" id="cRiskPctLbl">—</div></div>
-          <div class="crc hi"><div class="crl"><i class="fa-solid fa-layer-group"></i> Position</div><div class="crv" id="cPosSize">—</div><div class="crs" id="cPosUnit">—</div></div>
-          <div class="crc"><div class="crl"><i class="fa-solid fa-arrows-left-right"></i> SL Dist</div><div class="crv" id="cSLDist">—</div><div class="crs" id="cSLUnit">—</div></div>
-          <div class="crc dan"><div class="crl"><i class="fa-solid fa-circle-xmark"></i> Max Loss</div><div class="crv neg" id="cMaxLoss">—</div><div class="crs">= risk</div></div>
-        </div>
-        <div class="cpnl" id="cPnlSec" style="display:none">
-          <div class="cpnltitle"><i class="fa-solid fa-chart-line"></i> P/L Estimate</div>
-          <div class="crg">
-            <div class="crc dan"><div class="crl"><i class="fa-solid fa-arrow-trend-down"></i> Max Loss</div><div class="crv neg" id="cLoss2">—</div><div class="crs">if SL</div></div>
-            <div class="crc"><div class="crl"><i class="fa-solid fa-arrow-trend-up"></i> Target</div><div class="crv pos" id="cProfit">—</div><div class="crs">if TP</div></div>
-          </div>
-          <div id="cRRSec" style="display:none;margin-top:8px">
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <span style="font-size:10px;color:var(--muted)">Risk/Reward</span>
-              <span style="font-family:var(--font-mono,'Space Grotesk',sans-serif);font-size:13px;font-weight:700" id="cRR">—</span>
-            </div>
-            <div class="crrwrap"><div class="crrbar" id="cRRBar"></div></div>
-            <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted)"><span>&lt;1R Poor</span><span>2R Good</span><span>3R+ Great</span></div>
-          </div>
-        </div>
-        <div class="cfbox"><div class="cftitle">Formula</div><div id="cFormula">Position = Risk ÷ SL Distance</div></div>
-        <div class="cdis"><i class="fa-solid fa-triangle-exclamation" style="color:var(--accent2);margin-right:3px"></i>Educational only. Verify with your broker.</div>
-      </div>
-    </div>
+    <!-- calculator.html is loaded here on first open -->
+    <iframe id="calcFrame" src="" scrolling="auto"></iframe>
   </div>
 </div>
 
@@ -583,9 +442,9 @@ iframe.ready{opacity:1}
 <div id="toast"><i id="toastIcon" class="fa-solid fa-circle-check"></i><span id="toastMsg"></span></div>
 
 <script>
-// ─── Tabs ───────────────────────────────────────────────────────────────────
+// ─── Tabs ────────────────────────────────────────────────────────────────────
 const TABS=['logs','calendar','notes','analytics','settings'];
-let activeTab='logs', journalId = sessionStorage.getItem('tz_current_journal') 
+let activeTab='logs', journalId = sessionStorage.getItem('tz_current_journal')
              || localStorage.getItem('tz_current_journal');
 let journalObj=null, settings=null, currentUser=null, userIsPro=false, isDirty=false;
 let exportScope='full', importMode='replace', importPayload=null;
@@ -594,39 +453,32 @@ let _lastRemovedTag=null, _lastRemovedKey=null, _undoTimer=null;
 (async()=>{
   currentUser=await requireAuth();if(!currentUser)return;
   if(!journalId){location.href='/dashboard';return;}
-// Fire all three at once instead of one-by-one
-const [profile, journals, settingsData] = await Promise.all([
-  getProfile(currentUser.id),
-  getJournals(currentUser.id),
-  getJournalSettings(journalId)
-]);
-
-userIsPro = profile?.plan === 'pro';
-window._userIsPro = userIsPro;
-document.getElementById('hUserName').textContent = profile?.name || currentUser.email;
-// ── Plan badge (mirrors dashboard logic) ──────────────────────────
-const _badge = document.getElementById('hPlanBadge');
-if (userIsPro) {
-  const _sub = getSubscriptionStatus(profile);
-  if (_sub.expiring) {
-    _badge.textContent = `Pro · ${_sub.daysLeft}d left`;
-    _badge.className = 'plan-badge badge-expiring';
-  } else if (_sub.expired) {
-    _badge.textContent = 'Pro Expired';
-    _badge.className = 'plan-badge badge-free';
-  } else {
-    _badge.textContent = 'Pro';
-    _badge.className = 'plan-badge badge-pro';
+  const [profile, journals, settingsData] = await Promise.all([
+    getProfile(currentUser.id),
+    getJournals(currentUser.id),
+    getJournalSettings(journalId)
+  ]);
+  userIsPro = profile?.plan === 'pro';
+  window._userIsPro = userIsPro;
+  document.getElementById('hUserName').textContent = profile?.name || currentUser.email;
+  const _badge = document.getElementById('hPlanBadge');
+  if (userIsPro) {
+    const _sub = getSubscriptionStatus(profile);
+    if (_sub.expiring) {
+      _badge.textContent = `Pro · ${_sub.daysLeft}d left`;
+      _badge.className = 'plan-badge badge-expiring';
+    } else if (_sub.expired) {
+      _badge.textContent = 'Pro Expired';
+      _badge.className = 'plan-badge badge-free';
+    } else {
+      _badge.textContent = 'Pro';
+      _badge.className = 'plan-badge badge-pro';
+    }
   }
-}
-// Free users: HTML default ("Free" / badge-free) stays unchanged
-
-journalObj = journals.find(j => j.id === journalId);
-if (!journalObj) { location.href = '/dashboard'; return; }
-
-settings = settingsData;
+  journalObj = journals.find(j => j.id === journalId);
+  if (!journalObj) { location.href = '/dashboard'; return; }
+  settings = settingsData;
   bcast({type:'tz_plan',isPro:userIsPro});
-  // Show pro duration in settings
   if(userIsPro&&profile?.pro_expires_at){
     const exp=new Date(profile.pro_expires_at);
     document.getElementById('proDurationRow').style.display='block';
@@ -679,7 +531,17 @@ function frameReady(n){
   try{if(f?.contentWindow)f.contentWindow.postMessage({type:'tz_plan',isPro:userIsPro},'*');}catch(e){}
   if(f){f.classList.add('ready');const l=document.getElementById('loader-'+n);if(l){l.classList.add('hidden');setTimeout(()=>{if(l.classList.contains('hidden'))l.style.display='none';},350);}}
 }
-function bcast(msg){['logsFrame','calFrame','notesFrame','analyticsFrame'].forEach(id=>{const f=document.getElementById(id);try{if(f?.contentWindow)f.contentWindow.postMessage(msg,'*');}catch(e){}});}
+function bcast(msg){
+  ['logsFrame','calFrame','notesFrame','analyticsFrame'].forEach(id=>{
+    const f=document.getElementById(id);
+    try{if(f?.contentWindow)f.contentWindow.postMessage(msg,'*');}catch(e){}
+  });
+  // Also push theme/font changes into the calculator iframe if it's loaded
+  if(msg.type==='tz_theme'||msg.type==='tz_font'){
+    const cf=document.getElementById('calcFrame');
+    try{if(cf?.contentWindow&&cf.src)cf.contentWindow.postMessage(msg,'*');}catch(e){}
+  }
+}
 
 function markDirty(){isDirty=true;document.getElementById('unsavedBar').classList.add('show');}
 function clearDirty(){isDirty=false;document.getElementById('unsavedBar').classList.remove('show');}
@@ -748,7 +610,6 @@ function renderExportImport(){
   el.innerHTML=`<div class="io-grid"><button class="io-btn hi" onclick="openExport()"><div class="io-icon"><i class="fa-solid fa-file-arrow-down"></i></div><div class="io-label">JSON Backup</div><div class="io-desc">Full backup + images</div></button><button class="io-btn hi" onclick="exportCSV()"><div class="io-icon"><i class="fa-solid fa-file-csv"></i></div><div class="io-label">CSV Export</div><div class="io-desc">For Excel / Sheets</div></button><button class="io-btn" onclick="openImport()"><div class="io-icon"><i class="fa-solid fa-file-arrow-up"></i></div><div class="io-label">Import</div><div class="io-desc">Restore from .json</div></button></div><div class="io-note"><i class="fa-solid fa-circle-info"></i><span>JSON backup includes all images as embedded base64 data. CSV exports all trade fields for spreadsheet analysis.</span></div>`;
 }
 
-/* ── CSV Export ── */
 async function exportCSV(){
   try{
     const trades=await getTrades(journalId),rows=trades.map(dbToTrade);
@@ -764,7 +625,6 @@ async function exportCSV(){
   }catch(e){showToast('CSV export failed: '+e.message,'fa-solid fa-circle-exclamation','red');}
 }
 
-/* ── JSON Export (with images as base64) ── */
 function openExport(){exportScope='full';setScope('full');document.getElementById('exportOverlay').classList.add('open');refreshExpSummary();}
 function closeExport(){document.getElementById('exportOverlay').classList.remove('open');}
 function setScope(s){
@@ -781,49 +641,29 @@ async function refreshExpSummary(){
   el.innerHTML='<div class="es-row"><i class="fa-solid fa-spinner fa-spin"></i> Loading…</div>';
   const trades=await getTrades(journalId);
   const s=settings||{};const f=exportScope==='full';
-  // Count trades with images
-// Count trades with images from DB
-let withImgs=0;
-for(const t of trades){
-  const imgs=await getTradeImages(t.id);
-  if(imgs.length>0)withImgs++;
-}
-el.innerHTML=`
+  let withImgs=0;
+  for(const t of trades){const imgs=await getTradeImages(t.id);if(imgs.length>0)withImgs++;}
+  el.innerHTML=`
     <div class="es-row ok"><i class="fa-solid fa-check"></i> ${trades.length} trade${trades.length!==1?'s':''}</div>
     <div class="es-row ${f?'ok':''}"><i class="fa-solid fa-${f?'check':'xmark'}"></i> ${(s.strategies||[]).length} strategy tags</div>
     <div class="es-row ${f?'ok':''}"><i class="fa-solid fa-${f?'check':'xmark'}"></i> ${(s.moods||[]).length} mood tags</div>
     <div class="es-row ${f?'ok':''}"><i class="fa-solid fa-${f?'check':'xmark'}"></i> Capital &amp; name</div>
     <div class="es-row ${f?'ok':''}" id="imgCountRow"><i class="fa-solid fa-spinner fa-spin"></i> Counting images…</div>
   `;
-// Count images in background without blocking
-(async()=>{
-  let withImgs=0;
-  for(const t of trades){
-    const imgs=await getTradeImages(t.id);
-    if(imgs.length>0)withImgs++;
-  }
-  const row=document.getElementById('imgCountRow');
-  if(row)row.outerHTML=`<div class="es-row ${f?'ok':''}"><i class="fa-solid fa-${f?'images':'xmark'}"></i> ${withImgs} trade${withImgs!==1?'s':''} with images${f?' (embedded in backup)':' (not included)'}</div>`;
-})();
+  (async()=>{
+    let withImgs=0;
+    for(const t of trades){const imgs=await getTradeImages(t.id);if(imgs.length>0)withImgs++;}
+    const row=document.getElementById('imgCountRow');
+    if(row)row.outerHTML=`<div class="es-row ${f?'ok':''}"><i class="fa-solid fa-${f?'images':'xmark'}"></i> ${withImgs} trade${withImgs!==1?'s':''} with images${f?' (embedded in backup)':' (not included)'}</div>`;
+  })();
 }
 
-/**
- * Fetch an image URL and convert it to a base64 data URL.
- * Returns null if the fetch fails (don't abort the whole export).
- */
-async function storagePathToBase64(storagePath) {
-  try {
-    const { data, error } = await db.storage
-      .from('trade-images')
-      .download(storagePath);
-    if (error || !data) return null;
-    return await new Promise(res => {
-      const r = new FileReader();
-      r.onload = () => res(r.result);
-      r.onerror = () => res(null);
-      r.readAsDataURL(data);
-    });
-  } catch { return null; }
+async function storagePathToBase64(storagePath){
+  try{
+    const{data,error}=await db.storage.from('trade-images').download(storagePath);
+    if(error||!data)return null;
+    return await new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>res(null);r.readAsDataURL(data);});
+  }catch{return null;}
 }
 
 async function confirmExport(){
@@ -833,41 +673,26 @@ async function confirmExport(){
     const trades=await getTrades(journalId);
     const isFull=exportScope==='full';
     const tradeRows=trades.map(dbToTrade);
-
-if (isFull) {
-  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Embedding images…';
-  for (let i = 0; i < tradeRows.length; i++) {
-    const t = tradeRows[i];
-    const rawImgs = await getTradeImages(t.id);
-    if (rawImgs.length > 0) {
-      const b64Imgs = [];
-      for (const img of rawImgs) {
-        // Use storage path directly — no signed URL needed, avoids CORS
-        if (img.storage_url && !img.data) {
-          const b64 = await storagePathToBase64(img.storage_url);
-          if (b64) b64Imgs.push(b64);
-        } else if (img.data) {
-          // Legacy base64 stored directly in DB
-          b64Imgs.push(img.data);
+    if(isFull){
+      btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Embedding images…';
+      for(let i=0;i<tradeRows.length;i++){
+        const t=tradeRows[i];
+        const rawImgs=await getTradeImages(t.id);
+        if(rawImgs.length>0){
+          const b64Imgs=[];
+          for(const img of rawImgs){
+            if(img.storage_url&&!img.data){const b64=await storagePathToBase64(img.storage_url);if(b64)b64Imgs.push(b64);}
+            else if(img.data)b64Imgs.push(img.data);
+          }
+          tradeRows[i]={...t,images:b64Imgs};
         }
+        btn.innerHTML=`<i class="fa-solid fa-spinner fa-spin"></i> Embedding images… (${i+1}/${tradeRows.length})`;
       }
-      tradeRows[i] = { ...t, images: b64Imgs };
     }
-    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Embedding images… (${i+1}/${tradeRows.length})`;
-  }
-}
     const payload={
-      _meta:{
-        version:'2.1',app:'TradeZona',journalName:journalObj.name,
-        exportedAt:new Date().toISOString(),exportScope,
-        tradeCount:trades.length,imagesEmbedded:isFull,
-      },
+      _meta:{version:'2.1',app:'TradeZona',journalName:journalObj.name,exportedAt:new Date().toISOString(),exportScope,tradeCount:trades.length,imagesEmbedded:isFull},
       trades:tradeRows,
-      ...(isFull&&settings?{settings:{
-        strategies:settings.strategies||[],timeframes:settings.timeframes||[],
-        pairs:settings.pairs||[],moods:settings.moods||[],
-        mood_colors:settings.mood_colors||{},capital:journalObj.capital,journalName:journalObj.name
-      }}:{})
+      ...(isFull&&settings?{settings:{strategies:settings.strategies||[],timeframes:settings.timeframes||[],pairs:settings.pairs||[],moods:settings.moods||[],mood_colors:settings.mood_colors||{},capital:journalObj.capital,journalName:journalObj.name}}:{})
     };
     const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
     const url=URL.createObjectURL(blob);
@@ -880,7 +705,6 @@ if (isFull) {
   finally{btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-download"></i>Download .json';}
 }
 
-/* ── Import (images from base64 auto-restored) ── */
 function openImport(){
   importPayload=null;clearFile();setImpMode('replace');
   ['previewBox','settingsRestoreRow','importProgress'].forEach(id=>document.getElementById(id).classList.remove('show'));
@@ -917,7 +741,6 @@ async function refreshImpPreview(){
   const curIds=new Set(cur.map(t=>t.id));
   const dups=inc.filter(t=>curIds.has(t.id)).length;
   const hasS=!!(importPayload.settings);
-  // Count trades with embedded images
   const withImgs=inc.filter(t=>t.images&&t.images.some(img=>typeof img==='string'&&img.startsWith('data:'))).length;
   document.getElementById('pvTotal').textContent=inc.length;
   document.getElementById('pvJournal').textContent=importPayload._meta?.journalName||'—';
@@ -953,19 +776,11 @@ async function confirmImport(){
       document.getElementById('impProgLabel').textContent='Deleting…';
       for(let i=0;i<cur.length;i++){await deleteTrade(cur[i].id);sp(5+Math.round((i+1)/cur.length*35),`${i+1}/${cur.length}`);}
       document.getElementById('impProgLabel').textContent='Importing…';
-      for(let i=0;i<inc.length;i++){
-        const{id:_,...d}=inc[i];
-        await createTrade(currentUser.id,journalId,d);
-        fc++;sp(40+Math.round((i+1)/inc.length*50),`${i+1}/${inc.length}`);
-      }
+      for(let i=0;i<inc.length;i++){const{id:_,...d}=inc[i];await createTrade(currentUser.id,journalId,d);fc++;sp(40+Math.round((i+1)/inc.length*50),`${i+1}/${inc.length}`);}
     } else {
       const nt=inc.filter(t=>!curIds.has(t.id));
       document.getElementById('impProgLabel').textContent='Merging…';
-      for(let i=0;i<nt.length;i++){
-        const{id:_,...d}=nt[i];
-        await createTrade(currentUser.id,journalId,d);
-        fc++;sp(10+Math.round((i+1)/nt.length*80),`${i+1}/${nt.length}`);
-      }
+      for(let i=0;i<nt.length;i++){const{id:_,...d}=nt[i];await createTrade(currentUser.id,journalId,d);fc++;sp(10+Math.round((i+1)/nt.length*80),`${i+1}/${nt.length}`);}
       fc=cur.length+nt.length;
     }
     const hasS=!!(importPayload.settings),shouldRestore=hasS&&document.getElementById('restoreSettingsChk')?.checked;
@@ -990,7 +805,6 @@ async function confirmImport(){
   }
 }
 
-/* ── Delete Journal ── */
 function openDelJournal(){document.getElementById('delJournalName').textContent=journalObj?.name||'this journal';document.getElementById('delConfirmInput').value='';checkDel();document.getElementById('delOverlay').classList.add('open');setTimeout(()=>document.getElementById('delConfirmInput').focus(),120);}
 function closeDelJournal(){document.getElementById('delOverlay').classList.remove('open');}
 function checkDel(){const exp=(journalObj?.name||'').trim().toLowerCase(),typ=document.getElementById('delConfirmInput').value.trim().toLowerCase(),ok=typ===exp&&exp!=='';const btn=document.getElementById('delConfirmBtn');btn.disabled=!ok;btn.style.opacity=ok?'1':'.4';btn.style.cursor=ok?'pointer':'not-allowed';}
@@ -1018,112 +832,96 @@ document.addEventListener('keydown',e=>{
 window.addEventListener('beforeunload',e=>{if(activeTab==='settings'&&isDirty){e.preventDefault();e.returnValue='';}});
 
 // ═══════════════════════════════════════════════════
-//  CALCULATOR — FAB + DRAGGABLE MODAL
+//  CALCULATOR — FAB + DRAGGABLE MODAL (iframe)
+//  All calculator logic lives in calculator.html
 // ═══════════════════════════════════════════════════
-let _calcOpen=false, _cAsset='crypto';
+let _calcOpen = false;
 
 function toggleCalc(){
-  _calcOpen=!_calcOpen;
-  const modal=document.getElementById('calcModal');
-  const fab=document.getElementById('calcFab');
-  const icon=document.getElementById('calcFabIcon');
+  _calcOpen = !_calcOpen;
+  const modal = document.getElementById('calcModal');
+  const fab   = document.getElementById('calcFab');
+  const icon  = document.getElementById('calcFabIcon');
+  const frame = document.getElementById('calcFrame');
+
   if(_calcOpen){
-    modal.classList.add('open');fab.classList.add('open');
-    icon.className='fa-solid fa-xmark';
-    if(!modal._placed){
-      modal.style.right='16px';modal.style.bottom='82px';
-      modal.style.top='auto';modal.style.left='auto';
-      modal.style.width='min(700px,96vw)';modal._placed=true;
+    // Load calculator.html into iframe on first open only
+    if(!frame.src || frame.src === 'about:blank' || frame.src === window.location.href){
+      frame.src = 'calculator.html';
+      frame.onload = () => _syncCalcTheme();
     }
-    cCalc();
+    modal.classList.add('open');
+    fab.classList.add('open');
+    icon.className = 'fa-solid fa-xmark';
+    // Default position bottom-right on first open
+    if(!modal._placed){
+      modal.style.right  = '16px';
+      modal.style.bottom = '82px';
+      modal.style.top    = 'auto';
+      modal.style.left   = 'auto';
+      modal._placed = true;
+    }
+    _syncCalcTheme();
   } else {
-    modal.classList.remove('open');fab.classList.remove('open');
-    icon.className='fa-solid fa-calculator';
+    modal.classList.remove('open');
+    fab.classList.remove('open');
+    icon.className = 'fa-solid fa-calculator';
   }
 }
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&_calcOpen)toggleCalc();});
 
-function cSetAsset(t){
-  _cAsset=t;
-  document.getElementById('cBtnCrypto').classList.toggle('active',t==='crypto');
-  document.getElementById('cBtnForex').classList.toggle('active',t==='forex');
-  const fp=document.getElementById('cForexPairField');if(fp)fp.classList.toggle('show',t==='forex');
-  cCalc();
+function _syncCalcTheme(){
+  const frame = document.getElementById('calcFrame');
+  if(!frame?.contentWindow) return;
+  const t  = localStorage.getItem('tl_theme') || 'dark';
+  const ft = localStorage.getItem('tl_font')  || 'default';
+  try{
+    frame.contentWindow.postMessage({type:'tz_theme', theme:t}, '*');
+    frame.contentWindow.postMessage({type:'tz_font',  font:ft},  '*');
+  }catch(e){}
 }
-function _g(id){return document.getElementById(id)?.value;}
-function _s(id,v){const e=document.getElementById(id);if(e)e.textContent=v;}
-function _fD(n){if(n===null||isNaN(n))return'—';return'$'+Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
-function _f(n,d=2){if(n===null||isNaN(n))return'—';return n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});}
 
-function cCalc(){
-  const bal=parseFloat(_g('cBalance')),rp=parseFloat(_g('cRiskPct'));
-  const ent=parseFloat(_g('cEntry')),sl=parseFloat(_g('cSL')),tp=parseFloat(_g('cTP'));
-  const pair=_g('cPair')||'EURUSD';
-  const riskAmt=(!isNaN(bal)&&!isNaN(rp)&&bal>0&&rp>0)?bal*(rp/100):null;
-  _s('cRiskAmt',riskAmt!==null?_fD(riskAmt):'—');
-  _s('cRiskPctLbl',(!isNaN(rp)&&rp>0)?rp.toFixed(1)+'% of balance':'—');
-  if(riskAmt===null||isNaN(ent)||isNaN(sl)||ent===sl||ent<=0||sl<=0){_cClear();return;}
-  const dist=Math.abs(ent-sl);if(!dist){_cClear();return;}
-  const isJPY=pair.includes('JPY'),isSp=['XAUUSD','US30','NAS100'].includes(pair);
-  let pos,unit,sldStr,sldUnit,maxL,profit=null,rr=null,formula;
-  if(_cAsset==='crypto'){
-    pos=riskAmt/dist;maxL=pos*dist;unit='units';sldStr=_f(dist,dist<1?6:2);sldUnit='price diff';formula=`${_fD(riskAmt)} ÷ ${sldStr} = ${_f(pos,6)} units`;
-    if(!isNaN(tp)&&tp>0&&tp!==ent){const d=Math.abs(tp-ent);profit=pos*d;rr=profit/riskAmt;}
-  } else if(isSp){
-    pos=riskAmt/dist;maxL=riskAmt;unit=pair==='XAUUSD'?'oz':'contracts';sldStr=_f(dist,2);sldUnit='price dist';formula=`${_fD(riskAmt)} ÷ ${sldStr} = ${_f(pos,4)} ${unit}`;
-    if(!isNaN(tp)&&tp>0&&tp!==ent){const d=Math.abs(tp-ent);profit=pos*d;rr=profit/riskAmt;}
-  } else {
-    const mult=isJPY?100:10000,pips=dist*mult,pipVal=10;
-    pos=riskAmt/(pips*pipVal);maxL=pos*pips*pipVal;unit='std lots';sldStr=_f(pips,1);sldUnit='pips';formula=`${_f(pips,1)} pips × $${pipVal}/pip → ${_f(pos,4)} lots`;
-    if(!isNaN(tp)&&tp>0&&tp!==ent){const tpP=Math.abs(tp-ent)*mult;profit=pos*tpP*pipVal;rr=profit/riskAmt;}
-  }
-  _s('cPosSize',_f(pos,pos<0.001?6:pos<1?4:2));_s('cPosUnit',unit);
-  _s('cSLDist',sldStr);_s('cSLUnit',sldUnit);_s('cMaxLoss',_fD(maxL));
-  _s('cFormula',formula);
-  const pnlSec=document.getElementById('cPnlSec');
-  if(profit!==null){
-    pnlSec.style.display='block';_s('cLoss2',_fD(riskAmt));_s('cProfit',_fD(profit));
-    const rrSec=document.getElementById('cRRSec');
-    if(rr!==null){
-      rrSec.style.display='block';
-      const col=rr>=3?'var(--accent)':rr>=2?'var(--accent2)':rr>=1?'var(--amber)':'var(--red)';
-      const rrEl=document.getElementById('cRR');rrEl.textContent='1 : '+_f(rr,2);rrEl.style.color=col;
-      const bar=document.getElementById('cRRBar');bar.style.width=Math.min((rr/3)*100,100)+'%';bar.style.background=col;
-    } else rrSec.style.display='none';
-  } else pnlSec.style.display='none';
-}
-function _cClear(){['cPosSize','cPosUnit','cSLDist','cSLUnit','cMaxLoss'].forEach(k=>_s(k,'—'));const p=document.getElementById('cPnlSec');if(p)p.style.display='none';_s('cFormula','Position = Risk ÷ SL Distance');}
+document.addEventListener('keydown', e => { if(e.key==='Escape'&&_calcOpen) toggleCalc(); });
 
-// Drag
+// ── Drag (mouse + touch) ─────────────────────────────────────────────────────
 (function(){
-  const modal=document.getElementById('calcModal'),hdr=document.getElementById('calcDragHdr');
-  let drag=false,ox=0,oy=0;
-  hdr.addEventListener('mousedown',e=>{
-    if(e.button!==0||e.target.closest('.calc-x'))return;
-    drag=true;const r=modal.getBoundingClientRect();ox=e.clientX-r.left;oy=e.clientY-r.top;
-    modal.style.right='auto';modal.style.bottom='auto';modal.style.left=r.left+'px';modal.style.top=r.top+'px';
-    document.body.style.userSelect='none';e.preventDefault();
+  const modal = document.getElementById('calcModal');
+  const hdr   = document.getElementById('calcDragHdr');
+  let drag=false, ox=0, oy=0;
+
+  hdr.addEventListener('mousedown', e => {
+    if(e.button!==0 || e.target.closest('.calc-x')) return;
+    drag=true;
+    const r=modal.getBoundingClientRect();
+    ox=e.clientX-r.left; oy=e.clientY-r.top;
+    modal.style.right='auto'; modal.style.bottom='auto';
+    modal.style.left=r.left+'px'; modal.style.top=r.top+'px';
+    document.body.style.userSelect='none';
+    e.preventDefault();
   });
-  document.addEventListener('mousemove',e=>{
-    if(!drag)return;
-    const nx=Math.max(0,Math.min(e.clientX-ox,window.innerWidth-modal.offsetWidth));
-    const ny=Math.max(0,Math.min(e.clientY-oy,window.innerHeight-modal.offsetHeight));
-    modal.style.left=nx+'px';modal.style.top=ny+'px';
+  document.addEventListener('mousemove', e => {
+    if(!drag) return;
+    const nx=Math.max(0,Math.min(e.clientX-ox, window.innerWidth-modal.offsetWidth));
+    const ny=Math.max(0,Math.min(e.clientY-oy, window.innerHeight-modal.offsetHeight));
+    modal.style.left=nx+'px'; modal.style.top=ny+'px';
   });
-  document.addEventListener('mouseup',()=>{drag=false;document.body.style.userSelect='';});
-  hdr.addEventListener('touchstart',e=>{
-    if(e.target.closest('.calc-x'))return;
-    const r=modal.getBoundingClientRect();ox=e.touches[0].clientX-r.left;oy=e.touches[0].clientY-r.top;
-    modal.style.right='auto';modal.style.bottom='auto';modal.style.left=r.left+'px';modal.style.top=r.top+'px';
-    drag=true;e.preventDefault();
+  document.addEventListener('mouseup', () => { drag=false; document.body.style.userSelect=''; });
+
+  hdr.addEventListener('touchstart', e => {
+    if(e.target.closest('.calc-x')) return;
+    const r=modal.getBoundingClientRect();
+    ox=e.touches[0].clientX-r.left; oy=e.touches[0].clientY-r.top;
+    modal.style.right='auto'; modal.style.bottom='auto';
+    modal.style.left=r.left+'px'; modal.style.top=r.top+'px';
+    drag=true; e.preventDefault();
   },{passive:false});
-  document.addEventListener('touchmove',e=>{
-    if(!drag)return;
-    const nx=Math.max(0,Math.min(e.touches[0].clientX-ox,window.innerWidth-modal.offsetWidth));
-    const ny=Math.max(0,Math.min(e.touches[0].clientY-oy,window.innerHeight-modal.offsetHeight));
-    modal.style.left=nx+'px';modal.style.top=ny+'px';e.preventDefault();
+  document.addEventListener('touchmove', e => {
+    if(!drag) return;
+    const nx=Math.max(0,Math.min(e.touches[0].clientX-ox, window.innerWidth-modal.offsetWidth));
+    const ny=Math.max(0,Math.min(e.touches[0].clientY-oy, window.innerHeight-modal.offsetHeight));
+    modal.style.left=nx+'px'; modal.style.top=ny+'px';
+    e.preventDefault();
   },{passive:false});
-  document.addEventListener('touchend',()=>{drag=false;});
+  document.addEventListener('touchend', () => { drag=false; });
 })();
 </script>
 </body>

@@ -47,8 +47,6 @@ body{visibility:hidden;background:var(--bg);color:var(--text);font-family:var(--
 .fm-titlebar:active{cursor:grabbing}
 .fm-title{display:flex;align-items:center;gap:8px;font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:13px;font-weight:600;color:var(--text)}
 .fm-title i{color:var(--accent2);font-size:12px}
-.fm-drag-hint{font-size:9px;color:var(--muted);display:flex;align-items:right;gap:4px;opacity:.55}
-.fm-drag-hint i{font-size:8px}
 .fm-close{background:rgba(255,255,255,.06);border:none;color:var(--muted);cursor:pointer;width:26px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:13px;transition:all var(--transition-fast);flex-shrink:0}
 .fm-close:hover{background:rgba(255,95,109,.15);color:#ff5f6d}
 .fm-display{padding:10px 16px 8px;background:rgba(0,0,0,.2);border-bottom:1px solid var(--border);flex-shrink:0;min-height:42px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
