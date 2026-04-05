@@ -1,231 +1,233 @@
-<!-- calculator.html -->
+<!-- calculator.html — Standalone content page. The floating FAB lives in journal.html only. -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
 <title>Risk Calculator</title>
+<script src="theme.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;overflow:hidden}
-body{
-  background:var(--panel,#1a1d20);
-  color:var(--text,#e8ecf0);
-  font-family:var(--font-body,'Inter',sans-serif);
-  overflow-y:auto;
-  scrollbar-width:thin;
-  scrollbar-color:var(--border,#262a2f) transparent;
-}
-body::-webkit-scrollbar{width:4px}
-body::-webkit-scrollbar-thumb{background:var(--border,#262a2f);border-radius:2px}
-
-.calc-wrap{padding:14px}
-.calc-hero{background:linear-gradient(135deg,rgba(var(--accent-rgb,0,255,136),.06),rgba(var(--accent2-rgb,25,195,125),.02));border:1px solid rgba(var(--accent-rgb,0,255,136),.15);border-radius:var(--radius-xl,16px);padding:12px 16px;margin-bottom:13px;display:flex;align-items:center;gap:12px}
-.calc-hero-icon{width:34px;height:34px;background:rgba(var(--accent-rgb,0,255,136),.12);border-radius:var(--radius-lg,12px);display:flex;align-items:center;justify-content:center;color:var(--accent2,#19c37d);font-size:14px;flex-shrink:0}
-.calc-hero-text h2{font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:12px;font-weight:600;margin-bottom:2px}
-.calc-hero-text p{font-size:10px;color:var(--muted,#5a6370);line-height:1.5}
-.calc-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-@media(max-width:520px){.calc-cols{grid-template-columns:1fr}}
-.ccol{background:var(--bg,#0d0f11);border:1px solid var(--border,#262a2f);border-radius:var(--radius-xl,16px);padding:13px}
-.ccol-title{font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:10px;font-weight:600;color:var(--muted,#5a6370);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;display:flex;align-items:center;gap:5px}
-.ccol-title i{color:var(--accent2,#19c37d)}
-.cfield{margin-bottom:9px}
-.cflbl{font-size:10px;color:var(--muted,#5a6370);margin-bottom:3px;display:flex;align-items:center;justify-content:space-between}
-.ctip{display:inline-flex;align-items:center;justify-content:center;width:12px;height:12px;border-radius:50%;background:var(--border,#262a2f);color:var(--muted,#5a6370);font-size:7px;cursor:help;position:relative;flex-shrink:0}
-.ctip:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 4px);right:0;background:#0b0f0c;color:#e6f2ec;font-size:9px;padding:4px 7px;border-radius:var(--radius-md,8px);z-index:9999;max-width:170px;width:150px;line-height:1.4;pointer-events:none;border:1px solid var(--border,#262a2f);white-space:normal;text-align:left}
-.cinwrap{position:relative;display:flex;align-items:center}
-.cipre,.cisuf{position:absolute;font-size:10px;color:var(--muted,#5a6370);pointer-events:none;z-index:1}
-.cipre{left:8px}.cisuf{right:8px}
-.cin{width:100%;background:var(--panel,#1a1d20);border:1px solid var(--border,#262a2f);border-radius:var(--radius-md,8px);padding:6px 8px;color:var(--text,#e8ecf0);font-family:var(--font-body,'Inter',sans-serif);font-size:12px;outline:none;transition:border-color .15s;-moz-appearance:textfield}
-.cin::-webkit-outer-spin-button,.cin::-webkit-inner-spin-button{-webkit-appearance:none}
-.cin:focus{border-color:var(--accent2,#19c37d)}
-.cin.pre{padding-left:20px}.cin.suf{padding-right:20px}
-.cin::placeholder{color:var(--muted,#5a6370)}
-.csel{width:100%;background:var(--panel,#1a1d20);border:1px solid var(--border,#262a2f);border-radius:var(--radius-md,8px);padding:6px 8px;color:var(--text,#e8ecf0);font-family:var(--font-body,'Inter',sans-serif);font-size:12px;outline:none;cursor:pointer;-webkit-appearance:none;transition:border-color .15s}
-.csel:focus{border-color:var(--accent2,#19c37d)}
-.csel option{background:var(--panel,#1a1d20)}
-.ctoggle{display:flex;gap:4px;margin-bottom:9px}
-.ctbtn{flex:1;padding:6px 4px;border:1px solid var(--border,#262a2f);border-radius:var(--radius-md,8px);background:none;color:var(--muted,#5a6370);font-size:11px;font-family:var(--font-heading,'Space Grotesk',sans-serif);font-weight:600;cursor:pointer;transition:all .15s;text-align:center;white-space:nowrap}
-.ctbtn.active{border-color:var(--accent2,#19c37d);color:var(--accent2,#19c37d);background:rgba(25,195,125,.07)}
-.cdiv{border:none;border-top:1px solid var(--border,#262a2f);margin:7px 0}
-.crg{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.crc{background:var(--panel,#1a1d20);border:1px solid var(--border,#262a2f);border-radius:var(--radius-lg,12px);padding:9px}
-.crc.hi{border-color:rgba(0,255,136,.3);background:rgba(0,255,136,.04)}
-.crc.dan{border-color:rgba(255,95,109,.25);background:rgba(255,95,109,.04)}
-.crl{font-size:9px;color:var(--muted,#5a6370);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;display:flex;align-items:center;gap:3px}
-.crl i{font-size:8px}
-.crv{font-family:var(--font-mono,'Space Grotesk',sans-serif);font-size:14px;font-weight:700;color:var(--text,#e8ecf0);line-height:1}
-.crv.pos{color:var(--accent,#00c896)}.crv.neg{color:var(--red,#ff4f6a)}
-.crs{font-size:9px;color:var(--muted,#5a6370);margin-top:2px}
-.cpnl{margin-top:9px;padding-top:9px;border-top:1px solid var(--border,#262a2f)}
-.cpnltitle{font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:9px;color:var(--muted,#5a6370);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;display:flex;align-items:center;gap:4px}
-.cpnltitle i{color:var(--accent2,#19c37d)}
-.crrwrap{height:4px;background:var(--border,#262a2f);border-radius:3px;overflow:hidden;margin:4px 0 2px}
-.crrbar{height:100%;border-radius:3px;transition:width .4s,background .2s}
-.cfbox{margin-top:9px;padding:7px 9px;background:var(--panel,#1a1d20);border:1px solid var(--border,#262a2f);border-radius:var(--radius-md,8px);font-size:9px;color:var(--muted,#5a6370);line-height:1.5}
-.cftitle{font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:9px;font-weight:600;color:var(--text,#e8ecf0);margin-bottom:2px}
-.cdis{font-size:9px;color:var(--muted,#5a6370);line-height:1.4;padding:6px 8px;background:var(--panel,#1a1d20);border:1px solid var(--border,#262a2f);border-radius:var(--radius-md,8px);margin-top:7px;opacity:.65}
-.cforex{display:none}.cforex.show{display:block}
-@media(max-width:400px){.crg{grid-template-columns:1fr}}
+body{background:var(--bg);color:var(--text);font-family:var(--font-body,'Inter',sans-serif);padding:20px;min-height:100vh}
+.pw{max-width:980px;margin:0 auto}
+.calc-hero{background:linear-gradient(135deg,rgba(var(--accent-rgb,0,255,136),.06),rgba(var(--accent2-rgb,25,195,125),.03));border:1px solid rgba(var(--accent-rgb,0,255,136),.15);border-radius:var(--radius-xl);padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;gap:14px}
+.calc-hero-icon{width:40px;height:40px;background:rgba(var(--accent-rgb,0,255,136),.12);border-radius:var(--radius-lg);display:flex;align-items:center;justify-content:center;color:var(--accent2);font-size:17px;flex-shrink:0}
+.calc-hero-text h2{font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:14px;font-weight:600;margin-bottom:3px}
+.calc-hero-text p{font-size:12px;color:var(--muted);line-height:1.5}
+.calc-layout{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:680px){.calc-layout{grid-template-columns:1fr}}
+.cpanel{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-xl);padding:18px}
+.cpanel-title{font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px;display:flex;align-items:center;gap:7px}
+.cpanel-title i{color:var(--accent2)}
+.field{margin-bottom:12px}
+.field-label{font-size:11px;color:var(--muted);margin-bottom:5px;display:flex;align-items:center;justify-content:space-between}
+.tip{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:var(--border);color:var(--muted);font-size:9px;cursor:help;position:relative;flex-shrink:0}
+.tip:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 5px);left:50%;transform:translateX(-50%);background:#000;color:#e6f2ec;font-size:10px;padding:5px 8px;border-radius:var(--radius-md);z-index:99;max-width:200px;text-align:center;width:180px;line-height:1.4;pointer-events:none;border:1px solid var(--border);white-space:normal}
+.input-wrap{position:relative;display:flex;align-items:center}
+.input-pre,.input-suf{position:absolute;font-size:12px;color:var(--muted);pointer-events:none;z-index:1}
+.input-pre{left:12px}.input-suf{right:12px}
+.ci{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md);padding:9px 12px;color:var(--text);font-family:var(--font-body,'Inter',sans-serif);font-size:14px;outline:none;transition:border-color var(--transition-base);-moz-appearance:textfield}
+.ci::-webkit-outer-spin-button,.ci::-webkit-inner-spin-button{-webkit-appearance:none}
+.ci:focus{border-color:var(--accent2)}
+.ci.pre{padding-left:26px}.ci.suf{padding-right:26px}
+.csel{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md);padding:9px 12px;color:var(--text);font-family:var(--font-body,'Inter',sans-serif);font-size:14px;outline:none;cursor:pointer;-webkit-appearance:none;transition:border-color var(--transition-base)}
+.csel:focus{border-color:var(--accent2)}
+.csel option{background:var(--panel)}
+.asset-toggle{display:flex;gap:6px;margin-bottom:12px}
+.asset-btn{flex:1;padding:9px 8px;border:1px solid var(--border);border-radius:var(--radius-md);background:none;color:var(--muted);font-size:13px;font-family:var(--font-heading,'Space Grotesk',sans-serif);font-weight:600;cursor:pointer;transition:all var(--transition-fast);text-align:center}
+.asset-btn.active{border-color:var(--accent2);color:var(--accent2);background:rgba(var(--accent2-rgb,25,195,125),.07)}
+.cdiv{border:none;border-top:1px solid var(--border);margin:12px 0}
+.rg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.rc{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:13px}
+.rc.hi{border-color:rgba(var(--accent-rgb,0,255,136),.3);background:rgba(var(--accent-rgb,0,255,136),.04)}
+.rc.danger{border-color:rgba(255,95,109,.25);background:rgba(255,95,109,.04)}
+.rl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:4px;display:flex;align-items:center;gap:4px}
+.rl i{font-size:9px}
+.rv{font-family:var(--font-mono,'Space Grotesk',sans-serif);font-size:20px;font-weight:700;color:var(--text);line-height:1}
+.rv.pos{color:var(--accent)}.rv.neg{color:var(--red)}
+.rs{font-size:11px;color:var(--muted);margin-top:3px}
+.pnl-sec{margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+.pnl-title{font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.pnl-title i{color:var(--accent2)}
+.rr-wrap{height:5px;background:var(--border);border-radius:3px;overflow:hidden;margin:6px 0 3px}
+.rr-bar{height:100%;border-radius:3px;transition:width .4s,background var(--transition-base)}
+.formula-box{margin-top:14px;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md);font-size:11px;color:var(--muted);line-height:1.6}
+.formula-title{font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:11px;font-weight:600;color:var(--text);margin-bottom:3px}
+.disclaimer{font-size:11px;color:var(--muted);line-height:1.5;padding:9px 12px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md);margin-top:12px;opacity:.7}
+.disclaimer i{color:var(--accent2);margin-right:4px}
+.forex-only{display:none}
+.forex-only.show{display:block}
+@media(max-width:400px){.rg{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-<div class="calc-wrap">
+<div class="pw">
   <div class="calc-hero">
     <div class="calc-hero-icon"><i class="fa-solid fa-calculator"></i></div>
-    <div class="calc-hero-text"><h2>Trading Risk Calculator</h2><p>Correct position sizing for Crypto &amp; Forex. Live results.</p></div>
+    <div class="calc-hero-text">
+      <h2>Trading Risk Calculator</h2>
+      <p>Position size based on your exact risk. Correct formulas for Crypto and Forex. Updates in real-time.</p>
+    </div>
   </div>
-  <div class="calc-cols">
-    <div class="ccol">
-      <div class="ccol-title"><i class="fa-solid fa-sliders"></i> Inputs</div>
-      <div class="ctoggle">
-        <button class="ctbtn active" id="cBtnCrypto" onclick="cSetAsset('crypto')"><i class="fa-brands fa-bitcoin" style="margin-right:3px"></i>Crypto</button>
-        <button class="ctbtn" id="cBtnForex" onclick="cSetAsset('forex')"><i class="fa-solid fa-dollar-sign" style="margin-right:3px"></i>Forex</button>
+
+  <div class="calc-layout">
+    <div class="cpanel">
+      <div class="cpanel-title"><i class="fa-solid fa-sliders"></i> Trade Inputs</div>
+      <div class="field">
+        <div class="field-label">Asset Type</div>
+        <div class="asset-toggle">
+          <button class="asset-btn active" id="btnCrypto" onclick="setAsset('crypto')"><i class="fa-brands fa-bitcoin" style="margin-right:5px"></i>Crypto</button>
+          <button class="asset-btn" id="btnForex" onclick="setAsset('forex')"><i class="fa-solid fa-dollar-sign" style="margin-right:5px"></i>Forex</button>
+        </div>
       </div>
-      <div class="cfield cforex" id="cForexPairField">
-        <div class="cflbl">Pair <span class="ctip" data-tip="JPY: ×100 pip. Gold/Indices: direct price.">?</span></div>
-        <select class="csel" id="cPair" onchange="cCalc()">
+      <div class="field forex-only" id="forexPairField">
+        <div class="field-label">Currency Pair <span class="tip" data-tip="JPY pairs use ×100 pip. Gold/Indices use direct price.">?</span></div>
+        <select class="csel" id="forexPair" onchange="calc()">
           <option value="EURUSD">EURUSD</option><option value="GBPUSD">GBPUSD</option>
           <option value="AUDUSD">AUDUSD</option><option value="NZDUSD">NZDUSD</option>
           <option value="USDCAD">USDCAD</option><option value="USDCHF">USDCHF</option>
           <option value="USDJPY">USDJPY (JPY)</option><option value="EURJPY">EURJPY (JPY)</option>
-          <option value="GBPJPY">GBPJPY (JPY)</option><option value="XAUUSD">XAU/USD</option>
-          <option value="US30">US30</option><option value="NAS100">NAS100</option>
+          <option value="GBPJPY">GBPJPY (JPY)</option><option value="XAUUSD">XAU/USD (Gold)</option>
+          <option value="US30">US30 / Dow</option><option value="NAS100">NAS100 / Nasdaq</option>
         </select>
       </div>
-      <div class="cfield">
-        <div class="cflbl">Balance <span class="ctip" data-tip="Total account balance in USD">?</span></div>
-        <div class="cinwrap"><span class="cipre">$</span><input class="cin pre" type="number" id="cBalance" value="1000" min="0" oninput="cCalc()"></div>
+      <div class="field">
+        <div class="field-label">Account Balance <span class="tip" data-tip="Total trading account balance in USD">?</span></div>
+        <div class="input-wrap"><span class="input-pre">$</span><input class="ci pre" type="number" id="balance" value="1000" min="0" oninput="calc()"></div>
       </div>
-      <div class="cfield">
-        <div class="cflbl">Risk % <span class="ctip" data-tip="% of balance risked. Pros: 1–2%">?</span></div>
-        <div class="cinwrap"><input class="cin suf" type="number" id="cRiskPct" value="1" min="0.01" max="100" step="0.1" oninput="cCalc()"><span class="cisuf">%</span></div>
+      <div class="field">
+        <div class="field-label">Risk Per Trade <span class="tip" data-tip="% of balance you risk. Pros use 1–2%">?</span></div>
+        <div class="input-wrap"><input class="ci suf" type="number" id="riskPct" value="1" min="0.01" max="100" step="0.1" oninput="calc()"><span class="input-suf">%</span></div>
       </div>
       <hr class="cdiv">
-      <div class="cfield"><div class="cflbl">Entry Price</div><input class="cin" type="number" id="cEntry" placeholder="70116.1" step="any" oninput="cCalc()"></div>
-      <div class="cfield"><div class="cflbl">Stop Loss <span class="ctip" data-tip="SL hit = exact risk amount">?</span></div><input class="cin" type="number" id="cSL" placeholder="70007.1" step="any" oninput="cCalc()"></div>
-      <div class="cfield"><div class="cflbl">Take Profit <span style="font-size:8px;color:var(--muted,#5a6370)">(optional)</span></div><input class="cin" type="number" id="cTP" placeholder="70500" step="any" oninput="cCalc()"></div>
+      <div class="field">
+        <div class="field-label">Entry Price</div>
+        <input class="ci" type="number" id="entry" placeholder="e.g. 70116.1" step="any" oninput="calc()">
+      </div>
+      <div class="field">
+        <div class="field-label">Stop Loss <span class="tip" data-tip="Hitting SL = your exact risk amount">?</span></div>
+        <input class="ci" type="number" id="stopLoss" placeholder="e.g. 70007.1" step="any" oninput="calc()">
+      </div>
+      <div class="field">
+        <div class="field-label">Take Profit <span style="font-size:10px;color:var(--muted)">(optional)</span></div>
+        <input class="ci" type="number" id="takeProfit" placeholder="e.g. 70500" step="any" oninput="calc()">
+      </div>
     </div>
-    <div class="ccol">
-      <div class="ccol-title"><i class="fa-solid fa-chart-bar"></i> Results</div>
-      <div class="crg">
-        <div class="crc hi"><div class="crl"><i class="fa-solid fa-shield-halved"></i> Risk $</div><div class="crv pos" id="cRiskAmt">—</div><div class="crs" id="cRiskPctLbl">—</div></div>
-        <div class="crc hi"><div class="crl"><i class="fa-solid fa-layer-group"></i> Position</div><div class="crv" id="cPosSize">—</div><div class="crs" id="cPosUnit">—</div></div>
-        <div class="crc"><div class="crl"><i class="fa-solid fa-arrows-left-right"></i> SL Dist</div><div class="crv" id="cSLDist">—</div><div class="crs" id="cSLUnit">—</div></div>
-        <div class="crc dan"><div class="crl"><i class="fa-solid fa-circle-xmark"></i> Max Loss</div><div class="crv neg" id="cMaxLoss">—</div><div class="crs">= risk</div></div>
+
+    <div class="cpanel">
+      <div class="cpanel-title"><i class="fa-solid fa-chart-bar"></i> Live Results</div>
+      <div class="rg">
+        <div class="rc hi"><div class="rl"><i class="fa-solid fa-shield-halved"></i> Risk Amount</div><div class="rv pos" id="rRiskAmt">—</div><div class="rs" id="rRiskPct">—% of balance</div></div>
+        <div class="rc hi"><div class="rl"><i class="fa-solid fa-layer-group"></i> Position Size</div><div class="rv" id="rPositionSize">—</div><div class="rs" id="rPositionUnit">—</div></div>
+        <div class="rc"><div class="rl"><i class="fa-solid fa-arrows-left-right"></i> SL Distance</div><div class="rv" id="rSLDist">—</div><div class="rs" id="rSLDistUnit">—</div></div>
+        <div class="rc danger"><div class="rl"><i class="fa-solid fa-circle-xmark"></i> Max Loss</div><div class="rv neg" id="rMaxLoss">—</div><div class="rs">= risk amount</div></div>
       </div>
-      <div class="cpnl" id="cPnlSec" style="display:none">
-        <div class="cpnltitle"><i class="fa-solid fa-chart-line"></i> P/L Estimate</div>
-        <div class="crg">
-          <div class="crc dan"><div class="crl"><i class="fa-solid fa-arrow-trend-down"></i> Max Loss</div><div class="crv neg" id="cLoss2">—</div><div class="crs">if SL</div></div>
-          <div class="crc"><div class="crl"><i class="fa-solid fa-arrow-trend-up"></i> Target</div><div class="crv pos" id="cProfit">—</div><div class="crs">if TP</div></div>
+      <div class="pnl-sec" id="pnlSec" style="display:none">
+        <div class="pnl-title"><i class="fa-solid fa-chart-line"></i> Profit / Loss Estimate</div>
+        <div class="rg">
+          <div class="rc danger"><div class="rl"><i class="fa-solid fa-arrow-trend-down"></i> Max Loss</div><div class="rv neg" id="rLoss2">—</div><div class="rs">if SL hit</div></div>
+          <div class="rc"><div class="rl"><i class="fa-solid fa-arrow-trend-up"></i> Target Profit</div><div class="rv pos" id="rProfit">—</div><div class="rs">if TP hit</div></div>
         </div>
-        <div id="cRRSec" style="display:none;margin-top:8px">
+        <div id="rrSec" style="display:none;margin-top:12px">
           <div style="display:flex;justify-content:space-between;align-items:center">
-            <span style="font-size:10px;color:var(--muted,#5a6370)">Risk/Reward</span>
-            <span style="font-family:var(--font-mono,'Space Grotesk',sans-serif);font-size:13px;font-weight:700" id="cRR">—</span>
+            <span style="font-size:11px;color:var(--muted)">Risk / Reward</span>
+            <span style="font-family:var(--font-mono,'Space Grotesk',sans-serif);font-size:15px;font-weight:700" id="rRR">—</span>
           </div>
-          <div class="crrwrap"><div class="crrbar" id="cRRBar"></div></div>
-          <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted,#5a6370)"><span>&lt;1R Poor</span><span>2R Good</span><span>3R+ Great</span></div>
+          <div class="rr-wrap"><div class="rr-bar" id="rrBar"></div></div>
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted)"><span>Poor (&lt;1R)</span><span>Good (2R+)</span><span>Great (3R+)</span></div>
         </div>
       </div>
-      <div class="cfbox"><div class="cftitle">Formula</div><div id="cFormula">Position = Risk ÷ SL Distance</div></div>
-      <div class="cdis"><i class="fa-solid fa-triangle-exclamation" style="color:var(--accent2,#19c37d);margin-right:3px"></i>Educational only. Verify with your broker.</div>
+      <div class="formula-box"><div class="formula-title">Formula used</div><div id="formulaNote">Position Size = Risk Amount ÷ SL Distance</div></div>
+      <div class="disclaimer"><i class="fa-solid fa-triangle-exclamation"></i>Educational use only. Verify with your broker.</div>
     </div>
   </div>
 </div>
 
 <script>
-/* ── Theme sync from parent journal.html via postMessage ── */
-window.addEventListener('message', e => {
-  if (!e.data) return;
-  if (e.data.type === 'tz_theme') {
-    const vars = e.data.theme === 'light' ? {
-      '--bg':'#f5f6f7','--panel':'#ffffff','--panel2':'#f0f1f3',
-      '--border':'#e2e4e8','--text':'#111318','--muted':'#8a93a0',
-      '--accent':'#00a876','--accent2':'#00956a',
-      '--accent-rgb':'0,168,118','--accent2-rgb':'0,149,106',
-      '--red':'#e03050','--font-mono':'Space Grotesk, sans-serif'
-    } : {
-      '--bg':'#0d0f11','--panel':'#1a1d20','--panel2':'#1f2226',
-      '--border':'#262a2f','--text':'#e8ecf0','--muted':'#5a6370',
-      '--accent':'#00c896','--accent2':'#19c37d',
-      '--accent-rgb':'0,200,150','--accent2-rgb':'25,195,125',
-      '--red':'#ff4f6a','--font-mono':'Space Grotesk, sans-serif'
-    };
-    const root = document.documentElement;
-    Object.entries(vars).forEach(([k,v]) => root.style.setProperty(k, v));
-  }
-  if (e.data.type === 'tz_font') {
-    const map = {
-      default: "'Inter', sans-serif",
-      mono:    "'Space Mono', monospace",
-      rounded: "'Nunito', sans-serif",
-      serif:   "'Lora', serif",
-    };
-    document.documentElement.style.setProperty('--font-body', map[e.data.font] || map.default);
-  }
-});
+let assetType='crypto';
 
-let _cAsset = 'crypto';
-
-function cSetAsset(t){
-  _cAsset=t;
-  document.getElementById('cBtnCrypto').classList.toggle('active',t==='crypto');
-  document.getElementById('cBtnForex').classList.toggle('active',t==='forex');
-  const fp=document.getElementById('cForexPairField');if(fp)fp.classList.toggle('show',t==='forex');
-  cCalc();
+function setAsset(t){
+  assetType=t;
+  document.getElementById('btnCrypto').classList.toggle('active',t==='crypto');
+  document.getElementById('btnForex').classList.toggle('active',t==='forex');
+  document.getElementById('forexPairField').classList.toggle('show',t==='forex');
+  calc();
 }
-function _g(id){return document.getElementById(id)?.value;}
-function _s(id,v){const e=document.getElementById(id);if(e)e.textContent=v;}
-function _fD(n){if(n===null||isNaN(n))return'—';return'$'+Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
-function _f(n,d=2){if(n===null||isNaN(n))return'—';return n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});}
 
-function cCalc(){
-  const bal=parseFloat(_g('cBalance')),rp=parseFloat(_g('cRiskPct'));
-  const ent=parseFloat(_g('cEntry')),sl=parseFloat(_g('cSL')),tp=parseFloat(_g('cTP'));
-  const pair=_g('cPair')||'EURUSD';
-  const riskAmt=(!isNaN(bal)&&!isNaN(rp)&&bal>0&&rp>0)?bal*(rp/100):null;
-  _s('cRiskAmt',riskAmt!==null?_fD(riskAmt):'—');
-  _s('cRiskPctLbl',(!isNaN(rp)&&rp>0)?rp.toFixed(1)+'% of balance':'—');
-  if(riskAmt===null||isNaN(ent)||isNaN(sl)||ent===sl||ent<=0||sl<=0){_cClear();return;}
-  const dist=Math.abs(ent-sl);if(!dist){_cClear();return;}
-  const isJPY=pair.includes('JPY'),isSp=['XAUUSD','US30','NAS100'].includes(pair);
-  let pos,unit,sldStr,sldUnit,maxL,profit=null,rr=null,formula;
-  if(_cAsset==='crypto'){
-    pos=riskAmt/dist;maxL=pos*dist;unit='units';sldStr=_f(dist,dist<1?6:2);sldUnit='price diff';formula=`${_fD(riskAmt)} ÷ ${sldStr} = ${_f(pos,6)} units`;
-    if(!isNaN(tp)&&tp>0&&tp!==ent){const d=Math.abs(tp-ent);profit=pos*d;rr=profit/riskAmt;}
-  } else if(isSp){
-    pos=riskAmt/dist;maxL=riskAmt;unit=pair==='XAUUSD'?'oz':'contracts';sldStr=_f(dist,2);sldUnit='price dist';formula=`${_fD(riskAmt)} ÷ ${sldStr} = ${_f(pos,4)} ${unit}`;
-    if(!isNaN(tp)&&tp>0&&tp!==ent){const d=Math.abs(tp-ent);profit=pos*d;rr=profit/riskAmt;}
+function fmt(n,d=2){if(n===null||n===undefined||isNaN(n))return'—';return n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});}
+function fmtD(n){if(n===null||n===undefined||isNaN(n))return'—';return'$'+Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function sv(id,v){const e=document.getElementById(id);if(e)e.textContent=v;}
+
+function calc(){
+  const balance=parseFloat(document.getElementById('balance').value);
+  const riskPct=parseFloat(document.getElementById('riskPct').value);
+  const entry=parseFloat(document.getElementById('entry').value);
+  const sl=parseFloat(document.getElementById('stopLoss').value);
+  const tp=parseFloat(document.getElementById('takeProfit').value);
+  const pair=document.getElementById('forexPair').value;
+
+  const riskAmt=(!isNaN(balance)&&!isNaN(riskPct)&&balance>0&&riskPct>0)?balance*(riskPct/100):null;
+  sv('rRiskAmt', riskAmt!==null?fmtD(riskAmt):'—');
+  sv('rRiskPct', (!isNaN(riskPct)&&riskPct>0)?riskPct.toFixed(1)+'% of balance':'—% of balance');
+
+  if(riskAmt===null||isNaN(entry)||isNaN(sl)||entry===sl||entry<=0||sl<=0){clearRes();return;}
+  const distance=Math.abs(entry-sl);
+  if(!distance){clearRes();return;}
+
+  const isJPY=pair.includes('JPY');
+  const isSpecial=['XAUUSD','US30','NAS100'].includes(pair);
+  let posSize,posUnit,slDistStr,slDistUnit,maxLoss,profit=null,rr=null,formulaStr;
+
+  if(assetType==='crypto'){
+    posSize=riskAmt/distance; maxLoss=posSize*distance; posUnit='units';
+    slDistStr=fmt(distance,distance<1?6:2); slDistUnit='price difference';
+    formulaStr=`${fmtD(riskAmt)} ÷ ${slDistStr} = ${fmt(posSize,6)} units`;
+    if(!isNaN(tp)&&tp>0&&tp!==entry){const d=Math.abs(tp-entry);profit=posSize*d;rr=profit/riskAmt;}
+  } else if(isSpecial){
+    posSize=riskAmt/distance; maxLoss=riskAmt;
+    posUnit=pair==='XAUUSD'?'oz':'contracts';
+    slDistStr=fmt(distance,2); slDistUnit='price distance';
+    formulaStr=`${fmtD(riskAmt)} ÷ ${slDistStr} = ${fmt(posSize,4)} ${posUnit}`;
+    if(!isNaN(tp)&&tp>0&&tp!==entry){const d=Math.abs(tp-entry);profit=posSize*d;rr=profit/riskAmt;}
   } else {
-    const mult=isJPY?100:10000,pips=dist*mult,pipVal=10;
-    pos=riskAmt/(pips*pipVal);maxL=pos*pips*pipVal;unit='std lots';sldStr=_f(pips,1);sldUnit='pips';formula=`${_f(pips,1)} pips × $${pipVal}/pip → ${_f(pos,4)} lots`;
-    if(!isNaN(tp)&&tp>0&&tp!==ent){const tpP=Math.abs(tp-ent)*mult;profit=pos*tpP*pipVal;rr=profit/riskAmt;}
+    const mult=isJPY?100:10000, pips=distance*mult, pipVal=10;
+    posSize=riskAmt/(pips*pipVal); maxLoss=posSize*pips*pipVal;
+    posUnit='standard lots'; slDistStr=fmt(pips,1); slDistUnit='pips';
+    formulaStr=`${fmt(pips,1)} pips × $${pipVal}/pip/lot → ${fmt(posSize,4)} lots`;
+    if(!isNaN(tp)&&tp>0&&tp!==entry){const tpPips=Math.abs(tp-entry)*mult;profit=posSize*tpPips*pipVal;rr=profit/riskAmt;}
   }
-  _s('cPosSize',_f(pos,pos<0.001?6:pos<1?4:2));_s('cPosUnit',unit);
-  _s('cSLDist',sldStr);_s('cSLUnit',sldUnit);_s('cMaxLoss',_fD(maxL));
-  _s('cFormula',formula);
-  const pnlSec=document.getElementById('cPnlSec');
+
+  sv('rPositionSize', fmt(posSize,posSize<0.001?6:posSize<1?4:2));
+  sv('rPositionUnit', posUnit);
+  sv('rSLDist', slDistStr);
+  sv('rSLDistUnit', slDistUnit);
+  sv('rMaxLoss', fmtD(maxLoss));
+  sv('formulaNote', formulaStr);
+
+  const pnlSec=document.getElementById('pnlSec');
   if(profit!==null){
-    pnlSec.style.display='block';_s('cLoss2',_fD(riskAmt));_s('cProfit',_fD(profit));
-    const rrSec=document.getElementById('cRRSec');
+    pnlSec.style.display='block';
+    sv('rLoss2', fmtD(riskAmt));
+    sv('rProfit', fmtD(profit));
+    const rrSec=document.getElementById('rrSec');
     if(rr!==null){
       rrSec.style.display='block';
-      const col=rr>=3?'var(--accent,#00c896)':rr>=2?'var(--accent2,#19c37d)':rr>=1?'var(--amber,#f59e0b)':'var(--red,#ff4f6a)';
-      const rrEl=document.getElementById('cRR');rrEl.textContent='1 : '+_f(rr,2);rrEl.style.color=col;
-      const bar=document.getElementById('cRRBar');bar.style.width=Math.min((rr/3)*100,100)+'%';bar.style.background=col;
+      const col=rr>=3?'var(--accent)':rr>=2?'var(--accent2)':rr>=1?'var(--amber)':'var(--red)';
+      const rrEl=document.getElementById('rRR'); rrEl.textContent='1 : '+fmt(rr,2); rrEl.style.color=col;
+      const bar=document.getElementById('rrBar'); bar.style.width=Math.min((rr/3)*100,100)+'%'; bar.style.background=col;
     } else rrSec.style.display='none';
   } else pnlSec.style.display='none';
 }
-function _cClear(){
-  ['cPosSize','cPosUnit','cSLDist','cSLUnit','cMaxLoss'].forEach(k=>_s(k,'—'));
-  const p=document.getElementById('cPnlSec');if(p)p.style.display='none';
-  _s('cFormula','Position = Risk ÷ SL Distance');
+
+function clearRes(){
+  ['rPositionSize','rPositionUnit','rSLDist','rSLDistUnit','rMaxLoss'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent='—';});
+  document.getElementById('pnlSec').style.display='none';
+  document.getElementById('formulaNote').textContent='Position Size = Risk Amount ÷ SL Distance';
 }
 
-cCalc();
+calc();
 </script>
 </body>
 </html>
