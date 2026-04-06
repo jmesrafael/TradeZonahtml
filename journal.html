@@ -417,7 +417,8 @@ iframe.ready{opacity:1}
 
 <nav>
   <button class="tab active" data-tab="logs"       onclick="switchTab('logs')"><i class="fa-solid fa-table-list"></i><span class="tab-txt"> Logs</span></button>
-  <button class="tab"        data-tab="calendar"   onclick="switchTab('calendar')"><i class="fa-solid fa-calendar-days"></i><span class="tab-txt"> Calendar</span></button>
+  <button class="tab"        data-tab="presession" onclick="switchTab('presession')"></button><i class="fa-solid fa-clipboard-list"></i><span class="tab-txt"> Pre-Session</span>
+  <button class="tab"        data-tab="calendar"   onclick="switchTab('calendar')"><i class="fa-solid fa-calendar-days"></i><span class="tab-txt"> Calendar</span></button></button>
   <button class="tab"        data-tab="notes"      onclick="switchTab('notes')"><i class="fa-solid fa-note-sticky"></i><span class="tab-txt"> Notes</span></button>
   <button class="tab"        data-tab="analytics"  onclick="switchTab('analytics')"><i class="fa-solid fa-chart-line"></i><span class="tab-txt"> Analytics</span></button>
   <div class="tab-spacer"></div>
@@ -428,6 +429,14 @@ iframe.ready{opacity:1}
 <div class="tab-content active" id="tab-logs">
   <div class="tab-loader hidden" id="loader-logs"><div class="tab-loader-spin"></div><span class="tab-loader-label">Loading…</span></div>
   <iframe src="/logs/index.html" id="logsFrame" onload="frameReady('logs')"></iframe>
+</div>
+<!-- Tab: Pre-Session -->
+<div class="tab-content" id="tab-presession">
+  <div class="tab-loader" id="loader-presession">
+    <div class="tab-loader-spin"></div>
+    <span class="tab-loader-label">Loading pre-session…</span>
+  </div>
+  <iframe id="presessionFrame" onload="frameReady('presession')"></iframe>
 </div>
 <!-- Tab: Calendar -->
 <div class="tab-content" id="tab-calendar">
@@ -907,7 +916,7 @@ iframe.ready{opacity:1}
 
 <script>
 // ─── Tabs ───────────────────────────────────────────────────────────────────
-const TABS=['logs','calendar','notes','analytics','settings'];
+const TABS=['logs','presession','calendar','notes','analytics','settings'];
 let activeTab='logs', journalId = sessionStorage.getItem('tz_current_journal') 
              || localStorage.getItem('tz_current_journal');
 let journalObj=null, settings=null, currentUser=null, userIsPro=false, isDirty=false;
@@ -967,7 +976,12 @@ let _lastRemovedTag=null, _lastRemovedKey=null, _undoTimer=null;
 })();
 
 function _preloadTabs(){
-  [{id:'calFrame',src:'calendar.html'},{id:'notesFrame',src:'notes.html'},{id:'analyticsFrame',src:'analytics.html'}]
+ [
+  {id:'presessionFrame',src:'/presession/presession.html'},
+  {id:'calFrame',src:'calendar.html'},
+  {id:'notesFrame',src:'notes.html'},
+  {id:'analyticsFrame',src:'analytics.html'}
+]
     .forEach(({id,src})=>{const f=document.getElementById(id);if(f&&!f.src)f.src=src+'?preload=1';});
 }
 
@@ -989,21 +1003,26 @@ function switchTab(name){
   if(activeTab==='settings'&&isDirty&&name!=='settings'){showToast('Save or discard changes first.','fa-solid fa-triangle-exclamation','red');return;}
   TABS.forEach(t=>{document.getElementById('tab-'+t).classList.toggle('active',t===name);document.querySelector(`[data-tab="${t}"]`)?.classList.toggle('active',t===name);});
   activeTab=name;
-  const fm={calendar:{id:'calFrame',src:'calendar.html'},notes:{id:'notesFrame',src:'notes.html'},analytics:{id:'analyticsFrame',src:'analytics.html'}};
+  const fm={
+  presession:{id:'presessionFrame',src:'/presession/presession.html'},
+  calendar:{id:'calFrame',src:'calendar.html'},
+  notes:{id:'notesFrame',src:'notes.html'},
+  analytics:{id:'analyticsFrame',src:'analytics.html'}
+};
   if(fm[name]){const{id,src}=fm[name];const f=document.getElementById(id);if(f){if(!f.src||f.src==='about:blank'){showTabLoader(name);f.classList.remove('ready');f.src=src+'?t='+Date.now();}else if(!f.classList.contains('ready'))showTabLoader(name);}}
   if(name==='settings')populateSettings();
   document.getElementById('unsavedBar').classList.remove('show');
 }
 function showTabLoader(n){const l=document.getElementById('loader-'+n);if(l){l.style.display='';l.classList.remove('hidden');}}
 function frameReady(n){
-  const map={logs:'logsFrame',calendar:'calFrame',notes:'notesFrame',analytics:'analyticsFrame'};
+  const map={logs:'logsFrame',presession:'presessionFrame',calendar:'calFrame',notes:'notesFrame',analytics:'analyticsFrame'};
   const f=document.getElementById(map[n]);
   const t=localStorage.getItem('tl_theme')||'dark',ft=localStorage.getItem('tl_font')||'default';
   try{if(f?.contentWindow){f.contentWindow.postMessage({type:'tz_theme',theme:t},'*');f.contentWindow.postMessage({type:'tz_font',font:ft},'*');}}catch(e){}
   try{if(f?.contentWindow)f.contentWindow.postMessage({type:'tz_plan',isPro:userIsPro},'*');}catch(e){}
   if(f){f.classList.add('ready');const l=document.getElementById('loader-'+n);if(l){l.classList.add('hidden');setTimeout(()=>{if(l.classList.contains('hidden'))l.style.display='none';},350);}}
 }
-function bcast(msg){['logsFrame','calFrame','notesFrame','analyticsFrame'].forEach(id=>{const f=document.getElementById(id);try{if(f?.contentWindow)f.contentWindow.postMessage(msg,'*');}catch(e){}});}
+function bcast(msg){['logsFrame','presessionFrame','calFrame','notesFrame','analyticsFrame'].forEach(id=>{const f=document.getElementById(id);try{if(f?.contentWindow)f.contentWindow.postMessage(msg,'*');}catch(e){}});}
 
 function markDirty(){isDirty=true;document.getElementById('unsavedBar').classList.add('show');}
 function clearDirty(){isDirty=false;document.getElementById('unsavedBar').classList.remove('show');}
