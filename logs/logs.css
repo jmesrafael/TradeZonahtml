@@ -135,7 +135,7 @@ tbody tr.new-row{background:rgba(var(--accent-rgb,25,195,125),.04)!important;bor
 tbody tr.selected-row{background:rgba(255,95,109,.05)!important}
 td{padding:5px 6px;vertical-align:middle;text-align:center}
 .er td{color:var(--muted);font-size:13px;padding:58px 0;text-align:center}
-td:nth-child(1){width:30px}td:nth-child(2){width:90px}td:nth-child(3){width:72px}td:nth-child(4){width:110px}td:nth-child(5){width:64px}td:nth-child(8){width:80px}td:nth-child(9){width:64px}
+td:nth-child(1){width:30px}td:nth-child(2){width:105px}td:nth-child(3){width:110px}td:nth-child(4){width:64px}td:nth-child(7){width:80px}td:nth-child(8){width:64px}
 .row-cb-cell{width:28px!important;padding:0 4px!important}
 .row-cb{width:15px;height:15px;accent-color:var(--accent2);cursor:pointer;display:none}
 .select-mode .row-cb{display:inline-block}
