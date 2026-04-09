@@ -417,8 +417,8 @@ iframe.ready{opacity:1}
 
 <nav>
   <button class="tab active" data-tab="logs"       onclick="switchTab('logs')"><i class="fa-solid fa-table-list"></i><span class="tab-txt"> Logs</span></button>
-  <button class="tab"        data-tab="presession" onclick="switchTab('presession')"></button><i class="fa-solid fa-clipboard-list"></i><span class="tab-txt"> Pre-Session</span>
-  <button class="tab"        data-tab="calendar"   onclick="switchTab('calendar')"><i class="fa-solid fa-calendar-days"></i><span class="tab-txt"> Calendar</span></button></button>
+  <button class="tab"        data-tab="presession" onclick="switchTab('presession')"><i class="fa-solid fa-clipboard-list"></i><span class="tab-txt"> Pre-Session</span></button>
+  <button class="tab"        data-tab="calendar"   onclick="switchTab('calendar')"><i class="fa-solid fa-calendar-days"></i><span class="tab-txt"> Calendar</span></button>
   <button class="tab"        data-tab="notes"      onclick="switchTab('notes')"><i class="fa-solid fa-note-sticky"></i><span class="tab-txt"> Notes</span></button>
   <button class="tab"        data-tab="analytics"  onclick="switchTab('analytics')"><i class="fa-solid fa-chart-line"></i><span class="tab-txt"> Analytics</span></button>
   <div class="tab-spacer"></div>
@@ -1200,14 +1200,91 @@ async function confirmImport(){
   cb.disabled=true;cancel.disabled=true;document.getElementById('importProgress').classList.add('show');
   const sp=(p,l)=>{document.getElementById('impProgBar').style.width=p+'%';document.getElementById('impProgSub').textContent=l;};
   try{
-    const inc=importPayload.trades||[];const cur=await getTrades(journalId);const curIds=new Set(cur.map(t=>t.id));let fc=0;
-    if(importMode==='replace'){document.getElementById('impProgLabel').textContent='Deleting…';for(let i=0;i<cur.length;i++){await deleteTrade(cur[i].id);sp(5+Math.round((i+1)/cur.length*35),`${i+1}/${cur.length}`);}document.getElementById('impProgLabel').textContent='Importing…';for(let i=0;i<inc.length;i++){const{id:_,...d}=inc[i];await createTrade(currentUser.id,journalId,d);fc++;sp(40+Math.round((i+1)/inc.length*50),`${i+1}/${inc.length}`);}}
-    else{const nt=inc.filter(t=>!curIds.has(t.id));document.getElementById('impProgLabel').textContent='Merging…';for(let i=0;i<nt.length;i++){const{id:_,...d}=nt[i];await createTrade(currentUser.id,journalId,d);fc++;sp(10+Math.round((i+1)/nt.length*80),`${i+1}/${nt.length}`);}fc=cur.length+nt.length;}
+    const inc=importPayload.trades||[];
+    const cur=await getTrades(journalId);
+    const curIds=new Set(cur.map(t=>t.id));
+    let fc=0;
+
+    // ── Helper: upload base64 images for a trade row ──────────────
+    async function uploadImagesForTrade(tradeId, tradeData) {
+      const imgs = tradeData.images;
+      if (!Array.isArray(imgs) || !imgs.length) return;
+      for (const img of imgs) {
+        // img can be a base64 data URL string or an object with .data
+        const dataUrl = typeof img === 'string' ? img : (img?.data || img?._previewUrl || '');
+        if (!dataUrl || !dataUrl.startsWith('data:')) continue;
+        try { await addTradeImage(currentUser.id, tradeId, dataUrl); } catch(imgErr) { console.warn('[import] image upload failed:', imgErr); }
+      }
+    }
+
+    if(importMode==='replace'){
+      document.getElementById('impProgLabel').textContent='Deleting…';
+      for(let i=0;i<cur.length;i++){
+        await deleteTrade(cur[i].id);
+        sp(5+Math.round((i+1)/cur.length*25),`Deleting ${i+1}/${cur.length}`);
+      }
+      document.getElementById('impProgLabel').textContent='Importing…';
+      for(let i=0;i<inc.length;i++){
+        const {id:_,images:_imgs,...d}=inc[i];
+        const row=await createTrade(currentUser.id,journalId,d);
+        // Upload images for this trade
+        if (row?.id) {
+          await uploadImagesForTrade(row.id, inc[i]);
+        }
+        fc++;
+        sp(30+Math.round((i+1)/inc.length*55),`Importing ${i+1}/${inc.length}`);
+      }
+    } else {
+      const nt=inc.filter(t=>!curIds.has(t.id));
+      document.getElementById('impProgLabel').textContent='Merging…';
+      for(let i=0;i<nt.length;i++){
+        const {id:_,images:_imgs,...d}=nt[i];
+        const row=await createTrade(currentUser.id,journalId,d);
+        if (row?.id) {
+          await uploadImagesForTrade(row.id, nt[i]);
+        }
+        fc++;
+        sp(10+Math.round((i+1)/nt.length*75),`Merging ${i+1}/${nt.length}`);
+      }
+      fc=cur.length+nt.length;
+    }
+
     const hasS=!!(importPayload.settings),shouldRestore=hasS&&document.getElementById('restoreSettingsChk')?.checked;
-    if(shouldRestore){sp(95,'Restoring settings…');const s=importPayload.settings;const su={};if(s.strategies)su.strategies=s.strategies;if(s.timeframes)su.timeframes=s.timeframes;if(s.pairs)su.pairs=s.pairs;if(s.moods)su.moods=s.moods;if(s.mood_colors)su.mood_colors=s.mood_colors;await updateJournalSettings(journalId,su);settings={...settings,...su};const ju={};if(s.capital)ju.capital=s.capital;if(s.journalName)ju.name=s.journalName;if(Object.keys(ju).length){await updateJournal(journalId,ju);Object.assign(journalObj,ju);if(s.journalName){document.getElementById('jnameHdr').textContent=s.journalName;document.title='TradeZona | '+s.journalName;}}}
-    sp(100,'Done!');await new Promise(r=>setTimeout(r,600));closeImport();document.getElementById('logsFrame').src='/logs/index.html?t='+Date.now();if(activeTab==='settings')populateSettings();
+    if(shouldRestore){
+      sp(90,'Restoring settings…');
+      const s=importPayload.settings;
+      const su={};
+      if(s.strategies)su.strategies=s.strategies;
+      if(s.timeframes)su.timeframes=s.timeframes;
+      if(s.pairs)su.pairs=s.pairs;
+      if(s.moods)su.moods=s.moods;
+      if(s.mood_colors)su.mood_colors=s.mood_colors;
+      await updateJournalSettings(journalId,su);
+      settings={...settings,...su};
+      const ju={};
+      if(s.capital)ju.capital=s.capital;
+      if(s.journalName)ju.name=s.journalName;
+      if(Object.keys(ju).length){
+        await updateJournal(journalId,ju);
+        Object.assign(journalObj,ju);
+        if(s.journalName){
+          document.getElementById('jnameHdr').textContent=s.journalName;
+          document.title='TradeZona | '+s.journalName;
+        }
+      }
+    }
+
+    sp(100,'Done!');
+    await new Promise(r=>setTimeout(r,600));
+    closeImport();
+    document.getElementById('logsFrame').src='/logs/index.html?t='+Date.now();
+    if(activeTab==='settings')populateSettings();
     showToast(`Import complete — ${fc} trade${fc!==1?'s':''}${shouldRestore?' + settings':''}!`,'fa-solid fa-circle-check','green');
-  }catch(e){showToast('Import failed: '+e.message,'fa-solid fa-circle-exclamation','red');document.getElementById('importProgress').classList.remove('show');cb.disabled=false;cancel.disabled=false;}
+  } catch(e){
+    showToast('Import failed: '+e.message,'fa-solid fa-circle-exclamation','red');
+    document.getElementById('importProgress').classList.remove('show');
+    cb.disabled=false;cancel.disabled=false;
+  }
 }
 
 /* ── Delete Journal ── */

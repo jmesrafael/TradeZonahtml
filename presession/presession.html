@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="icon" type="image/svg+xml" href="../favicon.svg">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <title>Pre-Session</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/theme.js"></script>
@@ -13,54 +13,53 @@
 <link rel="stylesheet" href="/presession/presession.css">
 </head>
 <body>
+<div class="pw">
 
-<!-- ══ SESSION BANNER ══ -->
-<div class="session-banner" id="sessionBanner">
-  <div class="sb-left">
-    <div class="sb-dot" id="sbDot"></div>
-    <span class="sb-label">Today's Bias:</span>
-    <span class="sb-bias" id="sbBias">—</span>
-  </div>
-  <div class="sb-center">
-    <span class="sb-score-label">Checklist</span>
-    <div class="sb-score-bar">
-      <div class="sb-score-fill" id="sbFill"></div>
+  <!-- ══ SESSION BANNER ══ -->
+  <div class="session-banner" id="sessionBanner">
+    <div class="sb-left">
+      <div class="sb-dot" id="sbDot"></div>
+      <span class="sb-label">Bias</span>
+      <span class="sb-bias" id="sbBias">—</span>
     </div>
-    <span class="sb-score-val" id="sbScoreVal">—</span>
-  </div>
-  <div class="sb-right">
-    <span class="sb-phase" id="sbPhase">No session today</span>
-  </div>
-</div>
-
-<!-- ══ INNER TABS ══ -->
-<div class="ps-wrap" id="psWrap">
-
-  <div class="ps-header">
-    <div class="ps-header-left">
-      <div class="ps-title" id="psDateTitle">Pre-Session</div>
-      <div class="ps-subtitle" id="psSubtitle">Loading…</div>
+    <div class="sb-center">
+      <span class="sb-score-label">Checklist</span>
+      <div class="sb-score-bar">
+        <div class="sb-score-fill" id="sbFill"></div>
+      </div>
+      <span class="sb-score-val" id="sbScoreVal">—</span>
     </div>
-    <div class="ps-header-right">
-      <button class="btn-template" id="btnTemplate" onclick="openTemplateModal()">
+    <div class="sb-right">
+      <span class="sb-phase" id="sbPhase">No session today</span>
+    </div>
+  </div>
+
+  <!-- ══ PAGE HEADER ══ -->
+  <div class="ps-page-header">
+    <div class="ps-page-header-left">
+      <div class="ps-page-title" id="psDateTitle">Pre-Session</div>
+      <div class="ps-page-subtitle" id="psSubtitle">Loading…</div>
+    </div>
+    <div class="ps-page-header-right">
+      <button class="btn-template" onclick="openTemplateModal()">
         <i class="fa-solid fa-layer-group"></i> <span>Template</span>
       </button>
       <div class="session-date-nav">
-        <button class="sdn-btn" onclick="navSession(-1)" title="Previous session"><i class="fa-solid fa-chevron-left"></i></button>
+        <button class="sdn-btn" onclick="navSession(-1)"><i class="fa-solid fa-chevron-left"></i></button>
         <button class="sdn-today" onclick="goToday()">Today</button>
-        <button class="sdn-btn" onclick="navSession(1)" title="Next session"><i class="fa-solid fa-chevron-right"></i></button>
+        <button class="sdn-btn" onclick="navSession(1)"><i class="fa-solid fa-chevron-right"></i></button>
       </div>
     </div>
   </div>
 
-  <!-- Inner tab bar -->
+  <!-- ══ INNER TABS ══ -->
   <div class="ps-tabs">
     <button class="ps-tab active" data-pstab="plan" onclick="switchPsTab('plan')">
       <i class="fa-solid fa-bullseye"></i> Plan
     </button>
     <button class="ps-tab" data-pstab="checklist" onclick="switchPsTab('checklist')">
       <i class="fa-solid fa-list-check"></i> Checklist
-      <span class="ps-tab-badge" id="checklistBadge"></span>
+      <span class="ps-tab-badge" id="checklistBadge" style="display:none"></span>
     </button>
     <button class="ps-tab" data-pstab="intent" onclick="switchPsTab('intent')">
       <i class="fa-solid fa-crosshairs"></i> Intent
@@ -68,65 +67,42 @@
     <button class="ps-tab" data-pstab="reflect" onclick="switchPsTab('reflect')">
       <i class="fa-solid fa-moon"></i> Reflect
     </button>
-    <button class="ps-tab ps-tab-customize" data-pstab="customize" onclick="switchPsTab('customize')">
+    <button class="ps-tab ps-tab-right" data-pstab="customize" onclick="switchPsTab('customize')">
       <i class="fa-solid fa-sliders"></i> Customize
     </button>
   </div>
 
-  <!-- ══════════════════════════════════
-       TAB: PLAN
-  ══════════════════════════════════ -->
+  <!-- ══════════════ TAB: PLAN ══════════════ -->
   <div class="ps-panel active" id="panel-plan">
     <div class="ps-two-col">
-
-      <!-- Bias block -->
       <div class="ps-card">
         <div class="ps-card-title"><i class="fa-solid fa-compass"></i> Market Bias</div>
         <div class="bias-selector" id="biasSelector">
-          <button class="bias-btn" data-bias="Bullish" onclick="setBias('Bullish')">
-            <i class="fa-solid fa-arrow-trend-up"></i> Bullish
-          </button>
-          <button class="bias-btn" data-bias="Bearish" onclick="setBias('Bearish')">
-            <i class="fa-solid fa-arrow-trend-down"></i> Bearish
-          </button>
-          <button class="bias-btn" data-bias="Neutral" onclick="setBias('Neutral')">
-            <i class="fa-solid fa-minus"></i> Neutral
-          </button>
-          <button class="bias-btn" data-bias="Wait" onclick="setBias('Wait')">
-            <i class="fa-solid fa-hand"></i> Wait
-          </button>
+          <button class="bias-btn" data-bias="Bullish" onclick="setBias('Bullish')"><i class="fa-solid fa-arrow-trend-up"></i> Bullish</button>
+          <button class="bias-btn" data-bias="Bearish" onclick="setBias('Bearish')"><i class="fa-solid fa-arrow-trend-down"></i> Bearish</button>
+          <button class="bias-btn" data-bias="Neutral" onclick="setBias('Neutral')"><i class="fa-solid fa-minus"></i> Neutral</button>
+          <button class="bias-btn" data-bias="Wait" onclick="setBias('Wait')"><i class="fa-solid fa-hand"></i> Wait</button>
         </div>
-        <div class="ps-field-lbl" style="margin-top:14px">Bias Reasoning <span class="ps-lbl-hint">Why do you have this bias?</span></div>
-        <textarea class="ps-textarea" id="biasReason" placeholder="e.g. Price rejected the daily FVG at 1.0830, structure broke bearish on H4, DXY showing strength…" rows="4" oninput="markDirty('plan')"></textarea>
+        <div class="ps-field-lbl" style="margin-top:12px">Bias Reasoning <span class="ps-lbl-hint">Why this bias?</span></div>
+        <textarea class="ps-textarea" id="biasReason" placeholder="e.g. Price rejected the daily FVG at 1.0830, structure broke bearish on H4…" rows="4" oninput="markDirty('plan')"></textarea>
       </div>
 
-      <!-- Key levels -->
       <div class="ps-card">
         <div class="ps-card-title"><i class="fa-solid fa-layer-group"></i> Key Levels</div>
         <div class="levels-list" id="levelsList"></div>
-        <button class="btn-add-level" onclick="addLevel()">
-          <i class="fa-solid fa-plus"></i> Add Level
-        </button>
+        <button class="btn-add-row" onclick="addLevel()"><i class="fa-solid fa-plus"></i> Add Level</button>
       </div>
 
-      <!-- Goals -->
       <div class="ps-card">
         <div class="ps-card-title"><i class="fa-solid fa-trophy"></i> Session Goals</div>
-        <div class="ps-field-lbl">What do you want to accomplish today?</div>
-        <textarea class="ps-textarea" id="sessionGoals" placeholder="e.g. Take only 2 high-quality setups, hit 2R minimum, stay out of London open…" rows="3" oninput="markDirty('plan')"></textarea>
+        <textarea class="ps-textarea" id="sessionGoals" placeholder="e.g. Take only 2 high-quality setups, minimum 2R, stay out of London open…" rows="3" oninput="markDirty('plan')"></textarea>
       </div>
 
-      <!-- Rules -->
       <div class="ps-card">
-        <div class="ps-card-title"><i class="fa-solid fa-shield-halved"></i> Today's Rules
-          <span class="ps-card-hint">Personal commitments for this session</span>
-        </div>
+        <div class="ps-card-title"><i class="fa-solid fa-shield-halved"></i> Today's Rules <span class="ps-card-hint">Personal commitments</span></div>
         <div class="rules-list" id="rulesList"></div>
-        <button class="btn-add-level" onclick="addRule()">
-          <i class="fa-solid fa-plus"></i> Add Rule
-        </button>
+        <button class="btn-add-row" onclick="addRule()"><i class="fa-solid fa-plus"></i> Add Rule</button>
       </div>
-
     </div>
     <div class="ps-save-row">
       <span class="ps-dirty-indicator" id="planDirty"></span>
@@ -134,15 +110,12 @@
     </div>
   </div>
 
-  <!-- ══════════════════════════════════
-       TAB: CHECKLIST
-  ══════════════════════════════════ -->
+  <!-- ══════════════ TAB: CHECKLIST ══════════════ -->
   <div class="ps-panel" id="panel-checklist">
     <div class="cl-layout">
-      <!-- Left: checklist items -->
       <div class="cl-main">
         <div class="cl-score-hero">
-          <div class="cl-score-ring" id="clScoreRing">
+          <div class="cl-score-ring">
             <svg viewBox="0 0 80 80" class="cl-ring-svg">
               <circle cx="40" cy="40" r="34" class="cl-ring-bg"/>
               <circle cx="40" cy="40" r="34" class="cl-ring-fill" id="clRingFill"/>
@@ -158,24 +131,16 @@
             <div class="cl-quality-bar" id="clQualityBar"></div>
           </div>
         </div>
-
-        <div class="cl-items" id="clItems">
-          <!-- Rendered by JS -->
-        </div>
-
+        <div class="cl-items" id="clItems"></div>
         <div class="ps-save-row">
           <span class="ps-dirty-indicator" id="checklistDirty"></span>
-          <button class="btn-ps-save" onclick="saveChecklist()">
-            <i class="fa-solid fa-floppy-disk"></i> Save Checklist
-          </button>
+          <button class="btn-ps-save" onclick="saveChecklist()"><i class="fa-solid fa-floppy-disk"></i> Save Checklist</button>
         </div>
       </div>
-
-      <!-- Right: history bar -->
       <div class="cl-history">
         <div class="cl-history-title"><i class="fa-solid fa-chart-column"></i> Recent Sessions</div>
         <div class="cl-history-bars" id="clHistoryBars">
-          <div class="cl-history-empty">Complete a few sessions to see history</div>
+          <div class="cl-history-empty">Complete sessions to see history</div>
         </div>
         <div class="cl-history-legend">
           <span class="cl-hl-item"><span class="cl-hl-dot" style="background:#ff5f6d"></span>Poor</span>
@@ -186,69 +151,52 @@
     </div>
   </div>
 
-  <!-- ══════════════════════════════════
-       TAB: TRADE INTENT
-  ══════════════════════════════════ -->
+  <!-- ══════════════ TAB: INTENT ══════════════ -->
   <div class="ps-panel" id="panel-intent">
-
-    <!-- Intent list / new intent button -->
     <div class="intent-header">
-      <div class="intent-header-left">
+      <div>
         <div class="intent-count" id="intentCount">0 intents today</div>
-        <div class="intent-hint">Pre-trade analysis for each individual trade you plan to take</div>
+        <div class="intent-hint">Pre-trade analysis for each individual trade</div>
       </div>
-      <button class="btn-new-intent" onclick="newIntent()">
-        <i class="fa-solid fa-plus"></i> New Trade Intent
-      </button>
+      <button class="btn-new-intent" onclick="newIntent()"><i class="fa-solid fa-plus"></i> New Trade Intent</button>
     </div>
-
-    <!-- Lock status from checklist -->
     <div class="intent-lock-bar" id="intentLockBar">
       <div class="ilb-left">
         <i class="fa-solid fa-shield-halved" id="ilbIcon"></i>
         <div>
           <div class="ilb-title" id="ilbTitle">Checklist not completed</div>
-          <div class="ilb-sub" id="ilbSub">Complete your pre-session checklist before trading</div>
+          <div class="ilb-sub" id="ilbSub">Complete your checklist before trading</div>
         </div>
       </div>
       <span class="ilb-badge" id="ilbBadge"></span>
     </div>
-
     <div class="intent-list" id="intentList">
       <div class="intent-empty" id="intentEmpty">
-        <i class="fa-solid fa-crosshairs" style="font-size:28px;opacity:.25;display:block;margin-bottom:10px"></i>
-        No trade intents yet for this session.<br>
-        <span style="font-size:11px;color:var(--muted)">Fill one out before entering each trade.</span>
+        <i class="fa-solid fa-crosshairs" style="font-size:26px;opacity:.2;display:block;margin-bottom:10px"></i>
+        No trade intents yet for this session.
+        <br><span style="font-size:11px;color:var(--muted)">Fill one out before entering each trade.</span>
       </div>
     </div>
-
-    <!-- Intent form (shown when adding/editing) -->
     <div class="intent-form-wrap" id="intentFormWrap" style="display:none">
       <div class="intent-form">
         <div class="intent-form-title" id="intentFormTitle">New Trade Intent</div>
         <div class="intent-form-grid">
           <div class="if-field">
             <div class="if-lbl">Setup Name <span class="if-required">*</span></div>
-            <div class="if-select-wrap">
-              <select class="if-select" id="ifSetup" onchange="markDirty('intent')">
-                <option value="">— Choose setup —</option>
-              </select>
-            </div>
+            <select class="if-select" id="ifSetup" onchange="markDirty('intent')">
+              <option value="">— Choose setup —</option>
+            </select>
           </div>
           <div class="if-field">
             <div class="if-lbl">Direction</div>
             <div class="if-dir-toggle">
-              <button class="if-dir-btn active" id="ifLong" onclick="setIntentDir('Long')">
-                <i class="fa-solid fa-arrow-up"></i> Long
-              </button>
-              <button class="if-dir-btn" id="ifShort" onclick="setIntentDir('Short')">
-                <i class="fa-solid fa-arrow-down"></i> Short
-              </button>
+              <button class="if-dir-btn active" id="ifLong" onclick="setIntentDir('Long')"><i class="fa-solid fa-arrow-up"></i> Long</button>
+              <button class="if-dir-btn" id="ifShort" onclick="setIntentDir('Short')"><i class="fa-solid fa-arrow-down"></i> Short</button>
             </div>
           </div>
           <div class="if-field if-full">
             <div class="if-lbl">Why this trade? <span class="if-lbl-hint">Be specific — what is your edge?</span></div>
-            <textarea class="ps-textarea" id="ifWhy" placeholder="e.g. Break & retest of H4 FVG, confluence with daily OB, DXY showing weakness, price grabbed sell-side liquidity…" rows="3" oninput="markDirty('intent')"></textarea>
+            <textarea class="ps-textarea" id="ifWhy" placeholder="e.g. Break & retest of H4 FVG, confluence with daily OB…" rows="3" oninput="markDirty('intent')"></textarea>
           </div>
           <div class="if-field">
             <div class="if-lbl">Entry Price</div>
@@ -263,74 +211,56 @@
             <div class="if-input-wrap"><span class="if-pre">$</span><input type="number" class="if-input" id="ifTP" placeholder="0.00" step="any" oninput="markDirty('intent');calcIntentRR()"></div>
           </div>
           <div class="if-field if-full">
-            <div class="if-lbl">Invalidation <span class="if-lbl-hint">What would make this setup invalid?</span></div>
-            <textarea class="ps-textarea" id="ifInvalidation" placeholder="e.g. If price closes above 1.0870 on H1, the bearish structure is broken…" rows="2" oninput="markDirty('intent')"></textarea>
+            <div class="if-lbl">Invalidation <span class="if-lbl-hint">What makes this setup invalid?</span></div>
+            <textarea class="ps-textarea" id="ifInvalidation" placeholder="e.g. If price closes above 1.0870 on H1…" rows="2" oninput="markDirty('intent')"></textarea>
           </div>
           <div class="if-field if-full">
             <div class="if-rr-display" id="ifRRDisplay" style="display:none">
-              <div class="if-rr-label">Risk / Reward</div>
-              <div class="if-rr-val" id="ifRRVal">—</div>
+              <span class="if-rr-label">R:R</span>
+              <span class="if-rr-val" id="ifRRVal">—</span>
               <div class="if-rr-bar"><div class="if-rr-fill" id="ifRRFill"></div></div>
             </div>
           </div>
         </div>
         <div class="intent-form-actions">
           <button class="btn-ghost" onclick="cancelIntent()">Cancel</button>
-          <button class="btn-ps-save" onclick="saveIntent()">
-            <i class="fa-solid fa-floppy-disk"></i> Save Intent
-          </button>
+          <button class="btn-ps-save" onclick="saveIntent()"><i class="fa-solid fa-floppy-disk"></i> Save Intent</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ══════════════════════════════════
-       TAB: REFLECT
-  ══════════════════════════════════ -->
+  <!-- ══════════════ TAB: REFLECT ══════════════ -->
   <div class="ps-panel" id="panel-reflect">
     <div class="ps-two-col">
-
       <div class="ps-card">
-        <div class="ps-card-title"><i class="fa-solid fa-face-smile"></i> Session Mood
-          <span class="ps-card-hint">How did you feel overall?</span>
-        </div>
+        <div class="ps-card-title"><i class="fa-solid fa-face-smile"></i> Session Mood</div>
         <div class="mood-row" id="reflectMoodRow"></div>
       </div>
-
       <div class="ps-card">
         <div class="ps-card-title"><i class="fa-solid fa-trophy"></i> What Went Well?</div>
-        <textarea class="ps-textarea" id="reflectWell" placeholder="Setups I executed correctly, discipline I maintained, decisions I'm proud of…" rows="4" oninput="markDirty('reflect')"></textarea>
+        <textarea class="ps-textarea" id="reflectWell" placeholder="Setups I executed correctly, discipline I maintained…" rows="4" oninput="markDirty('reflect')"></textarea>
       </div>
-
       <div class="ps-card">
         <div class="ps-card-title"><i class="fa-solid fa-triangle-exclamation"></i> What Went Wrong?</div>
-        <textarea class="ps-textarea" id="reflectWrong" placeholder="Mistakes I made, rules I broke, emotions that affected my decisions…" rows="4" oninput="markDirty('reflect')"></textarea>
+        <textarea class="ps-textarea" id="reflectWrong" placeholder="Mistakes I made, rules I broke, emotions that affected me…" rows="4" oninput="markDirty('reflect')"></textarea>
       </div>
-
       <div class="ps-card">
         <div class="ps-card-title"><i class="fa-solid fa-lightbulb"></i> Key Lesson</div>
         <textarea class="ps-textarea" id="reflectLesson" placeholder="The one thing I want to remember from this session…" rows="3" oninput="markDirty('reflect')"></textarea>
       </div>
-
       <div class="ps-card ps-card-full">
         <div class="ps-card-title"><i class="fa-solid fa-ban"></i> Rules Broken Today</div>
         <div class="rules-broken-list" id="rulesBrokenList">
           <div style="font-size:12px;color:var(--muted)">Save your plan rules first, then mark any you broke.</div>
         </div>
       </div>
-
       <div class="ps-card ps-card-full">
-        <div class="ps-card-title"><i class="fa-solid fa-robot"></i> Auto-Insights
-          <span class="ps-card-hint">Generated from your session data</span>
-        </div>
+        <div class="ps-card-title"><i class="fa-solid fa-robot"></i> Auto-Insights <span class="ps-card-hint">From your session data</span></div>
         <div class="auto-insights" id="autoInsights">
-          <div class="ai-placeholder">
-            <i class="fa-solid fa-chart-simple" style="font-size:22px;opacity:.2;margin-bottom:8px;display:block"></i>
-            Build up 5+ sessions to unlock behavioral pattern insights.
-          </div>
+          <div class="ai-placeholder"><i class="fa-solid fa-chart-simple" style="font-size:22px;opacity:.2;display:block;margin-bottom:8px"></i>Build up 5+ sessions to unlock behavioral pattern insights.</div>
         </div>
       </div>
-
     </div>
     <div class="ps-save-row">
       <span class="ps-dirty-indicator" id="reflectDirty"></span>
@@ -338,34 +268,20 @@
     </div>
   </div>
 
-  <!-- ══════════════════════════════════
-       TAB: CUSTOMIZE
-  ══════════════════════════════════ -->
+  <!-- ══════════════ TAB: CUSTOMIZE ══════════════ -->
   <div class="ps-panel" id="panel-customize">
     <div class="cz-grid">
-
-      <!-- Templates -->
       <div class="cz-card cz-full">
         <div class="cz-card-title"><i class="fa-solid fa-layer-group"></i> Checklist Templates</div>
-        <div class="cz-template-row" id="czTemplateRow">
-          <!-- rendered by JS -->
-        </div>
+        <div class="cz-template-row" id="czTemplateRow"></div>
         <div class="cz-save-template-row">
           <input type="text" class="cz-input" id="czNewTemplateName" placeholder="My Custom Template name…" maxlength="40">
-          <button class="btn-ps-save" onclick="saveCurrentAsTemplate()">
-            <i class="fa-solid fa-floppy-disk"></i> Save Current Checklist as Template
-          </button>
+          <button class="btn-ps-save" onclick="saveCurrentAsTemplate()"><i class="fa-solid fa-floppy-disk"></i> Save Current as Template</button>
         </div>
       </div>
-
-      <!-- Checklist items editor -->
       <div class="cz-card cz-full">
-        <div class="cz-card-title"><i class="fa-solid fa-list-check"></i> Checklist Items
-          <span class="cz-card-hint">Edit, reorder, or add items. Changes apply to new sessions.</span>
-        </div>
-        <div class="cz-items-list" id="czItemsList">
-          <!-- rendered by JS -->
-        </div>
+        <div class="cz-card-title"><i class="fa-solid fa-list-check"></i> Checklist Items <span class="cz-card-hint">Drag to reorder · click text to edit</span></div>
+        <div class="cz-items-list" id="czItemsList"></div>
         <div class="cz-add-item-row">
           <input type="text" class="cz-input" id="czNewItem" placeholder="New checklist item…" maxlength="120" onkeydown="if(event.key==='Enter')addChecklistItem()">
           <select class="cz-select" id="czNewCat">
@@ -374,79 +290,44 @@
             <option value="risk">Risk</option>
             <option value="execution">Execution</option>
           </select>
-          <button class="btn-cz-add" onclick="addChecklistItem()">
-            <i class="fa-solid fa-plus"></i> Add
-          </button>
+          <button class="btn-cz-add" onclick="addChecklistItem()"><i class="fa-solid fa-plus"></i> Add</button>
         </div>
       </div>
-
-      <!-- Setup library -->
       <div class="cz-card">
-        <div class="cz-card-title"><i class="fa-solid fa-chess-knight"></i> Setup Library
-          <span class="cz-card-hint">Setup names appear in Trade Intent</span>
-        </div>
+        <div class="cz-card-title"><i class="fa-solid fa-chess-knight"></i> Setup Library <span class="cz-card-hint">Used in Trade Intent</span></div>
         <div class="cz-setup-list" id="czSetupList"></div>
         <div class="cz-add-item-row">
           <input type="text" class="cz-input" id="czNewSetup" placeholder="e.g. FVG Fill, Break & Retest…" maxlength="60" onkeydown="if(event.key==='Enter')addSetup()">
-          <button class="btn-cz-add" onclick="addSetup()">
-            <i class="fa-solid fa-plus"></i> Add
-          </button>
+          <button class="btn-cz-add" onclick="addSetup()"><i class="fa-solid fa-plus"></i> Add</button>
         </div>
       </div>
-
-      <!-- Feature toggles -->
       <div class="cz-card">
         <div class="cz-card-title"><i class="fa-solid fa-toggle-on"></i> Feature Toggles</div>
         <div class="cz-toggles">
           <div class="cz-toggle-row">
-            <div class="czt-info">
-              <div class="czt-name">Session Banner</div>
-              <div class="czt-desc">Show bias + checklist strip at top</div>
-            </div>
+            <div class="czt-info"><div class="czt-name">Session Banner</div><div class="czt-desc">Show bias + checklist strip at top</div></div>
             <div class="cz-tswitch on" id="toggle_banner" onclick="czToggle('banner')"></div>
           </div>
           <div class="cz-toggle-row">
-            <div class="czt-info">
-              <div class="czt-name">Trade Lock Warning</div>
-              <div class="czt-desc">Color-code Log Trade button by checklist score</div>
-            </div>
+            <div class="czt-info"><div class="czt-name">Trade Lock Warning</div><div class="czt-desc">Color-code based on checklist score</div></div>
             <div class="cz-tswitch on" id="toggle_tradeLock" onclick="czToggle('tradeLock')"></div>
           </div>
           <div class="cz-toggle-row">
-            <div class="czt-info">
-              <div class="czt-name">Intent Auto-fill</div>
-              <div class="czt-desc">Pre-fill log row from active intent</div>
-            </div>
+            <div class="czt-info"><div class="czt-name">Intent Auto-fill</div><div class="czt-desc">Pre-fill log row from active intent</div></div>
             <div class="cz-tswitch on" id="toggle_autofill" onclick="czToggle('autofill')"></div>
           </div>
           <div class="cz-toggle-row">
-            <div class="czt-info">
-              <div class="czt-name">Reflection Reminders</div>
-              <div class="czt-desc">Prompt to fill reflection after market close</div>
-            </div>
+            <div class="czt-info"><div class="czt-name">Reflection Reminders</div><div class="czt-desc">Prompt after market close</div></div>
             <div class="cz-tswitch" id="toggle_reflectReminder" onclick="czToggle('reflectReminder')"></div>
           </div>
         </div>
       </div>
-
-      <!-- Quality thresholds -->
       <div class="cz-card">
-        <div class="cz-card-title"><i class="fa-solid fa-gauge-high"></i> Quality Thresholds
-          <span class="cz-card-hint">Governs color coding throughout the app</span>
-        </div>
+        <div class="cz-card-title"><i class="fa-solid fa-gauge-high"></i> Quality Thresholds <span class="cz-card-hint">Governs all color coding</span></div>
         <div class="cz-threshold-row">
-          <div class="cz-threshold-item">
-            <div class="czt-label"><span class="czt-dot" style="background:#ff5f6d"></span>Poor (red)</div>
-            <div class="czt-range">0% — <span id="threshOKLabel">69</span>%</div>
-          </div>
-          <div class="cz-threshold-item">
-            <div class="czt-label"><span class="czt-dot" style="background:#f59e0b"></span>OK (amber)</div>
-            <div class="czt-range"><span id="threshOKLabel2">70</span>% — <span id="threshGoodLabel">84</span>%</div>
-          </div>
-          <div class="cz-threshold-item">
-            <div class="czt-label"><span class="czt-dot" style="background:var(--accent2)"></span>Good (green)</div>
-            <div class="czt-range"><span id="threshGoodLabel2">85</span>%+</div>
-          </div>
+          <div class="cz-threshold-item"><div class="czt-label"><span class="czt-dot" style="background:#ff5f6d"></span>Poor</div><div class="czt-range">0% — <span id="threshOKLabel">69</span>%</div></div>
+          <div class="cz-threshold-item"><div class="czt-label"><span class="czt-dot" style="background:#f59e0b"></span>OK</div><div class="czt-range"><span id="threshOKLabel2">70</span>% — <span id="threshGoodLabel">84</span>%</div></div>
+          <div class="cz-threshold-item"><div class="czt-label"><span class="czt-dot" style="background:var(--accent2)"></span>Good</div><div class="czt-range"><span id="threshGoodLabel2">85</span>%+</div></div>
         </div>
         <div class="cz-threshold-sliders">
           <div class="cz-slider-lbl">OK threshold: <strong id="threshOKVal">70</strong>%</div>
@@ -458,11 +339,10 @@
           <button class="btn-ps-save" onclick="saveCustomize()"><i class="fa-solid fa-floppy-disk"></i> Save Settings</button>
         </div>
       </div>
-
     </div>
   </div>
 
-</div><!-- .ps-wrap -->
+</div><!-- .pw -->
 
 <!-- ══ TEMPLATE MODAL ══ -->
 <div class="ps-overlay" id="templateOverlay" onclick="if(event.target===this)closeTemplateModal()">
@@ -472,19 +352,15 @@
       <button class="ps-modal-close" onclick="closeTemplateModal()"><i class="fa-solid fa-xmark"></i></button>
     </div>
     <div class="ps-modal-body">
-      <p style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6">
-        Switching templates replaces your current checklist items. Your session data is preserved.
-      </p>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6">Switching templates replaces your current checklist items.</p>
       <div class="template-grid" id="templateGrid"></div>
     </div>
-    <div class="ps-modal-ftr">
-      <button class="btn-ghost" onclick="closeTemplateModal()">Cancel</button>
-    </div>
+    <div class="ps-modal-ftr"><button class="btn-ghost" onclick="closeTemplateModal()">Cancel</button></div>
   </div>
 </div>
 
 <!-- ══ TOAST ══ -->
-<div id="psToast"><i id="psToastIcon" class="fa-solid fa-circle-check"></i><span id="psToastMsg"></span></div>
+<div id="toast"><i id="toastIcon" class="fa-solid fa-circle-check"></i><span id="toastMsg"></span></div>
 
 <script src="/presession/presession.js"></script>
 </body>
