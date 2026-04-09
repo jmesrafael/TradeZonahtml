@@ -417,7 +417,7 @@ iframe.ready{opacity:1}
 
 <nav>
   <button class="tab active" data-tab="logs"       onclick="switchTab('logs')"><i class="fa-solid fa-table-list"></i><span class="tab-txt"> Logs</span></button>
-  <button class="tab"        data-tab="presession" onclick="switchTab('presession')"><i class="fa-solid fa-clipboard-list"></i><span class="tab-txt"> Pre-Session</span></button>
+  <button class="tab"        data-tab="presession" onclick="switchTab('presession')"><i class="fa-solid fa-clipboard-list"></i><span class="tab-txt"> Pre-Session</span><span id="psTabDot" style="display:none;width:6px;height:6px;border-radius:50%;margin-left:4px;flex-shrink:0;vertical-align:middle"></span></button>
   <button class="tab"        data-tab="calendar"   onclick="switchTab('calendar')"><i class="fa-solid fa-calendar-days"></i><span class="tab-txt"> Calendar</span></button>
   <button class="tab"        data-tab="notes"      onclick="switchTab('notes')"><i class="fa-solid fa-note-sticky"></i><span class="tab-txt"> Notes</span></button>
   <button class="tab"        data-tab="analytics"  onclick="switchTab('analytics')"><i class="fa-solid fa-chart-line"></i><span class="tab-txt"> Analytics</span></button>
@@ -996,6 +996,16 @@ function navigateSafely(dest){
 window.addEventListener('message',e=>{
   if(e.data?.type==='tz_flushed'&&_flushTarget){clearTimeout(_flushTimer);const d=_flushTarget;_flushTarget=null;location.href=d;}
   if(e.data?.type==='tz_analytics_state'){const sw=document.getElementById('analyticsToggleSwitch');if(sw)sw.classList.toggle('on',!!e.data.on);}
+  if(e.data?.type==='tz_presession_summary'){
+    const dot=document.getElementById('psTabDot');if(!dot)return;
+    const today=new Date();const todayStr=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
+    if(e.data.date!==todayStr){dot.style.display='none';return;}
+    const score=e.data.checklist_score||0;
+    dot.style.background=score>=85?'#22c55e':score>=70?'#f59e0b':score>0?'#ff5f6d':'#555';
+    dot.style.display='inline-block';
+    // Forward summary to all other frames so Logs can show nudge bar
+    ['logsFrame'].forEach(fid=>{try{const f=document.getElementById(fid);if(f?.contentWindow)f.contentWindow.postMessage(e.data,'*');}catch(ex){}});
+  }
 });
 
 function goBack(){if(activeTab==='settings'&&isDirty){showToast('Save or discard settings first.','fa-solid fa-triangle-exclamation','red');return;}navigateSafely('/dashboard');}

@@ -338,6 +338,40 @@ body{
 #toast.toast-green{border-color:rgba(var(--accent-rgb,25,195,125),.4);background:rgba(var(--accent-rgb,25,195,125),.07)}
 #toast.toast-red{border-color:rgba(255,95,109,.4);background:rgba(255,95,109,.07)}
 
+/* ══ STREAK ══════════════════════════════════════════════ */
+.cl-streak{margin-top:9px;font-size:11px;display:flex;align-items:center;gap:5px;color:var(--text);padding-top:8px;border-top:1px solid var(--border)}
+.cl-streak i{flex-shrink:0}
+
+/* ══ CATEGORY BREAKDOWN ══════════════════════════════════ */
+.cl-cat-breakdown{display:flex;flex-direction:column;gap:4px;margin-top:8px}
+.cl-cat-row{display:flex;align-items:center;gap:7px}
+.cl-cat-name{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;width:52px;flex-shrink:0}
+.cl-cat-bar{flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+.cl-cat-fill{height:100%;border-radius:2px;transition:width .4s cubic-bezier(.4,0,.2,1)}
+.cl-cat-pct{font-size:9px;font-weight:700;width:26px;text-align:right;flex-shrink:0;font-family:var(--font-mono,'Space Grotesk',sans-serif)}
+
+/* ══ CRITICAL BADGE ══════════════════════════════════════ */
+.cl-critical-badge{display:inline-flex;align-items:center;padding:1px 5px;border-radius:var(--radius-pill);font-size:8px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;background:rgba(245,158,11,.12);color:#f59e0b;border:1px solid rgba(245,158,11,.3);margin-left:4px;vertical-align:middle}
+.cl-item-past{cursor:default!important;opacity:.72}
+.cl-item-past:hover{border-color:var(--border)!important}
+
+/* ══ WEIGHT BUTTON ═══════════════════════════════════════ */
+.cz-weight-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;padding:2px 4px;border-radius:var(--radius-sm);transition:color .15s;flex-shrink:0;line-height:1}
+.cz-weight-btn:hover{color:#f59e0b}
+.cz-weight-btn.active{color:#f59e0b}
+
+/* ══ INTENT STATUS CHIP ══════════════════════════════════ */
+.ic-status{font-size:9px;font-weight:700;padding:2px 7px;border-radius:var(--radius-pill);border:1px solid;cursor:pointer;flex-shrink:0;display:flex;align-items:center;gap:3px;transition:opacity .15s;text-transform:capitalize}
+.ic-status:hover{opacity:.75}
+
+/* ══ WEEKLY SUMMARY TABLE ════════════════════════════════ */
+.ws-table{width:100%;border-collapse:collapse;font-size:12px}
+.ws-table thead th{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;font-weight:600;padding:0 8px 8px;text-align:left;border-bottom:1px solid var(--border)}
+.ws-table tbody td{padding:8px 8px;border-bottom:1px solid var(--border);vertical-align:middle}
+.ws-table tbody tr:last-child td{border-bottom:none}
+.ws-table tbody tr:hover{background:rgba(255,255,255,.02)}
+.ws-bias-chip{font-size:10px;font-weight:700;padding:2px 7px;border-radius:var(--radius-pill);border:1px solid}
+
 /* ══ RESPONSIVE ══════════════════════════════════════════ */
 @media(max-width:768px){
   body{padding:10px}

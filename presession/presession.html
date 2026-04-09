@@ -129,6 +129,7 @@
             <div class="cl-score-status" id="clScoreStatus">Complete the checklist below</div>
             <div class="cl-score-counts" id="clScoreCounts"></div>
             <div class="cl-quality-bar" id="clQualityBar"></div>
+            <div class="cl-cat-breakdown" id="clCatBreakdown"></div>
           </div>
         </div>
         <div class="cl-items" id="clItems"></div>
@@ -147,6 +148,7 @@
           <span class="cl-hl-item"><span class="cl-hl-dot" style="background:#f59e0b"></span>OK</span>
           <span class="cl-hl-item"><span class="cl-hl-dot" style="background:var(--accent2)"></span>Good</span>
         </div>
+        <div class="cl-streak" id="clStreakDisplay"></div>
       </div>
     </div>
   </div>
@@ -258,8 +260,12 @@
       <div class="ps-card ps-card-full">
         <div class="ps-card-title"><i class="fa-solid fa-robot"></i> Auto-Insights <span class="ps-card-hint">From your session data</span></div>
         <div class="auto-insights" id="autoInsights">
-          <div class="ai-placeholder"><i class="fa-solid fa-chart-simple" style="font-size:22px;opacity:.2;display:block;margin-bottom:8px"></i>Build up 5+ sessions to unlock behavioral pattern insights.</div>
+          <div class="ai-placeholder"><i class="fa-solid fa-chart-simple" style="font-size:22px;opacity:.2;display:block;margin-bottom:8px"></i>Build up 2+ sessions to unlock insights.</div>
         </div>
+      </div>
+      <div class="ps-card ps-card-full">
+        <div class="ps-card-title"><i class="fa-solid fa-calendar-week"></i> Last 5 Sessions</div>
+        <div id="weeklySummaryTable"></div>
       </div>
     </div>
     <div class="ps-save-row">

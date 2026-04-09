@@ -211,6 +211,7 @@ async function loadSession(date) {
   updateChecklistBadge();
   dirtyTabs.clear();
   ['plan','checklist','reflect'].forEach(t => clearDirty(t));
+  broadcastSessionSummary();
 }
 
 async function upsertSession(updates) {
@@ -233,6 +234,31 @@ async function loadHistory() {
   const { data } = await db.from('pre_sessions').select('session_date,checklist_score').eq('journal_id', jid).order('session_date', { ascending: false }).limit(10);
   sessionHistory = (data || []).reverse();
   renderHistory();
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  SESSION BROADCAST
+// ══════════════════════════════════════════════════════════════════════
+function broadcastSessionSummary() {
+  if (!(psSettings?.feature_toggles?.autofill ?? true)) return;
+  const activeIntents = intents.filter(i => !i.trade_id);
+  try {
+    parent.postMessage({
+      type: 'tz_presession_summary',
+      date: currentDate,
+      checklist_score: currentSession?.checklist_score || 0,
+      bias: currentSession?.bias || null,
+      active_intents: activeIntents.map(i => ({
+        id: i.id,
+        setup_name: i.setup_name,
+        direction: i.direction,
+        entry_price: i.entry_price,
+        stop_loss:   i.stop_loss,
+        take_profit: i.take_profit,
+        why_trade:   i.why_trade
+      }))
+    }, '*');
+  } catch(e) {}
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -345,7 +371,13 @@ async function savePlan() {
 // ══════════════════════════════════════════════════════════════════════
 //  CHECKLIST TAB
 // ══════════════════════════════════════════════════════════════════════
-function getChecklistItems() { return psSettings?.checklist_items || FACTORY_TEMPLATES.scalping.items; }
+function getChecklistItems() {
+  const isToday = currentDate === todayLocal();
+  if (!isToday && currentSession?.checklist_snapshot) {
+    try { return JSON.parse(currentSession.checklist_snapshot); } catch(e) {}
+  }
+  return psSettings?.checklist_items || FACTORY_TEMPLATES.scalping.items;
+}
 function populateChecklist() { renderChecklistItems(); updateChecklistScore(); }
 function renderChecklistItems() {
   const items = getChecklistItems();
@@ -362,8 +394,14 @@ function renderChecklistItems() {
       const checked = !!state[idx];
       const div = document.createElement('div');
       div.className = 'cl-item' + (checked ? ' checked' : '');
-      div.innerHTML = `<div class="cl-item-check">${checked ? '<i class="fa-solid fa-check"></i>' : ''}</div><div class="cl-item-text">${esc(item.text)}</div><span class="cl-item-cat">${esc(item.cat)}</span>`;
-      div.addEventListener('click', () => toggleChecklistItem(idx));
+      const isCritical = item.weight >= 2;
+      div.innerHTML = `<div class="cl-item-check">${checked ? '<i class="fa-solid fa-check"></i>' : ''}</div><div class="cl-item-text">${esc(item.text)}${isCritical ? ' <span class="cl-critical-badge">Critical</span>' : ''}</div><span class="cl-item-cat">${esc(item.cat)}</span>`;
+      const isPast = currentDate !== todayLocal();
+      if (!isPast) {
+        div.addEventListener('click', () => toggleChecklistItem(idx));
+      } else {
+        div.classList.add('cl-item-past');
+      }
       el.appendChild(div);
     });
   });
@@ -377,9 +415,14 @@ function toggleChecklistItem(idx) {
 function updateChecklistScore() {
   const items = getChecklistItems();
   const state = currentSession?.checklist_state || {};
-  const total = items.length;
-  const done  = Object.values(state).filter(Boolean).length;
-  const pct   = total ? Math.round((done / total) * 100) : 0;
+  let totalWeight = 0, doneWeight = 0;
+  items.forEach((item, idx) => {
+    const w = item.weight || 1;
+    totalWeight += w;
+    if (state[idx]) doneWeight += w;
+  });
+  const done = Object.values(state).filter(Boolean).length;
+  const pct  = totalWeight ? Math.round((doneWeight / totalWeight) * 100) : 0;
   if (currentSession) currentSession.checklist_score = pct;
 
   const circ = 2 * Math.PI * 34;
@@ -388,14 +431,14 @@ function updateChecklistScore() {
   if (fill) { fill.style.strokeDashoffset = circ - (pct/100) * circ; fill.style.stroke = col; }
   document.getElementById('clScorePct').textContent    = pct ? pct + '%' : '—';
   document.getElementById('clScoreStatus').textContent = scoreLabel(pct);
-  document.getElementById('clScoreCounts').textContent  = total ? `${done} / ${total} items` : '';
+  document.getElementById('clScoreCounts').textContent  = items.length ? `${done} / ${items.length} items` : '';
   const qBar = document.getElementById('clQualityBar');
   if (qBar) {
     const { ok, good } = getThresholds();
     qBar.textContent = pct >= good ? 'Good' : pct >= ok ? 'OK' : pct > 0 ? 'Poor' : '—';
     qBar.style.color = col; qBar.style.borderColor = col + '55';
   }
-  updateChecklistBadge(); renderIntentLockBar(); renderBanner();
+  updateChecklistBadge(); renderIntentLockBar(); renderBanner(); renderCategoryBreakdown();
 }
 function updateChecklistBadge() {
   const items = getChecklistItems();
@@ -432,6 +475,44 @@ function renderHistory() {
     row.innerHTML = `<span class="cl-hbar-date">${m}/${d}</span><div class="cl-hbar-wrap"><div class="cl-hbar-fill" style="width:${pct}%;background:${col}"></div></div><span class="cl-hbar-pct">${pct}%</span>`;
     el.appendChild(row);
   });
+  renderStreak();
+}
+function calcStreak() {
+  const { good } = getThresholds();
+  let streak = 0;
+  for (let i = sessionHistory.length - 1; i >= 0; i--) {
+    if ((sessionHistory[i].checklist_score || 0) >= good) streak++;
+    else break;
+  }
+  return streak;
+}
+function renderStreak() {
+  const el = document.getElementById('clStreakDisplay'); if (!el) return;
+  const streak = calcStreak();
+  const { good } = getThresholds();
+  el.innerHTML = streak > 0
+    ? `<i class="fa-solid fa-fire" style="color:#f59e0b"></i> <strong>${streak}</strong> session streak above ${good}%`
+    : `<span style="color:var(--muted)">No current streak</span>`;
+}
+function renderCategoryBreakdown() {
+  const items = getChecklistItems();
+  const state = currentSession?.checklist_state || {};
+  const cats  = ['mindset','technical','risk','execution'];
+  const catLabels = { mindset:'Mindset', technical:'Technical', risk:'Risk', execution:'Execution' };
+  const el = document.getElementById('clCatBreakdown'); if (!el) return;
+  el.innerHTML = '';
+  cats.forEach(cat => {
+    const catItems = items.map((it,i) => ({...it,i})).filter(it => it.cat === cat);
+    if (!catItems.length) return;
+    const done  = catItems.filter(it => state[it.i]).length;
+    const total = catItems.length;
+    const pct   = Math.round((done/total)*100);
+    const col   = scoreColor(pct);
+    const row = document.createElement('div');
+    row.className = 'cl-cat-row';
+    row.innerHTML = `<span class="cl-cat-name">${catLabels[cat]}</span><div class="cl-cat-bar"><div class="cl-cat-fill" style="width:${pct}%;background:${col}"></div></div><span class="cl-cat-pct" style="color:${col}">${done}/${total}</span>`;
+    el.appendChild(row);
+  });
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -462,6 +543,8 @@ function renderIntents() {
   const empty = document.getElementById('intentEmpty');
   if (!count) { empty.style.display = ''; list.innerHTML = ''; list.appendChild(empty); return; }
   empty.style.display = 'none'; list.innerHTML = '';
+  const statusColors = { watching:'#8fa39a', ready:'#f59e0b', executed:'var(--accent2)', cancelled:'#ff5f6d' };
+  const statusIcons  = { watching:'fa-eye', ready:'fa-bullseye', executed:'fa-check', cancelled:'fa-ban' };
   intents.forEach(intent => {
     const rr  = calcRR(intent.entry_price, intent.stop_loss, intent.take_profit);
     const score = currentSession?.checklist_score || 0;
@@ -470,6 +553,9 @@ function renderIntents() {
     card.className = 'intent-card';
     card.dataset.id = intent.id;
     const rrText = rr ? '1:' + rr.toFixed(2) + 'R' : '';
+    const status = intent.status || 'watching';
+    const sCol   = statusColors[status] || '#8fa39a';
+    const sIcon  = statusIcons[status]  || 'fa-eye';
     card.innerHTML = `
       <div class="intent-card-hdr" onclick="toggleIntentCard('${intent.id}')">
         <div class="ic-left">
@@ -477,6 +563,7 @@ function renderIntents() {
           <span class="ic-dir ${(intent.direction||'Long').toLowerCase()}">${esc(intent.direction||'Long')}</span>
           ${rrText ? `<span class="ic-rr">${rrText}</span>` : ''}
           <span class="ic-score" style="color:${col};background:${col}18;border:1px solid ${col}44">${score}%</span>
+          <span class="ic-status" style="color:${sCol};border-color:${sCol}55;background:${sCol}11" onclick="event.stopPropagation();cycleIntentStatus('${intent.id}')"><i class="fa-solid ${sIcon}"></i> ${status}</span>
         </div>
         <div class="ic-actions">
           <button class="ic-btn" onclick="event.stopPropagation();editIntent('${intent.id}')"><i class="fa-solid fa-pencil"></i></button>
@@ -558,6 +645,7 @@ async function saveIntent() {
   const setup = document.getElementById('ifSetup').value;
   if (!setup) { showToast('Please select a setup name.','fa-solid fa-triangle-exclamation','red'); return; }
   if (!currentSession?.id) return;
+  const existingIntent = editingIntentId ? intents.find(i => i.id === editingIntentId) : null;
   const payload = {
     pre_session_id: currentSession.id, journal_id: jid, user_id: currentUser.id,
     setup_name: setup, direction: intentDir,
@@ -567,7 +655,8 @@ async function saveIntent() {
     take_profit: parseFloat(document.getElementById('ifTP').value)    || null,
     invalidation: document.getElementById('ifInvalidation').value,
     checklist_score: currentSession.checklist_score || 0,
-    checklist_snapshot: JSON.stringify(psSettings?.checklist_items || [])
+    checklist_snapshot: JSON.stringify(psSettings?.checklist_items || []),
+    status: existingIntent?.status || 'watching'
   };
   try {
     if (editingIntentId) {
@@ -578,7 +667,7 @@ async function saveIntent() {
       const { data } = await db.from('trade_intents').insert(payload).select('*').single();
       if (data) intents.push(data);
     }
-    cancelIntent(); renderIntents();
+    cancelIntent(); renderIntents(); broadcastSessionSummary();
     showToast('Trade intent saved!', 'fa-solid fa-circle-check', 'green');
   } catch(e) { showToast('Save failed: ' + e.message, 'fa-solid fa-circle-exclamation', 'red'); }
 }
@@ -586,8 +675,17 @@ async function deleteIntent(id) {
   if (!confirm('Delete this trade intent?')) return;
   try {
     await db.from('trade_intents').delete().eq('id', id);
-    intents = intents.filter(i => i.id !== id); renderIntents();
+    intents = intents.filter(i => i.id !== id); renderIntents(); broadcastSessionSummary();
     showToast('Intent deleted.', 'fa-solid fa-circle-check', 'green');
+  } catch(e) { showToast('Error: ' + e.message, 'fa-solid fa-circle-exclamation', 'red'); }
+}
+async function cycleIntentStatus(id) {
+  const order = ['watching','ready','executed','cancelled'];
+  const intent = intents.find(i => i.id === id); if (!intent) return;
+  const next = order[(order.indexOf(intent.status || 'watching') + 1) % order.length];
+  try {
+    await db.from('trade_intents').update({ status: next }).eq('id', id);
+    intent.status = next; renderIntents(); broadcastSessionSummary();
   } catch(e) { showToast('Error: ' + e.message, 'fa-solid fa-circle-exclamation', 'red'); }
 }
 
@@ -602,6 +700,7 @@ function populateReflect() {
   renderReflectMoods(s.reflect_mood);
   renderRulesBroken();
   renderAutoInsights();
+  loadWeeklySummary();
 }
 function renderReflectMoods(selected) {
   const moods  = journalSettings?.moods || ['Confident','Neutral','Anxious'];
@@ -643,12 +742,81 @@ function renderRulesBroken() {
     list.appendChild(row);
   });
 }
-function renderAutoInsights() {
+async function loadRulesBrokenHistory() {
+  const { data } = await db.from('pre_sessions')
+    .select('rules,rules_broken')
+    .eq('journal_id', jid)
+    .order('session_date', { ascending: false })
+    .limit(30);
+  const counts = {};
+  (data || []).forEach(s => {
+    const rules  = s.rules  || [];
+    const broken = s.rules_broken || [];
+    broken.forEach(idx => {
+      const text = rules[idx]?.text;
+      if (text) counts[text] = (counts[text] || 0) + 1;
+    });
+  });
+  return Object.entries(counts).sort((a,b) => b[1]-a[1]).slice(0,5);
+}
+async function renderAutoInsights() {
   const el = document.getElementById('autoInsights');
-  if (sessionHistory.length < 5) { el.innerHTML = `<div class="ai-placeholder"><i class="fa-solid fa-chart-simple" style="font-size:22px;opacity:.2;display:block;margin-bottom:8px"></i>Build up ${Math.max(0,5-sessionHistory.length)} more session${5-sessionHistory.length!==1?'s':''} to unlock behavioral pattern insights.</div>`; return; }
+  const count = sessionHistory.length;
+  if (count < 2) {
+    el.innerHTML = `<div class="ai-placeholder"><i class="fa-solid fa-chart-simple" style="font-size:22px;opacity:.2;display:block;margin-bottom:8px"></i>Build up ${Math.max(0,2-count)} more session${2-count!==1?'s':''} to unlock insights.</div>`;
+    return;
+  }
+  const insights = [];
   const scores = sessionHistory.map(s => s.checklist_score || 0);
-  const avg = Math.round(scores.reduce((a,b)=>a+b,0) / scores.length);
-  el.innerHTML = `<div class="ai-insight"><i class="fa-solid fa-chart-line"></i><div class="ai-insight-text">Your average checklist score over the last ${sessionHistory.length} sessions is <strong>${avg}%</strong>.</div></div>`;
+  const avg = Math.round(scores.reduce((a,b)=>a+b,0)/scores.length);
+  insights.push(`Average checklist score: <strong>${avg}%</strong> over ${count} session${count!==1?'s':''}`);
+  if (count >= 4) {
+    const recent = scores.slice(-2).reduce((a,b)=>a+b,0)/2;
+    const prior  = scores.slice(-4,-2).reduce((a,b)=>a+b,0)/2;
+    const delta  = Math.round(recent - prior);
+    const dir    = delta > 0 ? '↑ improving' : delta < 0 ? '↓ declining' : '→ stable';
+    const dcol   = delta > 0 ? 'var(--accent2)' : delta < 0 ? '#ff5f6d' : '#f59e0b';
+    insights.push(`Recent trend: <strong style="color:${dcol}">${dir} (${delta > 0 ? '+' : ''}${delta}%)</strong>`);
+  }
+  const biases = sessionHistory.map(s=>s.bias).filter(Boolean);
+  if (biases.length) {
+    const top = Object.entries(biases.reduce((a,b)=>{a[b]=(a[b]||0)+1;return a},{})).sort((a,b)=>b[1]-a[1])[0];
+    insights.push(`Most common bias: <strong>${top[0]}</strong> (${top[1]} session${top[1]!==1?'s':''})`);
+  }
+  if (count >= 5) {
+    const broken = await loadRulesBrokenHistory();
+    if (broken.length) insights.push(`Most broken rule: <strong>"${esc(broken[0][0])}"</strong> (${broken[0][1]}×)`);
+  }
+  el.innerHTML = insights.map(text =>
+    `<div class="ai-insight"><i class="fa-solid fa-chart-line"></i><div class="ai-insight-text">${text}</div></div>`
+  ).join('');
+}
+async function loadWeeklySummary() {
+  const { data } = await db.from('pre_sessions')
+    .select('id,session_date,bias,checklist_score,reflect_lesson,rules_broken')
+    .eq('journal_id', jid)
+    .order('session_date', { ascending: false })
+    .limit(5);
+  renderWeeklySummary(data || []);
+}
+function renderWeeklySummary(rows) {
+  const el = document.getElementById('weeklySummaryTable'); if (!el) return;
+  if (!rows.length) { el.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:10px 0">No sessions yet.</div>'; return; }
+  const biasChipColor = { Bullish:'#19c37d', Bearish:'#ff5f6d', Neutral:'#f59e0b', Wait:'var(--muted)' };
+  el.innerHTML = `<table class="ws-table">
+    <thead><tr><th>Date</th><th>Bias</th><th>Score</th><th>Rules Broken</th><th>Reflect</th></tr></thead>
+    <tbody>${rows.map(s => {
+      const bCol = biasChipColor[s.bias] || 'var(--muted)';
+      const pct  = s.checklist_score || 0;
+      const sCol = scoreColor(pct);
+      return `<tr>
+        <td style="font-size:11px;color:var(--muted)">${fmtDateDisplay(s.session_date)}</td>
+        <td>${s.bias ? `<span class="ws-bias-chip" style="color:${bCol};border-color:${bCol}44;background:${bCol}11">${s.bias}</span>` : '<span style="color:var(--muted)">—</span>'}</td>
+        <td><span style="color:${sCol};font-weight:700;font-size:12px">${pct ? pct+'%' : '—'}</span></td>
+        <td style="font-size:12px;color:var(--muted)">${(s.rules_broken||[]).length || '—'}</td>
+        <td>${s.reflect_lesson ? '<i class="fa-solid fa-check" style="color:var(--accent2)"></i>' : '<i class="fa-solid fa-xmark" style="color:var(--muted);opacity:.4"></i>'}</td>
+      </tr>`;
+    }).join('')}</tbody></table>`;
 }
 async function saveReflect() {
   if (!currentSession) return;
@@ -744,7 +912,8 @@ function renderCzItems() {
   items.forEach((item, i) => {
     const row = document.createElement('div');
     row.className = 'cz-item-row'; row.setAttribute('draggable','true'); row.dataset.idx = i;
-    row.innerHTML = `<span class="cz-item-drag"><i class="fa-solid fa-grip-vertical"></i></span><span class="cz-item-text" contenteditable="true" onblur="updateCzItem(${i},this.textContent)">${esc(item.text)}</span><span class="cz-item-cat-badge">${esc(item.cat)}</span><button class="cz-item-rm" onclick="removeCzItem(${i})"><i class="fa-solid fa-xmark"></i></button>`;
+    const isCrit = (item.weight || 1) >= 2;
+    row.innerHTML = `<span class="cz-item-drag"><i class="fa-solid fa-grip-vertical"></i></span><span class="cz-item-text" contenteditable="true" onblur="updateCzItem(${i},this.textContent)">${esc(item.text)}</span><span class="cz-item-cat-badge">${esc(item.cat)}</span><button class="cz-weight-btn${isCrit?' active':''}" onclick="toggleItemWeight(${i})" title="${isCrit?'Critical (double weight)':'Mark as critical'}">★</button><button class="cz-item-rm" onclick="removeCzItem(${i})"><i class="fa-solid fa-xmark"></i></button>`;
     row.addEventListener('dragstart', e => e.dataTransfer.setData('text/plain', i));
     row.addEventListener('dragover',  e => e.preventDefault());
     row.addEventListener('drop', async e => {
@@ -757,6 +926,13 @@ function renderCzItems() {
     });
     el.appendChild(row);
   });
+}
+async function toggleItemWeight(i) {
+  const items = [...(psSettings?.checklist_items||[])];
+  if (!items[i]) return;
+  items[i].weight = (items[i].weight || 1) >= 2 ? 1 : 2;
+  try { await savePsSettings({ checklist_items: items }); renderCzItems(); renderChecklistItems(); updateChecklistScore(); }
+  catch(e) { showToast('Error: '+e.message,'fa-solid fa-circle-exclamation','red'); }
 }
 async function updateCzItem(i, text) {
   const items = [...(psSettings?.checklist_items||[])];

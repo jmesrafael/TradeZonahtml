@@ -3,7 +3,22 @@ window.addEventListener('message',e=>{
   if(e.data?.type==='tz_plan'&&e.data.isPro!==undefined)userIsPro=e.data.isPro;
   if(e.data?.type==='tz_flush_request')flushAll();
   if(e.data?.type==='tz_analytics_toggle'){analyticsOn=!!e.data.on;localStorage.setItem('tl_analytics_on',analyticsOn);applyAnalyticsState();updateAnalytics();}
+  if(e.data?.type==='tz_presession_summary'){sessionStorage.setItem('tz_ps_summary',JSON.stringify(e.data));checkPresessionNudge();}
 });
+function getActiveIntent(){
+  try{const s=JSON.parse(sessionStorage.getItem('tz_ps_summary')||'{}');if(s.date!==todayLocal())return null;return(s.active_intents||[])[0]||null;}catch(e){return null;}
+}
+function checkPresessionNudge(){
+  const bar=document.getElementById('psNudgeBar');const msg=document.getElementById('psNudgeMsg');if(!bar||!msg)return;
+  try{
+    const s=JSON.parse(sessionStorage.getItem('tz_ps_summary')||'{}');
+    const missing=s.date!==todayLocal();
+    const poor=!missing&&(s.checklist_score||0)===0;
+    if(!missing&&!poor){bar.style.display='none';return;}
+    bar.style.display='flex';
+    msg.textContent=missing?'No pre-session filled for today — complete it before trading.':'Pre-session checklist score is 0% — review it before trading.';
+  }catch(e){bar.style.display='none';}
+}
 
 const jid=sessionStorage.getItem('tz_current_journal')||localStorage.getItem('tz_current_journal')||(()=>{try{return parent?.sessionStorage?.getItem('tz_current_journal')||parent?.localStorage?.getItem('tz_current_journal');}catch(e){return null;}})();
 
@@ -48,6 +63,7 @@ function fmt12(timeStr){if(!timeStr)return'';const[h,m]=timeStr.split(':').map(N
   let _refreshDebounce=null;
   subscribeTrades(jid,()=>{if(_pending.size>0)return;clearTimeout(_refreshDebounce);_refreshDebounce=setTimeout(refreshTrades,800);});
   try{parent.postMessage({type:'tz_analytics_state',on:analyticsOn},'*');}catch(e){}
+  checkPresessionNudge();
 })();
 
 async function reloadSettings(){settings=await getJournalSettings(jid);render();}
@@ -322,13 +338,17 @@ function setConf(id,n){localUpd(id,'confidence',n);document.querySelectorAll(`[d
 
 async function addRow(){
   const date=todayLocal(),time=nowTimeLocal(),tempId='temp_'+Date.now();
-  const nt={id:tempId,date,time,pair:'',position:'Long',strategy:[],timeframe:[],pnl:'',r:'',confidence:0,mood:[],notes:'',images:[]};
+  const intent=getActiveIntent();
+  const initPos=intent?.direction||'Long';
+  const initStrat=intent?.setup_name?[intent.setup_name]:[];
+  const nt={id:tempId,date,time,pair:'',position:initPos,strategy:initStrat,timeframe:[],pnl:'',r:'',confidence:0,mood:[],notes:'',images:[]};
   trades.unshift(nt);if(sortDir==='desc')currentPage=1;updateAnalytics();render();
   setTimeout(()=>{const inp=document.querySelector(`tr[data-id="${tempId}"] .pw-cell input`);if(inp)inp.focus();const tr=document.querySelector(`tr[data-id="${tempId}"]`);if(tr){tr.classList.add('new-row');setTimeout(()=>tr.classList.remove('new-row'),3000);}},30);
   try{
-    const row=await createTrade(currentUser.id,jid,{date,time,pair:'',position:'Long',strategy:[],timeframe:[],pnl:'',r:'',confidence:0,mood:[],notes:''});
+    const row=await createTrade(currentUser.id,jid,{date,time,pair:'',position:initPos,strategy:initStrat,timeframe:[],pnl:'',r:'',confidence:0,mood:[],notes:''});
     const idx=trades.findIndex(t=>t.id===tempId);if(idx>-1){trades[idx].id=row.id;if(_pending.has(tempId)){_pending.delete(tempId);_pending.add(row.id);}}
     const tr=document.querySelector(`tr[data-id="${tempId}"]`);if(tr){tr.dataset.id=row.id;tr.querySelectorAll('[id]').forEach(el=>{el.id=el.id.replace(tempId,row.id);});tr.querySelectorAll('[onclick]').forEach(el=>{el.setAttribute('onclick',el.getAttribute('onclick').replace(new RegExp(tempId,'g'),row.id));});}
+    if(intent?.id){try{await db.from('trade_intents').update({trade_id:row.id,status:'executed'}).eq('id',intent.id);}catch(e){}}
   }catch(e){trades=trades.filter(t=>t.id!==tempId);updateAnalytics();render();showToast('Error saving trade: '+e.message,'fa-solid fa-circle-exclamation','red');}
 }
 
