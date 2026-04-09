@@ -82,35 +82,35 @@ header{display:flex;align-items:center;justify-content:space-between;padding:11p
   cursor:pointer;
   transition:all var(--transition-base);
   flex-shrink:0;
+  margin-left:4px;
 }
 .sidebar-toggle:hover{border-color:var(--accent2);color:var(--text)}
 
 .sidebar-header{
   display:flex;
   align-items:center;
-  justify-content:space-between;
-  padding:10px 10px 10px 12px;
+  justify-content:flex-start;
+  padding:8px 6px;
   border-bottom:1px solid var(--border);
   flex-shrink:0;
   min-height:44px;
-  gap:8px;
+  gap:10px;
   overflow:hidden;
 }
 .sidebar.collapsed .sidebar-header{
   justify-content:center;
-  padding:10px;
+  padding:8px;
 }
 .sidebar-header-label{
   font-family:var(--font-heading,'Space Grotesk',sans-serif);
-  font-size:11px;
-  font-weight:600;
-  color:var(--muted);
-  text-transform:uppercase;
-  letter-spacing:.8px;
+  font-size:13px;
+  font-weight:700;
+  color:var(--text);
   white-space:nowrap;
   opacity:1;
   transition:opacity .15s, width .22s;
   overflow:hidden;
+  letter-spacing:-.01em;
 }
 .sidebar.collapsed .sidebar-header-label{
   opacity:0;
@@ -228,7 +228,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:11p
 /* Sidebar footer */
 .sidebar-footer{
   border-top:1px solid var(--border);
-  padding:6px 6px;
+  padding:4px 6px;
   flex-shrink:0;
 }
 .sidebar-footer .nav-item{
@@ -470,7 +470,7 @@ iframe.ready{opacity:1}
 .file-badge .clr{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:2px 5px;border-radius:4px;transition:color var(--transition-fast);flex-shrink:0}
 .file-badge .clr:hover{color:var(--red)}
 .badge-expiring{background:rgba(245,158,11,.12);color:#fbbf24;border:1px solid rgba(245,158,11,.35);animation:pulse 2s infinite}
-.badge-pro{background:linear-gradient(105deg,#7a5a00 0%,#c9973a 18%,#f5c842 35%,#ffe17a 50%,#f5c842 65%,#c9973a 82%,#7a5a00 100%);background-size:200% auto;color:#3a2800;border:1px solid #c9973a;text-shadow:0 1px 0 rgba(255,230,100,.5);box-shadow:0 1px 4px rgba(0,0,0,.35),0 0 0 1px rgba(255,220,80,.15) inset,0 1px 0 rgba(255,255,180,.3) inset;animation:goldShimmer 3.5s linear infinite;overflow:hidden;position:relative}
+.badge-pro{background:linear-gradient(105deg,#7a5a00 0%,#c9973a 18%,#f5c842 35%,#ffe17a 50%,#f5c842 65%,#c9973a 82%,#7a5a00 100%);background-size:200% auto;color:#3a2800;border:1px solid #c9973a;text-shadow:0 1px 0 rgba(255,230,100,.5);box-shadow:0 1px 4px rgba(0,0,0,.35),0 0 0 1px rgba(255,220,80,.15) inset,0 1px 0 rgba(255,255,180,.3) inset,0 0 10px 2px rgba(201,151,58,.45);animation:goldShimmer 3.5s linear infinite;overflow:hidden;position:relative}
 .badge-pro::after{content:'';position:absolute;top:0;left:-80%;width:45%;height:100%;background:linear-gradient(105deg,transparent 20%,rgba(255,255,255,.55) 50%,transparent 80%);transform:skewX(-15deg);animation:goldGlare 3.5s ease-in-out infinite;pointer-events:none}
 .mode-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px}
 .mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
@@ -504,8 +504,8 @@ iframe.ready{opacity:1}
 /* ── Toast ── */
 #toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-20px);background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-lg);padding:11px 18px;font-size:13px;color:var(--text);box-shadow:0 8px 28px rgba(0,0,0,.45);z-index:99999;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;white-space:nowrap;display:flex;align-items:center;gap:8px;max-width:92vw}
 #toast.show{opacity:1;pointer-events:all;transform:translateX(-50%) translateY(0);animation:slideDown .25s ease}
-#toast.toast-green{border-color:rgba(var(--accent-rgb,0,255,136),.45);background:rgba(var(--accent-rgb,0,255,136),.08)}
-#toast.toast-red{border-color:rgba(255,95,109,.45);background:rgba(255,95,109,.08)}
+#toast.toast-green{border-color:rgba(25,195,125,.5);background:linear-gradient(rgba(25,195,125,.12),rgba(25,195,125,.12)),var(--panel)}
+#toast.toast-red{border-color:rgba(255,95,109,.5);background:linear-gradient(rgba(255,95,109,.12),rgba(255,95,109,.12)),var(--panel)}
 
 /* ── Responsive ── */
 @media(max-width:768px){
@@ -584,10 +584,10 @@ iframe.ready{opacity:1}
 
     <!-- Sidebar header with toggle -->
     <div class="sidebar-header">
-      <span class="sidebar-header-label">Navigation</span>
       <button class="sidebar-toggle" id="sidebarToggleBtn" onclick="toggleSidebar()" title="Toggle sidebar">
         <i class="fa-solid fa-bars" id="sidebarToggleIcon"></i>
       </button>
+      <span class="sidebar-header-label">TradeZona</span>
     </div>
 
     <!-- Main nav items -->
@@ -667,8 +667,8 @@ iframe.ready{opacity:1}
 
           <div class="ssec">
             <div class="ssec-title"><i class="fa-solid fa-book-open"></i>Journal Info</div>
-            <div class="field-row"><div class="field-lbl">Journal Name</div><input type="text" class="field-input" id="js-name" maxlength="60" placeholder="My Journal" oninput="markDirty()"></div>
-            <div class="field-row"><div class="field-lbl">Account Capital <span style="font-size:10px;color:var(--muted)">(optional)</span></div><div style="position:relative"><span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;pointer-events:none">$</span><input type="number" class="field-input" id="js-capital" placeholder="0.00" min="0" step="0.01" style="padding-left:26px" oninput="markDirty()"></div></div>
+            <div class="field-row"><div class="field-lbl">Journal Name</div><input type="text" class="field-input" id="js-name" maxlength="60" placeholder="My Journal" autocomplete="off" oninput="markDirty()"></div>
+            <div class="field-row"><div class="field-lbl">Account Capital <span style="font-size:10px;color:var(--muted)">(optional)</span></div><div style="position:relative"><span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;pointer-events:none">$</span><input type="number" class="field-input" id="js-capital" placeholder="0.00" min="0" step="0.01" style="padding-left:26px" autocomplete="off" oninput="markDirty()"></div></div>
             <div class="field-row" id="proDurationRow" style="display:none">
               <div class="field-lbl">Pro Plan</div>
               <div style="background:var(--bg);border:1px solid rgba(var(--accent-rgb,0,255,136),.2);border-radius:var(--radius-md);padding:9px 12px;display:flex;align-items:center;gap:8px">
@@ -676,7 +676,7 @@ iframe.ready{opacity:1}
                 <span id="proDurationText" style="font-size:13px;font-weight:500;color:var(--accent2)">Active</span>
               </div>
             </div>
-            <div class="field-row" style="margin-bottom:0"><div class="field-lbl">Journal PIN <span id="pinProNote" style="font-size:10px;color:var(--muted)"></span></div><div class="pin-box"><div class="pin-status-row"><span id="pinBadge" class="pin-badge none"><i class="fa-solid fa-lock-open"></i> No PIN</span><div id="pinActionsRow"></div></div><div class="pin-form" id="pinForm"><input type="password" class="field-input" id="pinNew" placeholder="New 4-digit PIN" maxlength="6" style="margin-top:8px;letter-spacing:.15em" oninput="onPinInput()"><input type="password" class="field-input" id="pinConfirm" placeholder="Confirm PIN" maxlength="6" style="letter-spacing:.15em" oninput="onPinInput()"><p id="pinMismatch" style="font-size:11px;color:var(--red);display:none"><i class="fa-solid fa-triangle-exclamation" style="margin-right:4px"></i>PINs do not match.</p></div></div></div>
+            <div class="field-row" style="margin-bottom:0"><div class="field-lbl">Journal PIN <span id="pinProNote" style="font-size:10px;color:var(--muted)"></span></div><div class="pin-box"><div class="pin-status-row"><span id="pinBadge" class="pin-badge none"><i class="fa-solid fa-lock-open"></i> No PIN</span><div id="pinActionsRow"></div></div><div class="pin-form" id="pinForm"><input type="password" class="field-input" id="pinNew" placeholder="New 4-digit PIN" maxlength="6" style="margin-top:8px;letter-spacing:.15em" autocomplete="new-password" oninput="onPinInput()"><input type="password" class="field-input" id="pinConfirm" placeholder="Confirm PIN" maxlength="6" style="letter-spacing:.15em" autocomplete="new-password" oninput="onPinInput()"><p id="pinMismatch" style="font-size:11px;color:var(--red);display:none"><i class="fa-solid fa-triangle-exclamation" style="margin-right:4px"></i>PINs do not match.</p></div></div></div>
             <div class="save-row"><button class="jsave-btn" onclick="saveJournalSettings()"><i class="fa-solid fa-floppy-disk"></i>Save Changes</button></div>
           </div>
 
@@ -974,7 +974,7 @@ iframe.ready{opacity:1}
       <p class="sub">Choose what to include in your export.</p>
       <div class="scope-grid">
         <div class="scope-opt active" id="scopeFull" onclick="setScope('full')"><div class="sco-icon"><i class="fa-solid fa-database"></i></div><div><div class="sco-title">Full Backup</div><div class="sco-desc">Trades + settings, tags, moods, capital + images (base64)</div></div><div class="sco-chk"><i class="fa-solid fa-circle-check"></i></div></div>
-        <div class="scope-opt" id="scopeTrades" onclick="setScope('trades')"><div class="sco-icon"><i class="fa-solid fa-table-list"></i></div><div><div class="sco-title">Trades Only</div><div class="sco-desc">Just trade data, no settings or images</div></div><div class="sco-chk"><i class="fa-regular fa-circle"></i></div></div>
+        <div class="scope-opt" id="scopeTrades" onclick="setScope('trades')"><div class="sco-icon"><i class="fa-solid fa-table-list"></i></div><div><div class="sco-title">Trades Only</div><div class="sco-desc">Trade data + images, no settings</div></div><div class="sco-chk"><i class="fa-regular fa-circle"></i></div></div>
       </div>
       <div class="exp-sum" id="exportSummary"><div class="es-row"><i class="fa-solid fa-spinner fa-spin"></i> Loading…</div></div>
       <div class="img-backup-note"><i class="fa-solid fa-circle-info"></i><span>Images are embedded as base64 in the JSON backup. This makes the file larger but fully portable — restoring it will recover all your trade screenshots.</span></div>
@@ -1039,7 +1039,7 @@ _applySidebarState(false);
 const TABS=['logs','presession','calendar','notes','analytics','settings'];
 let activeTab='logs', journalId = sessionStorage.getItem('tz_current_journal')
              || localStorage.getItem('tz_current_journal');
-let journalObj=null, settings=null, currentUser=null, userIsPro=false, isDirty=false;
+let journalObj=null, settings=null, currentUser=null, userIsPro=false, isDirty=false, _settingsReady=false;
 let exportScope='full', importMode='replace', importPayload=null;
 let _lastRemovedTag=null, _lastRemovedKey=null, _undoTimer=null;
 
@@ -1157,11 +1157,12 @@ function frameReady(n){
 }
 function bcast(msg){['logsFrame','presessionFrame','calFrame','notesFrame','analyticsFrame'].forEach(id=>{const f=document.getElementById(id);try{if(f?.contentWindow)f.contentWindow.postMessage(msg,'*');}catch(e){}});}
 
-function markDirty(){isDirty=true;document.getElementById('unsavedBar').classList.add('show');}
+function markDirty(){if(!_settingsReady)return;isDirty=true;document.getElementById('unsavedBar').classList.add('show');}
 function clearDirty(){isDirty=false;document.getElementById('unsavedBar').classList.remove('show');}
 function discardChanges(){isDirty=false;document.getElementById('unsavedBar').classList.remove('show');populateSettings();}
 function populateSettings(){
   if(!journalObj||!settings)return;
+  _settingsReady=false;
   document.getElementById('js-name').value=journalObj.name||'';
   document.getElementById('js-capital').value=journalObj.capital||'';
   document.getElementById('showPnlToggle').classList.toggle('on',journalObj.show_pnl!==false);
@@ -1169,6 +1170,7 @@ function populateSettings(){
   const aOn=localStorage.getItem('tl_analytics_on')!=='false';
   const sw=document.getElementById('analyticsToggleSwitch');if(sw)sw.classList.toggle('on',aOn);
   renderPinSection();renderTagLists();renderMoodGrid();renderExportImport();clearDirty();
+  _settingsReady=true;
 }
 function renderPinSection(){
   const hasPin=!!(journalObj?.pin_hash);
@@ -1266,7 +1268,7 @@ async function refreshExpSummary(){
     <div class="es-row ${f?'ok':''}"><i class="fa-solid fa-${f?'check':'xmark'}"></i> ${(s.strategies||[]).length} strategy tags</div>
     <div class="es-row ${f?'ok':''}"><i class="fa-solid fa-${f?'check':'xmark'}"></i> ${(s.moods||[]).length} mood tags</div>
     <div class="es-row ${f?'ok':''}"><i class="fa-solid fa-${f?'check':'xmark'}"></i> Capital &amp; name</div>
-    <div class="es-row ${f?'ok':''}"><i class="fa-solid fa-${f?'images':'xmark'}"></i> ${withImgs} trade${withImgs!==1?'s':''} with images${f?' (embedded in backup)':' (not included)'}</div>
+    <div class="es-row ok"><i class="fa-solid fa-images"></i> ${withImgs} trade${withImgs!==1?'s':''} with images (embedded in backup)</div>
   `;
 }
 async function storagePathToBase64(storagePath){
@@ -1279,21 +1281,19 @@ async function confirmExport(){
     const trades=await getTrades(journalId);
     const isFull=exportScope==='full';
     const tradeRows=trades.map(dbToTrade);
-    if(isFull){
-      btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Embedding images…';
-      for(let i=0;i<tradeRows.length;i++){
-        const t=tradeRows[i];const rawImgs=await getTradeImages(t.id);
-        if(rawImgs.length>0){const b64Imgs=[];for(const img of rawImgs){if(img.storage_url&&!img.data){const b64=await storagePathToBase64(img.storage_url);if(b64)b64Imgs.push(b64);}else if(img.data){b64Imgs.push(img.data);}}tradeRows[i]={...t,images:b64Imgs};}
-        btn.innerHTML=`<i class="fa-solid fa-spinner fa-spin"></i> Embedding images… (${i+1}/${tradeRows.length})`;
-      }
+    btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Embedding images…';
+    for(let i=0;i<tradeRows.length;i++){
+      const t=tradeRows[i];const rawImgs=await getTradeImages(t.id);
+      if(rawImgs.length>0){const b64Imgs=[];for(const img of rawImgs){if(img.storage_url&&!img.data){const b64=await storagePathToBase64(img.storage_url);if(b64)b64Imgs.push(b64);}else if(img.data){b64Imgs.push(img.data);}}tradeRows[i]={...t,images:b64Imgs};}
+      btn.innerHTML=`<i class="fa-solid fa-spinner fa-spin"></i> Embedding images… (${i+1}/${tradeRows.length})`;
     }
-    const payload={_meta:{version:'2.1',app:'TradeZona',journalName:journalObj.name,exportedAt:new Date().toISOString(),exportScope,tradeCount:trades.length,imagesEmbedded:isFull},trades:tradeRows,...(isFull&&settings?{settings:{strategies:settings.strategies||[],timeframes:settings.timeframes||[],pairs:settings.pairs||[],moods:settings.moods||[],mood_colors:settings.mood_colors||{},capital:journalObj.capital,journalName:journalObj.name}}:{})};
+    const payload={_meta:{version:'2.1',app:'TradeZona',journalName:journalObj.name,exportedAt:new Date().toISOString(),exportScope,tradeCount:trades.length,imagesEmbedded:true},trades:tradeRows,...(isFull&&settings?{settings:{strategies:settings.strategies||[],timeframes:settings.timeframes||[],pairs:settings.pairs||[],moods:settings.moods||[],mood_colors:settings.mood_colors||{},capital:journalObj.capital,journalName:journalObj.name}}:{})};
     const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
     const url=URL.createObjectURL(blob);
     const fname=`${journalObj.name.replace(/[^a-z0-9]/gi,'_')}_${exportScope}_${new Date().toISOString().slice(0,10)}.json`;
     Object.assign(document.createElement('a'),{href:url,download:fname}).click();
     URL.revokeObjectURL(url);closeExport();
-    showToast(`Exported ${trades.length} trades${isFull?' with images':''}!`,'fa-solid fa-circle-check','green');
+    showToast(`Exported ${trades.length} trades with images!`,'fa-solid fa-circle-check','green');
   }catch(e){showToast('Export failed: '+e.message,'fa-solid fa-circle-exclamation','red');}
   finally{btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-download"></i>Download .json';}
 }
