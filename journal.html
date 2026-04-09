@@ -36,7 +36,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:11p
 .huser-info{display:flex;align-items:center;gap:7px;padding:5px 10px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:var(--radius-md);cursor:pointer;transition:border-color var(--transition-base)}
 .huser-info:hover{border-color:var(--accent2)}
 .huser-name{font-size:12px;color:var(--muted);max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.plan-badge{font-size:9px;font-weight:700;padding:2px 7px;border-radius:var(--radius-pill);text-transform:uppercase;letter-spacing:.5px;flex-shrink:0}
+.plan-badge{font-size:9px;font-weight:700;padding:2px 7px;border-radius:var(--radius-pill);text-transform:uppercase;letter-spacing:.5px;flex-shrink:0;position:relative;overflow:hidden}
 .badge-pro{background:rgba(var(--accent-rgb,0,255,136),.15);color:var(--accent2);border:1px solid rgba(var(--accent-rgb,0,255,136),.3)}
 .badge-free{background:rgba(143,163,154,.1);color:var(--muted);border:1px solid var(--border)}
 
@@ -212,17 +212,22 @@ header{display:flex;align-items:center;justify-content:space-between;padding:11p
 .sidebar.collapsed .nav-item[data-tip]:hover::after{opacity:1}
 
 /* Presession dot */
+.nav-icon-wrap{
+  position:relative;
+  width:16px;
+  flex-shrink:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
 .nav-dot{
   width:6px;height:6px;
   border-radius:50%;
-  flex-shrink:0;
-  margin-left:auto;
-  display:none;
-}
-.sidebar.collapsed .nav-dot{
   position:absolute;
-  top:6px;right:6px;
-  margin-left:0;
+  top:-3px;right:-3px;
+  display:none;
+  pointer-events:none;
+  z-index:1;
 }
 
 /* Sidebar footer */
@@ -470,7 +475,7 @@ iframe.ready{opacity:1}
 .file-badge .clr{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:2px 5px;border-radius:4px;transition:color var(--transition-fast);flex-shrink:0}
 .file-badge .clr:hover{color:var(--red)}
 .badge-expiring{background:rgba(245,158,11,.12);color:#fbbf24;border:1px solid rgba(245,158,11,.35);animation:pulse 2s infinite}
-.badge-pro{background:linear-gradient(105deg,#7a5a00 0%,#c9973a 18%,#f5c842 35%,#ffe17a 50%,#f5c842 65%,#c9973a 82%,#7a5a00 100%);background-size:200% auto;color:#3a2800;border:1px solid #c9973a;text-shadow:0 1px 0 rgba(255,230,100,.5);box-shadow:0 1px 4px rgba(0,0,0,.35),0 0 0 1px rgba(255,220,80,.15) inset,0 1px 0 rgba(255,255,180,.3) inset,0 0 10px 2px rgba(201,151,58,.45);animation:goldShimmer 3.5s linear infinite;overflow:hidden;position:relative}
+.badge-pro{background:linear-gradient(105deg,#7a5a00 0%,#c9973a 18%,#f5c842 35%,#ffe17a 50%,#f5c842 65%,#c9973a 82%,#7a5a00 100%);background-size:200% auto;color:#3a2800;border:1px solid #c9973a;text-shadow:0 1px 0 rgba(255,230,100,.5);box-shadow:0 1px 4px rgba(0,0,0,.35),0 0 0 1px rgba(255,220,80,.15) inset,0 1px 0 rgba(255,255,180,.3) inset;animation:goldShimmer 3.5s linear infinite}
 .badge-pro::after{content:'';position:absolute;top:0;left:-80%;width:45%;height:100%;background:linear-gradient(105deg,transparent 20%,rgba(255,255,255,.55) 50%,transparent 80%);transform:skewX(-15deg);animation:goldGlare 3.5s ease-in-out infinite;pointer-events:none}
 .mode-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px}
 .mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
@@ -598,9 +603,11 @@ iframe.ready{opacity:1}
       </button>
 
       <button class="nav-item" data-tab="presession" onclick="switchTab('presession')" data-tip="Pre-Session">
-        <i class="fa-solid fa-clipboard-list nav-item-icon"></i>
+        <span class="nav-icon-wrap">
+          <i class="fa-solid fa-clipboard-list nav-item-icon"></i>
+          <span class="nav-dot" id="psTabDot"></span>
+        </span>
         <span class="nav-item-label">Pre-Session</span>
-        <span class="nav-dot" id="psTabDot"></span>
       </button>
 
       <button class="nav-item" data-tab="calendar" onclick="switchTab('calendar')" data-tip="Calendar">
