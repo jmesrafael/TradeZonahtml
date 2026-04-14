@@ -348,7 +348,7 @@ async function addRow(){
   setTimeout(()=>{const inp=document.querySelector(`tr[data-id="${tempId}"] .pw-cell input`);if(inp)inp.focus();const tr=document.querySelector(`tr[data-id="${tempId}"]`);if(tr){tr.classList.add('new-row');setTimeout(()=>tr.classList.remove('new-row'),3000);}},30);
   try{
     const row=await createTrade(currentUser.id,jid,{date,time,pair:'',position:initPos,strategy:initStrat,timeframe:[],pnl:'',r:'',confidence:0,mood:[],notes:''});
-    const idx=trades.findIndex(t=>t.id===tempId);if(idx>-1){trades[idx].id=row.id;if(_pending.has(tempId)){_pending.delete(tempId);_pending.add(row.id);}}
+    const idx=trades.findIndex(t=>t.id===tempId);if(idx>-1){trades[idx].id=row.id;if(activeNotesId===tempId)activeNotesId=row.id;_pending.delete(tempId);clearTimeout(_saveTimers[tempId]);delete _saveTimers[tempId];scheduleSave(row.id,true);}
     const tr=document.querySelector(`tr[data-id="${tempId}"]`);if(tr){tr.dataset.id=row.id;tr.querySelectorAll('[id]').forEach(el=>{el.id=el.id.replace(tempId,row.id);});tr.querySelectorAll('[onclick]').forEach(el=>{el.setAttribute('onclick',el.getAttribute('onclick').replace(new RegExp(tempId,'g'),row.id));});}
     if(intent?.id){try{await db.from('trade_intents').update({trade_id:row.id,status:'executed'}).eq('id',intent.id);}catch(e){}}
   }catch(e){trades=trades.filter(t=>t.id!==tempId);updateAnalytics();render();showToast('Error saving trade: '+e.message,'fa-solid fa-circle-exclamation','red');}
