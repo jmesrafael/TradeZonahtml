@@ -11,6 +11,15 @@
 <script src="/supabase.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <link rel="stylesheet" href="/logs/logs.css">
+<!-- Dev Mode: Enable text selection and right-click -->
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const style = document.createElement('style');
+    style.textContent = `* { user-select: auto !important; -webkit-user-select: auto !important; }`;
+    document.head.appendChild(style);
+    document.addEventListener('contextmenu', (e) => e.stopPropagation(), false);
+  });
+</script>
 </head>
 <body>
 <div class="pw">
@@ -188,12 +197,13 @@
   <button class="pp-done-btn" onmousedown="event.stopPropagation()" onclick="closePP()">Done</button>
 </div>
 
-<div id="logsAdSlot" class="ad-slot">
+<!-- TODO: Enable ads integration after freemium model is stable -->
+<!-- <div id="logsAdSlot" class="ad-slot">
   <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;padding:5px 12px 0;opacity:.5">Advertisement</div>
   <div style="min-height:72px;padding:10px 16px;display:flex;align-items:center;justify-content:center">
     <ins class="adsbygoogle" style="display:block;width:100%;min-height:72px" data-ad-client="ca-pub-XXXXXXXXXXXXXXXX" data-ad-slot="XXXXXXXXXX" data-ad-format="horizontal" data-full-width-responsive="true"></ins>
   </div>
-</div>
+</div> -->
 <div id="logsUpgradeNudge" class="upgrade-nudge">
   <span style="font-size:12px;color:var(--muted)"><strong style="color:var(--text)">Remove ads</strong> — upgrade to Pro.</span>
   <a href="/subscription" style="background:var(--accent);color:#0b0f0c;border:none;border-radius:var(--radius-md);padding:6px 12px;font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:12px;font-weight:700;cursor:pointer;text-decoration:none;white-space:nowrap">Upgrade to Pro</a>
@@ -291,6 +301,7 @@
       </div>
       <div class="img-hint">PNG, JPG, GIF, WebP · max 5 MB</div>
       <div class="img-pro-lock" id="imgProLock"><i class="fa-solid fa-lock" style="opacity:.5"></i><span>Image uploads on <a href="/subscription" style="color:var(--accent2);text-decoration:none;font-weight:600">Pro plan</a>.</span></div>
+      <div class="nm-upload-progress" id="nmUploadProgress" style="display:none; align-items:center; gap:12px; padding:12px; background:rgba(25,195,125,0.1); border-radius:6px; margin-bottom:12px; font-size:13px;"><i class="fa-solid fa-spinner" style="animation: spin 1s linear infinite;"></i><span id="nmUploadCount">Uploading...</span></div>
       <div class="img-grid" id="nmImgs"></div>
       <div class="nmlbl"><i class="fa-solid fa-note-sticky"></i> Notes</div>
       <textarea class="nmta" id="nmText" placeholder="Analysis, observations, what you learned…" autocomplete="off" spellcheck="true"></textarea>

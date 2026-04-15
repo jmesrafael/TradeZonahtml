@@ -9,6 +9,15 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="theme.js"></script>
 <script src="supabase.js"></script>
+<!-- Dev Mode: Enable text selection and right-click -->
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const style = document.createElement('style');
+    style.textContent = `* { user-select: auto !important; -webkit-user-select: auto !important; }`;
+    document.head.appendChild(style);
+    document.addEventListener('contextmenu', (e) => e.stopPropagation(), false);
+  });
+</script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -693,9 +702,12 @@ function renderSubBanner(s){const banner=document.getElementById('subBanner'),te
   _updateThemeTrigger(localStorage.getItem('tl_theme')||'dark');
   _updateFontTrigger(localStorage.getItem('tl_font')||'default');
 
-  // Referral badge
-  const refCount=currentProfile?.referral_count||0;
-  if(refCount>0){const rb=document.getElementById('menuRefBadge');rb.textContent=refCount;rb.style.display='inline-flex';}
+  // Referral badge (load actual count from database)
+  try{
+    const refs=await getReferrals(currentUser.id);
+    const refCount=refs.length;
+    if(refCount>0){const rb=document.getElementById('menuRefBadge');rb.textContent=refCount;rb.style.display='inline-flex';}
+  }catch(e){console.warn('[dashboard] Failed to load referral count:',e);}
 
   await loadJournals();
   if(window.TZ)TZ.hideLoader();else hidePageLoader();

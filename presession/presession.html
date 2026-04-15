@@ -8,6 +8,15 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/theme.js"></script>
 <script src="/supabase.js"></script>
+<!-- Dev Mode: Enable text selection and right-click -->
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const style = document.createElement('style');
+    style.textContent = `* { user-select: auto !important; -webkit-user-select: auto !important; }`;
+    document.head.appendChild(style);
+    document.addEventListener('contextmenu', (e) => e.stopPropagation(), false);
+  });
+</script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <link rel="stylesheet" href="/presession/presession.css">
 </head>

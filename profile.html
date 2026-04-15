@@ -419,11 +419,20 @@ let currentProfile = null;
   document.getElementById('heroName').textContent = currentProfile?.name || '(No name set)';
   document.getElementById('heroEmail').textContent = currentUser.email;
 
+  // ── Get actual referral count from database
+  let actualReferralCount = 0;
+  try {
+    const refs = await getReferrals(currentUser.id);
+    actualReferralCount = refs.length;
+  } catch (e) {
+    console.warn('[profile] Failed to load referral count:', e);
+  }
+
   const heroBadges = document.getElementById('heroBadges');
   heroBadges.innerHTML = `
     <span class="plan-badge ${isPro ? 'badge-pro' : 'badge-free'}">${isPro ? '⚡ Pro' : 'Free'}</span>
-    ${(currentProfile?.referral_count || 0) > 0
-      ? `<span class="badge-referral"><i class="fa-solid fa-gift"></i> ${currentProfile.referral_count} referral${currentProfile.referral_count > 1 ? 's' : ''}</span>`
+    ${actualReferralCount > 0
+      ? `<span class="badge-referral"><i class="fa-solid fa-gift"></i> ${actualReferralCount} referral${actualReferralCount > 1 ? 's' : ''}</span>`
       : ''}
   `;
 

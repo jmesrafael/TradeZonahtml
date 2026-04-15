@@ -168,6 +168,11 @@ function buildReferralUrl(code) {
   return `${window.location.origin}/auth?ref=${code}`;
 }
 
+async function getReferralCount(userId) {
+  const refs = await getReferrals(userId);
+  return refs.length;
+}
+
 
 // ── Subscription helpers ──────────────────────────────────
 
@@ -428,34 +433,222 @@ async function deleteTrade(tradeId) {
 // ── Trade image helpers ───────────────────────────────────
 
 async function addTradeImage(userId, tradeId, dataUrl) {
-  // 1. Compress image before uploading
-  const compressed = await compressImage(dataUrl);
-  const res        = await fetch(compressed);
-  const blob       = await res.blob();
-  const ext        = blob.type.includes('png') ? 'png' : 'jpg';
-  const fileName   = `${userId}/${tradeId}/${Date.now()}.${ext}`;
+  try {
+    console.log('%c🎬 IMAGE UPLOAD STARTED', 'color: #00ff88; font-weight: bold; font-size: 14px');
 
-  // 2. Upload to Supabase Storage bucket "trade-images"
-  const { data: uploadData, error: uploadError } = await db.storage
-    .from('trade-images')
-    .upload(fileName, blob, { contentType: blob.type, upsert: false });
+    // 1. Compress image before uploading (with optimization)
+    console.log('[addTradeImage] 📦 Optimizing image for upload...');
+    const compressed = await compressImage(dataUrl, {
+      maxWidth: IMAGE_CONFIG.MAX_WIDTH,
+      maxHeight: IMAGE_CONFIG.MAX_HEIGHT,
+      targetQuality: IMAGE_CONFIG.QUALITY_MEDIUM
+    });
 
-  if (uploadError) throw uploadError;
+    const res        = await fetch(compressed);
+    const blob       = await res.blob();
+    const ext        = blob.type.includes('png') ? 'png' : 'jpg';
+    const fileName   = `trade_${Date.now()}.${ext}`;
+    const sizeKB     = Math.round(blob.size / 1024);
+    const sizeMB     = (blob.size / (1024 * 1024)).toFixed(2);
 
-  // 3. Save only the short path string in the DB — no more base64
-  const { data, error } = await db
-    .from('trade_images')
-    .insert({
-      user_id:     userId,
-      trade_id:    tradeId,
-      storage_url: uploadData.path,
-      data:        null,
-    })
-    .select('*')
-    .single();
+    console.log('[addTradeImage] ✅ Image optimized');
+    console.log('[addTradeImage] File name:', fileName);
+    console.log('[addTradeImage] File type:', blob.type);
+    console.log('[addTradeImage] File size:', sizeKB, 'KB (' + sizeMB + 'MB)');
 
-  if (error) throw error;
-  return data;
+    // Check final size
+    if (blob.size > IMAGE_CONFIG.MAX_FILE_SIZE_BYTES) {
+      console.warn('[addTradeImage] ⚠️ Compressed image still exceeds limit');
+      throw new Error(`Image too large: ${sizeMB}MB (max 5MB)`);
+    }
+
+    // 2. Try R2 first
+    console.log('[addTradeImage] %c🚀 ATTEMPTING R2 UPLOAD', 'color: #19c37d; font-weight: bold');
+    const r2Result = await tryR2Upload(userId, tradeId, blob, fileName);
+    if (r2Result.success) {
+      console.log('%c✅ IMAGE SAVED TO R2', 'color: #19c37d; font-weight: bold; font-size: 14px');
+      console.log('[addTradeImage] R2 URL:', r2Result.data.storage_url);
+      return r2Result.data;
+    }
+
+    console.warn('%c⚠️ R2 FAILED - FALLING BACK TO SUPABASE', 'color: #ff9500; font-weight: bold');
+    console.log('[addTradeImage] R2 error:', r2Result.error);
+
+    // 3. Fallback to Supabase Storage
+    console.log('[addTradeImage] %c🔄 ATTEMPTING SUPABASE STORAGE FALLBACK', 'color: #ff9500; font-weight: bold');
+    const supabaseResult = await uploadToSupabaseStorage(userId, tradeId, blob, fileName);
+    console.log('%c✅ IMAGE SAVED TO SUPABASE (FALLBACK)', 'color: #ff9500; font-weight: bold; font-size: 14px');
+    console.log('[addTradeImage] Supabase URL:', supabaseResult.storage_url);
+    return supabaseResult;
+
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    console.error('%c❌ IMAGE UPLOAD FAILED', 'color: #ff5f6d; font-weight: bold; font-size: 14px');
+    console.error('[addTradeImage] Error:', errorMsg);
+    throw error;
+  }
+}
+
+async function tryR2Upload(userId, tradeId, blob, fileName) {
+  try {
+    console.log('[R2] ========== R2 UPLOAD START ==========');
+    console.log('[R2] Authenticating user...');
+
+    const { data: { user } } = await db.auth.getUser();
+    if (!user?.id) throw new Error('User not authenticated');
+    console.log('[R2] ✅ User authenticated:', user.id);
+
+    const { data: sessionData } = await db.auth.getSession();
+    const token = sessionData?.session?.access_token;
+    if (!token) {
+      throw new Error('No auth token available');
+    }
+    console.log('[R2] ✅ Token retrieved, length:', token.length);
+
+    console.log('[R2] 📤 Calling edge function...');
+    console.log('[R2] Endpoint:', `${SUPABASE_URL}/functions/v1/generate-r2-upload-url`);
+
+    const urlResponse = await fetch(
+      `${SUPABASE_URL}/functions/v1/generate-r2-upload-url`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          file_name: fileName,
+          file_type: blob.type,
+          trade_id: tradeId,
+        }),
+      }
+    );
+
+    console.log('[R2] Function response status:', urlResponse.status);
+
+    if (!urlResponse.ok) {
+      const responseText = await urlResponse.text();
+      console.error('[R2] ❌ Edge function error:', responseText);
+      return {
+        success: false,
+        error: `R2 function error (${urlResponse.status}): ${responseText}`
+      };
+    }
+
+    const { upload_url: signedUrl, public_url: publicUrl } = await urlResponse.json();
+    console.log('[R2] ✅ Got signed URL');
+    console.log('[R2] Public URL:', publicUrl);
+
+    console.log('[R2] 📤 Uploading blob to R2...');
+    console.log('[R2] Blob size:', blob.size, 'bytes');
+
+    const uploadResponse = await fetch(signedUrl, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': blob.type,
+      },
+      body: blob,
+    });
+
+    console.log('[R2] Upload response status:', uploadResponse.status);
+
+    if (!uploadResponse.ok) {
+      console.error('[R2] ❌ Upload failed:', uploadResponse.statusText);
+      return {
+        success: false,
+        error: `R2 upload failed: ${uploadResponse.statusText}`
+      };
+    }
+
+    console.log('[R2] ✅ Blob uploaded to R2 successfully');
+    console.log('[R2] 💾 Saving R2 URL to database...');
+
+    // Save to DB with R2 URL
+    const { data: savedData, error } = await db
+      .from('trade_images')
+      .insert({
+        user_id:     userId,
+        trade_id:    tradeId,
+        storage_url: publicUrl,
+        data:        null,
+      })
+      .select('*')
+      .single();
+
+    if (error) {
+      console.error('[R2] ❌ Database save error:', error);
+      throw error;
+    }
+
+    console.log('[R2] ✅ Image record saved to DB');
+    console.log('[R2] Image ID:', savedData.id);
+    console.log('[R2] ========== R2 UPLOAD SUCCESS ==========');
+    console.log('[R2] Storage URL:', savedData.storage_url);
+
+    return { success: true, data: savedData };
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    console.error('[R2] ❌ EXCEPTION:', errorMsg);
+    console.log('[R2] ========== R2 UPLOAD FAILED ==========');
+    return {
+      success: false,
+      error: errorMsg
+    };
+  }
+}
+
+async function uploadToSupabaseStorage(userId, tradeId, blob, fileName) {
+  try {
+    console.log('[SUPABASE] ========== SUPABASE STORAGE FALLBACK START ==========');
+    const path = `${userId}/${tradeId}/${fileName}`;
+    console.log('[SUPABASE] Storage path:', path);
+    console.log('[SUPABASE] Blob size:', blob.size, 'bytes');
+    console.log('[SUPABASE] Content type:', blob.type);
+
+    // Upload to Supabase Storage
+    console.log('[SUPABASE] 📤 Uploading to Supabase Storage...');
+    const { data: uploadData, error: uploadError } = await db.storage
+      .from('trade-images')
+      .upload(path, blob, { contentType: blob.type, upsert: false });
+
+    if (uploadError) {
+      console.error('[SUPABASE] ❌ Upload error:', uploadError);
+      throw uploadError;
+    }
+
+    console.log('[SUPABASE] ✅ Uploaded to Supabase Storage');
+    console.log('[SUPABASE] Storage path:', uploadData.path);
+
+    // Save to DB with Supabase storage path
+    console.log('[SUPABASE] 💾 Saving to database...');
+    const { data: savedData, error } = await db
+      .from('trade_images')
+      .insert({
+        user_id:     userId,
+        trade_id:    tradeId,
+        storage_url: uploadData.path,
+        data:        null,
+      })
+      .select('*')
+      .single();
+
+    if (error) {
+      console.error('[SUPABASE] ❌ Database save error:', error);
+      throw error;
+    }
+
+    console.log('[SUPABASE] ✅ Saved to database');
+    console.log('[SUPABASE] Image ID:', savedData.id);
+    console.log('[SUPABASE] ========== SUPABASE STORAGE FALLBACK SUCCESS ==========');
+    console.log('[SUPABASE] Storage URL:', savedData.storage_url);
+
+    return savedData;
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    console.error('[SUPABASE] ❌ EXCEPTION:', errorMsg);
+    console.log('[SUPABASE] ========== SUPABASE STORAGE FALLBACK FAILED ==========');
+    throw error;
+  }
 }
 
 async function deleteTradeImage(imageId) {
@@ -468,7 +661,9 @@ async function deleteTradeImage(imageId) {
   // Run storage removal and DB deletion in parallel
   await Promise.all([
     (img?.storage_url && !img?.data)
-      ? db.storage.from('trade-images').remove([img.storage_url])
+      ? (img.storage_url.startsWith('https://')
+          ? Promise.resolve() // R2 public URLs don't need explicit deletion
+          : db.storage.from('trade-images').remove([img.storage_url])) // Supabase storage deletion
       : Promise.resolve(),
     db.from('trade_images').delete().eq('id', imageId),
   ]);
@@ -483,7 +678,14 @@ async function getImageUrl(img) {
 
   if (img.storage_url && !img.data) {
     const cacheKey = img.storage_url;
-    const cached   = _urlCache[cacheKey];
+
+    // R2 URLs are already public, return them directly
+    if (img.storage_url.startsWith('https://')) {
+      return img.storage_url;
+    }
+
+    // Supabase storage paths need signed URLs
+    const cached = _urlCache[cacheKey];
     if (cached && cached.expires > Date.now()) return cached.url;
     const { data, error } = await db.storage
       .from('trade-images')
@@ -514,6 +716,12 @@ async function getImageUrls(imgs) {
     if (img.data)       { results[i] = img.data; return; }
     if (img.url)        { results[i] = img.url;  return; }
     if (img.storage_url && !img.data) {
+      // R2 URLs are already public, use them directly
+      if (img.storage_url.startsWith('https://')) {
+        results[i] = img.storage_url;
+        return;
+      }
+      // Supabase storage paths need signed URLs
       const cached = _urlCache[img.storage_url];
       if (cached && cached.expires > now) { results[i] = cached.url; return; }
       toFetch.push({ idx: i, path: img.storage_url });
@@ -537,21 +745,119 @@ async function getImageUrls(imgs) {
 }
 
 
-// ── Image compression before upload ──────────────────────
-async function compressImage(dataUrl, maxWidth = 1200, quality = 0.82) {
+// ── Image optimization & compression ─────────────────────
+const IMAGE_CONFIG = {
+  MAX_FILE_SIZE_BYTES: 5 * 1024 * 1024, // 5 MB
+  MAX_WIDTH: 1200,
+  MAX_HEIGHT: 1200,
+  TARGET_SIZE_KB: 200, // Target compressed size
+  QUALITY_HIGH: 0.85,
+  QUALITY_MEDIUM: 0.75,
+  QUALITY_LOW: 0.60,
+};
+
+async function compressImage(dataUrl, options = {}) {
   return new Promise(resolve => {
+    const {
+      maxWidth = IMAGE_CONFIG.MAX_WIDTH,
+      maxHeight = IMAGE_CONFIG.MAX_HEIGHT,
+      targetKB = IMAGE_CONFIG.TARGET_SIZE_KB
+    } = options;
+
     const img = new Image();
     img.onload = () => {
-      const scale  = Math.min(1, maxWidth / img.width);
-      const canvas = document.createElement('canvas');
-      canvas.width  = Math.round(img.width  * scale);
-      canvas.height = Math.round(img.height * scale);
-      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-      resolve(canvas.toDataURL('image/jpeg', quality));
+      try {
+        // Calculate optimal dimensions
+        let width = img.width;
+        let height = img.height;
+        const aspectRatio = width / height;
+
+        // Constrain to max dimensions
+        if (width > maxWidth) {
+          width = maxWidth;
+          height = Math.round(width / aspectRatio);
+        }
+        if (height > maxHeight) {
+          height = maxHeight;
+          width = Math.round(height * aspectRatio);
+        }
+
+        console.log(`[compress] Original: ${img.width}x${img.height} → Optimized: ${width}x${height}`);
+
+        // Create canvas and draw
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+
+        // Anti-alias for better quality
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Binary search for optimal quality to hit target size
+        let minQuality = 0.3;
+        let maxQuality = 0.95;
+        let bestDataUrl = canvas.toDataURL('image/jpeg', 0.75);
+        let iterations = 0;
+
+        while (maxQuality - minQuality > 0.01 && iterations < 8) {
+          iterations++;
+          const midQuality = (minQuality + maxQuality) / 2;
+          const testDataUrl = canvas.toDataURL('image/jpeg', midQuality);
+          const testSizeKB = (testDataUrl.length * 0.75) / 1024;
+
+          if (testSizeKB > targetKB) {
+            maxQuality = midQuality; // Too large, reduce quality
+          } else {
+            minQuality = midQuality; // Under target, can use higher quality
+            bestDataUrl = testDataUrl; // Keep this as best so far
+          }
+        }
+
+        const finalSizeKB = (bestDataUrl.length * 0.75) / 1024;
+        const finalQuality = Math.round(minQuality * 100);
+        console.log(`[compress] ✅ Final: Quality ${finalQuality}% → ${Math.round(finalSizeKB)} KB (target: ${targetKB} KB)`);
+
+        resolve(bestDataUrl);
+      } catch (error) {
+        console.error('[compress] Error during compression:', error);
+        resolve(dataUrl); // Fall back to original
+      }
     };
-    img.onerror = () => resolve(dataUrl);
+    img.onerror = () => {
+      console.error('[compress] Image load failed');
+      resolve(dataUrl);
+    };
     img.src = dataUrl;
   });
+}
+
+/**
+ * Validate image before compression
+ * Returns { valid: boolean, error?: string }
+ */
+function validateImageBeforeUpload(file) {
+  // Check file size
+  if (file.size > IMAGE_CONFIG.MAX_FILE_SIZE_BYTES) {
+    const maxMB = Math.round(IMAGE_CONFIG.MAX_FILE_SIZE_BYTES / (1024 * 1024) * 10) / 10;
+    const fileMB = Math.round(file.size / (1024 * 1024) * 10) / 10;
+    return {
+      valid: false,
+      error: `Image too large: ${fileMB}MB (max ${maxMB}MB)`
+    };
+  }
+
+  // Check file type
+  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+  if (!allowedTypes.includes(file.type)) {
+    return {
+      valid: false,
+      error: `Unsupported format: ${file.type}`
+    };
+  }
+
+  return { valid: true };
 }
 
 
