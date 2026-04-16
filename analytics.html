@@ -7,15 +7,10 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="theme.js"></script>
 <script src="supabase.js"></script>
-<!-- Dev Mode: Enable text selection and right-click -->
-<script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const style = document.createElement('style');
-    style.textContent = `* { user-select: auto !important; -webkit-user-select: auto !important; }`;
-    document.head.appendChild(style);
-    document.addEventListener('contextmenu', (e) => e.stopPropagation(), false);
-  });
-</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://cdnjs.cloudflare.com">
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -63,6 +58,16 @@ canvas{max-height:190px}
   .skc .sv{font-size:26px}
 }
 @media(max-width:400px){.sr{grid-template-columns:1fr 1fr}}
+/* Equity range toggle */
+.eq-range-btns{display:flex;gap:3px;flex-shrink:0}
+.eq-tog{background:none;border:1px solid var(--border);color:var(--muted);border-radius:var(--radius-md);padding:3px 9px;font-size:10px;font-weight:600;font-family:var(--font-heading,'Space Grotesk',sans-serif);cursor:pointer;transition:all .15s;letter-spacing:.3px}
+.eq-tog:hover{border-color:var(--accent2);color:var(--text)}
+.eq-tog.active{background:rgba(var(--accent-rgb,0,255,136),.12);border-color:var(--accent2);color:var(--accent2)}
+/* Pair PNL bars */
+.pair-bar-row{margin-bottom:9px}
+.pair-bar-meta{display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px}
+.pair-bar-track{height:5px;background:var(--border);border-radius:3px}
+.pair-bar-fill{height:5px;border-radius:3px;transition:width .3s}
 </style>
 </head>
 <body>
@@ -85,6 +90,48 @@ const G='#19c37d', R='#ff5f6d';
 function fP(v){const n=parseFloat(v);if(isNaN(n))return'—';return(n>=0?'+':'-')+'$'+Math.abs(n).toFixed(2);}
 function fPct(v){return parseFloat(v).toFixed(1)+'%';}
 function grc(n){return n>0?'green':n<0?'red':'';}
+
+// ── Crosshair: vertical line follows cursor on line charts ──
+Chart.register({
+  id:'crosshairLine',
+  afterDraw(chart){
+    if(!chart.options.showCrosshair)return;
+    const active=chart.tooltip?._active;
+    if(!active?.length)return;
+    const{ctx,chartArea:{top,bottom}}=chart;
+    const x=active[0].element.x;
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(x,top);ctx.lineTo(x,bottom);
+    ctx.lineWidth=1;ctx.strokeStyle='rgba(255,255,255,.13)';
+    ctx.setLineDash([4,4]);ctx.stroke();ctx.restore();
+  }
+});
+
+// ── Dynamic gradient: green above zero, red below ──
+Chart.register({
+  id:'dynamicColorGradient',
+  beforeRender(chart){
+    if(!chart._dynamicColor)return;
+    const{ctx,chartArea,scales}=chart;
+    if(!chartArea)return;
+    const{top,bottom}=chartArea;
+    const zeroY=scales.y.getPixelForValue(0);
+    const clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
+    const zr=clamp((zeroY-top)/(bottom-top),0,1);
+    const a=Math.max(0,zr-.001),b=Math.min(1,zr+.001);
+    const bd=ctx.createLinearGradient(0,top,0,bottom);
+    bd.addColorStop(0,'#19c37d');bd.addColorStop(a,'#19c37d');
+    bd.addColorStop(b,'#ff5f6d');bd.addColorStop(1,'#ff5f6d');
+    const bg=ctx.createLinearGradient(0,top,0,bottom);
+    bg.addColorStop(0,'#19c37d30');bg.addColorStop(a,'#19c37d08');
+    bg.addColorStop(b,'#ff5f6d08');bg.addColorStop(1,'#ff5f6d30');
+    const ds=chart.data.datasets[0];
+    ds.borderColor=bd;ds.backgroundColor=bg;
+    ds.pointBackgroundColor=(ds.data||[]).map(v=>v>=0?'#19c37d':'#ff5f6d');
+    ds.pointHoverBackgroundColor=ds.pointBackgroundColor;
+  }
+});
 
 (async()=>{
   if(!jid){
@@ -121,7 +168,7 @@ function grc(n){return n>0?'green':n<0?'red':'';}
   document.getElementById('root').innerHTML=`
     <div class="sr" id="sr"></div>
     <div class="stk" id="stk"></div>
-    <div class="cb"><h3><i class="fa-solid fa-chart-area"></i> Equity Curve</h3><canvas id="eq"></canvas></div>
+    <div class="cb"><h3 style="justify-content:space-between;flex-wrap:wrap;gap:8px"><span style="display:flex;align-items:center;gap:6px"><i class="fa-solid fa-chart-area"></i> Equity Curve</span><div class="eq-range-btns"><button class="eq-tog active" data-range="all" onclick="setEqRange('all')">All</button><button class="eq-tog" data-range="week" onclick="setEqRange('week')">Week</button><button class="eq-tog" data-range="30d" onclick="setEqRange('30d')">30D</button><button class="eq-tog" data-range="90d" onclick="setEqRange('90d')">90D</button><span style="width:1px;background:var(--border);margin:0 2px;display:inline-block;align-self:stretch"></span><button class="eq-tog" id="eqDynBtn" onclick="setEqColor()" title="Green above zero · Red below zero">⚡ Dynamic</button></div></h3><canvas id="eq"></canvas></div>
     ${!isPro ? `
     <div class="ad-slot visible">
       <div class="ad-slot-label">Advertisement</div>
@@ -150,8 +197,9 @@ function grc(n){return n>0?'green':n<0?'red':'';}
     <div class="c2"><div class="cb"><h3><i class="fa-solid fa-face-smile"></i> Mood Distribution</h3><canvas id="md"></canvas></div><div class="cb"><h3><i class="fa-solid fa-face-smile-beam"></i> Mood vs Performance</h3><table class="bt"><thead><tr><th>Mood</th><th>Trades</th><th>Win Rate</th><th>Avg PNL</th></tr></thead><tbody id="mdb"></tbody></table></div></div>
     <div class="cb"><h3><i class="fa-solid fa-fire-flame-curved"></i> Hour Heatmap</h3><canvas id="hh"></canvas></div>
     <div class="c2"><div class="cb"><h3><i class="fa-solid fa-trophy"></i> Best Hours (Avg PNL)</h3><canvas id="hp"></canvas></div><div class="cb"><h3><i class="fa-solid fa-table"></i> Time of Day</h3><table class="bt"><thead><tr><th>Hour</th><th>Trades</th><th>Wins</th><th>Win Rate</th><th>Avg PNL</th></tr></thead><tbody id="tb"></tbody></table></div></div>
-    <div class="c2"><div class="cb"><h3><i class="fa-solid fa-arrow-right-arrow-left"></i> Long vs Short</h3><canvas id="ls"></canvas></div><div class="cb"><h3><i class="fa-solid fa-ranking-star"></i> Most Traded Pair</h3><div id="pb"></div></div></div>
-    <div class="cb"><h3><i class="fa-solid fa-calendar-week"></i> Trades by Day of Week</h3><canvas id="dow"></canvas></div>`}`;
+    <div class="c2"><div class="cb"><h3><i class="fa-solid fa-arrow-right-arrow-left"></i> Long vs Short</h3><canvas id="ls"></canvas></div><div class="cb"><h3><i class="fa-solid fa-ranking-star"></i> Top Pairs by PNL</h3><div id="pb"></div></div></div>
+    <div class="cb"><h3><i class="fa-solid fa-calendar-week"></i> Trades by Day of Week</h3><canvas id="dow"></canvas></div>
+    <div class="cb"><h3><i class="fa-solid fa-star"></i> Confidence vs Performance</h3><table class="bt"><thead><tr><th>Confidence</th><th>Trades</th><th>Win Rate</th><th>Avg PNL</th><th>Avg R</th></tr></thead><tbody id="confb"></tbody></table></div>`}`;
 
   if(!isPro){try{(adsbygoogle=window.adsbygoogle||[]).push({});}catch(e){}}
 
@@ -162,6 +210,16 @@ function grc(n){return n>0?'green':n<0?'red':'';}
   const best=vld.length?Math.max(...vld.map(t=>parseFloat(t.pnl))):null;
   const worst=vld.length?Math.min(...vld.map(t=>parseFloat(t.pnl))):null;
 
+  // Extra stats
+  const totalWinAmt=wins.reduce((s,t)=>s+parseFloat(t.pnl),0);
+  const totalLossAmt=Math.abs(losses.reduce((s,t)=>s+parseFloat(t.pnl),0));
+  const pf=totalLossAmt>0?(totalWinAmt/totalLossAmt):wins.length>0?Infinity:0;
+  const avgWin=wins.length?totalWinAmt/wins.length:0;
+  const avgLoss=losses.length?Math.abs(losses.reduce((s,t)=>s+parseFloat(t.pnl),0)/losses.length):0;
+  const srtVld=[...vld].sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  let peak=0,runEq=0,maxDd=0;
+  srtVld.forEach(t=>{runEq+=parseFloat(t.pnl);if(runEq>peak)peak=runEq;const dd=peak-runEq;if(dd>maxDd)maxDd=dd;});
+
   document.getElementById('sr').innerHTML=[
     {l:'Total PNL',v:fP(total),c:grc(total)},
     {l:'Win Rate',v:fPct(wr),c:wr>=50?'green':'red'},
@@ -169,6 +227,10 @@ function grc(n){return n>0?'green':n<0?'red':'';}
     {l:'Losses',v:losses.length,c:'red'},
     {l:'Trades',v:trades.length,c:''},
     {l:'Avg R',v:(avgR>=0?'+':'')+avgR.toFixed(2)+'R',c:grc(avgR)},
+    {l:'Profit Factor',v:pf===Infinity?'∞':pf.toFixed(2),c:pf>=1?'green':'red'},
+    {l:'Avg Win',v:avgWin?fP(avgWin):'—',c:'green'},
+    {l:'Avg Loss',v:avgLoss?'-$'+avgLoss.toFixed(2):'—',c:'red'},
+    {l:'Max Drawdown',v:maxDd?'-$'+maxDd.toFixed(2):'—',c:maxDd>0?'red':''},
     {l:'Best',v:best!==null?fP(best):'—',c:'green'},
     {l:'Worst',v:worst!==null?fP(worst):'—',c:'red'}
   ].map(s=>`<div class="sc"><div class="sl">${s.l}</div><div class="sv ${s.c}">${s.v}</div></div>`).join('');
@@ -177,9 +239,81 @@ function grc(n){return n>0?'green':n<0?'red':'';}
     <div class="skc"><div class="sl">Best Win Streak</div><div class="sv green">${mxW}</div><div class="ss">consecutive wins</div></div>
     <div class="skc"><div class="sl">Best Loss Streak</div><div class="sv red">${mxL}</div><div class="ss">consecutive losses</div></div>`;
 
-  const srt=[...vld].sort((a,b)=>(a.date||'').localeCompare(b.date||''));
-  let eq=0;const eqD=srt.map(t=>{eq+=parseFloat(t.pnl);return+eq.toFixed(2);});
-  new Chart(document.getElementById('eq'),{type:'line',data:{labels:srt.map(t=>t.date),datasets:[{data:eqD,borderColor:G,backgroundColor:G+'18',fill:true,tension:.35,pointRadius:2,pointBackgroundColor:G}]},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false}},scales:{x:{ticks:{maxTicksLimit:10}},y:{}}}});
+  // Equity curve with range toggle + crosshair + dynamic color
+  const eqAllTrades=srtVld;
+  let eqChart=null;
+
+  window.setEqRange=function(range){
+    // only toggle range buttons (not the Dynamic button)
+    document.querySelectorAll('.eq-tog[data-range]').forEach(b=>b.classList.toggle('active',b.dataset.range===range));
+    const now=new Date();let cutoff=null;
+    if(range==='week'){cutoff=new Date(now);cutoff.setDate(cutoff.getDate()-7);}
+    else if(range==='30d'){cutoff=new Date(now);cutoff.setDate(cutoff.getDate()-30);}
+    else if(range==='90d'){cutoff=new Date(now);cutoff.setDate(cutoff.getDate()-90);}
+    const filtered=cutoff?eqAllTrades.filter(t=>new Date((t.date||'')+'T12:00:00')>=cutoff):eqAllTrades;
+    let acc=0;const labels=[],data=[];
+    filtered.forEach(t=>{acc+=parseFloat(t.pnl);labels.push(t.date);data.push(+acc.toFixed(2));});
+    if(!eqChart)return;
+    // reset to flat green first so dynamic plugin has fresh canvas state
+    if(!eqChart._dynamicColor){
+      eqChart.data.datasets[0].borderColor=G;
+      eqChart.data.datasets[0].backgroundColor=G+'18';
+    }
+    eqChart.data.labels=labels;eqChart.data.datasets[0].data=data;eqChart.update();
+  };
+
+  window.setEqColor=function(){
+    if(!eqChart)return;
+    eqChart._dynamicColor=!eqChart._dynamicColor;
+    document.getElementById('eqDynBtn').classList.toggle('active',eqChart._dynamicColor);
+    if(!eqChart._dynamicColor){
+      eqChart.data.datasets[0].borderColor=G;
+      eqChart.data.datasets[0].backgroundColor=G+'18';
+      eqChart.data.datasets[0].pointBackgroundColor=G;
+      eqChart.data.datasets[0].pointHoverBackgroundColor=G;
+    }
+    eqChart.update();
+  };
+
+  let initEq=0;const initD=eqAllTrades.map(t=>{initEq+=parseFloat(t.pnl);return+initEq.toFixed(2);});
+  eqChart=new Chart(document.getElementById('eq'),{
+    type:'line',
+    data:{
+      labels:eqAllTrades.map(t=>t.date),
+      datasets:[{
+        data:initD,
+        borderColor:G,backgroundColor:G+'18',fill:true,
+        tension:.35,borderWidth:2,
+        pointRadius:3,pointHoverRadius:7,
+        pointBackgroundColor:G,pointHoverBackgroundColor:G
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:true,
+      showCrosshair:true,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:'rgba(11,15,12,.93)',
+          borderColor:'rgba(255,255,255,.1)',
+          borderWidth:1,
+          titleColor:'#8fa39a',
+          bodyColor:'#e6f2ec',
+          padding:10,
+          displayColors:false,
+          callbacks:{
+            title:ctx=>ctx[0]?.label||'',
+            label:ctx=>{const v=ctx.raw;return(v>=0?'+':'')+fP(v).slice(0);}
+          }
+        }
+      },
+      scales:{
+        x:{ticks:{maxTicksLimit:10}},
+        y:{ticks:{callback:v=>(v>=0?'+':'-')+'$'+Math.abs(v).toFixed(2)}}
+      }
+    }
+  });
 
   if(!isPro){try{(adsbygoogle=window.adsbygoogle||[]).push({});}catch(e){}return;}
 
@@ -204,13 +338,39 @@ function grc(n){return n>0?'green':n<0?'red':'';}
   const longs=trades.filter(t=>t.position==='Long').length,shorts=trades.filter(t=>t.position==='Short').length;
   new Chart(document.getElementById('ls'),{type:'doughnut',data:{labels:['Long','Short'],datasets:[{data:[longs,shorts],backgroundColor:[G+'cc',R+'cc'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{position:'bottom',labels:{padding:14,boxWidth:10}}},cutout:'60%'}});
 
-  const pc={};trades.forEach(t=>{if(t.pair)pc[t.pair]=(pc[t.pair]||0)+1;});
-  const pe=Object.entries(pc).sort((a,b)=>b[1]-a[1]);const mx=pe[0]?pe[0][1]:1;
-  document.getElementById('pb').innerHTML=pe.slice(0,8).map(([p,c])=>`<div style="margin-bottom:9px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><span style="font-weight:600">${p}</span><span style="color:var(--muted)">${c} trade${c>1?'s':''}</span></div><div style="height:5px;background:var(--border);border-radius:3px"><div style="height:5px;width:${(c/mx*100).toFixed(0)}%;background:#19c37d;border-radius:3px;transition:width .3s"></div></div></div>`).join('')||'<span style="color:var(--muted);font-size:13px">No pair data yet.</span>';
+  // Pair PNL (sorted by total PNL, show top 8)
+  const pairMap={};
+  trades.forEach(t=>{if(!t.pair)return;if(!pairMap[t.pair])pairMap[t.pair]={pnl:0,cnt:0};pairMap[t.pair].pnl+=parseFloat(t.pnl)||0;pairMap[t.pair].cnt++;});
+  const pairList=Object.entries(pairMap).map(([p,d])=>({p,pnl:+d.pnl.toFixed(2),cnt:d.cnt})).sort((a,b)=>b.pnl-a.pnl);
+  const maxAbsPnl=pairList.length?Math.max(...pairList.map(x=>Math.abs(x.pnl)),1):1;
+  document.getElementById('pb').innerHTML=pairList.slice(0,8).map(x=>{
+    const color=x.pnl>=0?G:R;const w=(Math.abs(x.pnl)/maxAbsPnl*100).toFixed(0);
+    return `<div class="pair-bar-row"><div class="pair-bar-meta"><span style="font-weight:600">${x.p}</span><span style="color:${color};font-family:var(--font-mono,'Space Grotesk',sans-serif);font-size:12px">${fP(x.pnl)} <span style="color:var(--muted);font-weight:400">${x.cnt} trade${x.cnt>1?'s':''}</span></span></div><div class="pair-bar-track"><div class="pair-bar-fill" style="width:${w}%;background:${color}"></div></div></div>`;
+  }).join('')||'<span style="color:var(--muted);font-size:13px">No pair data yet.</span>';
 
   const DOW_L=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],dc=[0,0,0,0,0,0,0];
   trades.forEach(t=>{if(!t.date)return;const d=new Date(t.date+'T12:00:00');dc[d.getDay()===0?6:d.getDay()-1]++;});
   new Chart(document.getElementById('dow'),{type:'bar',data:{labels:DOW_L,datasets:[{data:dc,backgroundColor:dc.map(v=>v>0?G+'cc':gc),borderRadius:6,barThickness:32}]},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{ticks:{stepSize:1}}}}});
+
+  // Confidence vs Performance
+  const cm={};
+  trades.forEach(t=>{
+    const stars=t.confidence;if(!stars||stars<1)return;
+    const key=stars;
+    if(!cm[key])cm[key]={tot:0,wins:0,pnl:0,rvals:[]};
+    cm[key].tot++;const p=parseFloat(t.pnl)||0;if(p>0)cm[key].wins++;cm[key].pnl+=p;
+    if(t.r&&!isNaN(parseFloat(t.r)))cm[key].rvals.push(parseFloat(t.r));
+  });
+  const confEl=document.getElementById('confb');
+  if(confEl){
+    const rows=Object.keys(cm).map(Number).sort((a,b)=>b-a);
+    confEl.innerHTML=rows.length?rows.map(stars=>{
+      const d=cm[stars],w=d.tot?(d.wins/d.tot*100).toFixed(1):'0',avg=d.tot?d.pnl/d.tot:0;
+      const ar=d.rvals.length?d.rvals.reduce((a,b)=>a+b,0)/d.rvals.length:null;
+      const starsHtml='★'.repeat(stars)+'<span style="opacity:.2">'+'★'.repeat(5-stars)+'</span>';
+      return`<tr><td><span style="color:#f5c518;letter-spacing:1px">${starsHtml}</span></td><td>${d.tot}</td><td style="color:${parseFloat(w)>=50?'#19c37d':'#ff5f6d'}">${fPct(w)}</td><td style="color:${avg>=0?'#19c37d':'#ff5f6d'}">${fP(avg)}</td><td style="color:${ar!==null?(ar>0?'#19c37d':ar<0?'#ff5f6d':'var(--muted)'):'var(--muted)'}">${ar!==null?(ar>=0?'+':'')+ar.toFixed(2)+'R':'—'}</td></tr>`;
+    }).join(''):'<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:18px">No confidence data yet. Set confidence stars on your trades.</td></tr>';
+  }
 
   const twt=trades.filter(t=>t.time&&t.time.includes(':')),hm={};
   twt.forEach(t=>{const h=parseInt(t.time.split(':')[0],10);if(!hm[h])hm[h]={tot:0,wins:0,pnl:0};hm[h].tot++;const p=parseFloat(t.pnl)||0;if(p>0)hm[h].wins++;hm[h].pnl+=p;});

@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -l \"fa-brands\\\\|fa-regular\\\\|fab \\\\|far \" c:/Users/james/Desktop/TradeZona/*.html c:/Users/james/Desktop/TradeZona/logs/*.html)"
+    ]
+  }
+}
