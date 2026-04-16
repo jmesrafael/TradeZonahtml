@@ -34,8 +34,10 @@ body{visibility:hidden;background:var(--bg);color:var(--text);font-family:var(--
 .skc .sv{font-family:var(--font-mono,'Space Grotesk',sans-serif);font-size:32px;font-weight:700}
 .skc .ss{font-size:11px;color:var(--muted)}
 .cb{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;margin-bottom:14px}
-.cb h3{font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:14px;display:flex;align-items:center;gap:6px}
+.cb h3{font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:14px;display:flex;align-items:center;gap:6px;position:relative}
 .cb h3 i{color:#19c37d}
+.tooltip-icon{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;border:1px solid var(--muted);font-size:10px;color:var(--muted);cursor:help;position:relative}
+.tooltip-icon:hover::after{content:attr(data-tooltip);position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-md);padding:8px 12px;font-size:11px;white-space:nowrap;z-index:10;color:var(--text);font-weight:500;text-transform:none;letter-spacing:normal;box-shadow:0 4px 12px rgba(0,0,0,.3)}
 .c2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
 canvas{max-height:190px}
 .bt{width:100%;border-collapse:collapse}
@@ -133,6 +135,26 @@ Chart.register({
   }
 });
 
+// ── Doughnut center text ──
+Chart.register({
+  id:'doughnutCenterText',
+  afterDatasetsDraw(chart){
+    if(!chart._centerText)return;
+    const{ctx,chartArea,data}=chart;
+    const{x:cx,y:cy}=chart.getDatasetMeta(0).data[0]||{x:chartArea.left+chartArea.width/2,y:chartArea.top+chartArea.height/2};
+    ctx.save();
+    ctx.font='bold 24px Space Grotesk, sans-serif';
+    ctx.fillStyle='#e6f2ec';
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    ctx.fillText(chart._centerText,cx,cy-6);
+    ctx.font='11px Space Grotesk, sans-serif';
+    ctx.fillStyle='#8fa39a';
+    ctx.fillText('Win Rate',cx,cy+12);
+    ctx.restore();
+  }
+});
+
 (async()=>{
   if(!jid){
     document.getElementById('skelView').style.display='none';
@@ -166,9 +188,10 @@ Chart.register({
   }
 
   document.getElementById('root').innerHTML=`
+    <div style="margin-bottom:18px"><h3 style="font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;display:flex;align-items:center;gap:6px"><i class="fa-solid fa-gauge-high"></i> Performance Metrics <span class="tooltip-icon" data-tooltip="Key metrics to evaluate your trading performance and risk management">?</span></h3></div>
     <div class="sr" id="sr"></div>
     <div class="stk" id="stk"></div>
-    <div class="cb"><h3 style="justify-content:space-between;flex-wrap:wrap;gap:8px"><span style="display:flex;align-items:center;gap:6px"><i class="fa-solid fa-chart-area"></i> Equity Curve</span><div class="eq-range-btns"><button class="eq-tog active" data-range="all" onclick="setEqRange('all')">All</button><button class="eq-tog" data-range="week" onclick="setEqRange('week')">Week</button><button class="eq-tog" data-range="30d" onclick="setEqRange('30d')">30D</button><button class="eq-tog" data-range="90d" onclick="setEqRange('90d')">90D</button><span style="width:1px;background:var(--border);margin:0 2px;display:inline-block;align-self:stretch"></span><button class="eq-tog" id="eqDynBtn" onclick="setEqColor()" title="Green above zero · Red below zero">⚡ Dynamic</button></div></h3><canvas id="eq"></canvas></div>
+    <div class="cb"><h3 style="justify-content:space-between;flex-wrap:wrap;gap:8px"><span style="display:flex;align-items:center;gap:6px"><i class="fa-solid fa-chart-area"></i> Equity Curve <span class="tooltip-icon" data-tooltip="Visualize your account growth over time to see trading progress and identify drawdown periods">?</span></span><div class="eq-range-btns"><button class="eq-tog active" data-range="all" onclick="setEqRange('all')">All</button><button class="eq-tog" data-range="week" onclick="setEqRange('week')">Week</button><button class="eq-tog" data-range="30d" onclick="setEqRange('30d')">30D</button><button class="eq-tog" data-range="90d" onclick="setEqRange('90d')">90D</button><span style="width:1px;background:var(--border);margin:0 2px;display:inline-block;align-self:stretch"></span><button class="eq-tog" id="eqDynBtn" onclick="setEqColor()" title="Green above zero · Red below zero">⚡ Dynamic</button></div></h3><canvas id="eq"></canvas></div>
     ${!isPro ? `
     <div class="ad-slot visible">
       <div class="ad-slot-label">Advertisement</div>
@@ -186,20 +209,20 @@ Chart.register({
         </a>
       </div>
     </div>` : `
-    <div class="c2"><div class="cb"><h3><i class="fa-solid fa-circle-half-stroke"></i> Win / Loss</h3><canvas id="wl"></canvas></div><div class="cb"><h3><i class="fa-solid fa-chess"></i> Strategy PNL</h3><canvas id="st"></canvas></div></div>
-    <div class="cb"><h3><i class="fa-solid fa-table"></i> Timeframe Breakdown</h3><table class="bt"><thead><tr><th>Timeframe</th><th>Trades</th><th>Wins</th><th>Win Rate</th><th>Total PNL</th></tr></thead><tbody id="tfb"></tbody></table></div>
+    <div class="c2"><div class="cb"><h3><i class="fa-solid fa-circle-half-stroke"></i> Win / Loss <span class="tooltip-icon" data-tooltip="Your win/loss ratio shows how many winning vs losing trades you have. Win rate displayed in center">?</span></h3><canvas id="wl"></canvas></div><div class="cb"><h3><i class="fa-solid fa-chess"></i> Strategy PNL <span class="tooltip-icon" data-tooltip="Compare profitability across different trading strategies to identify your best performers">?</span></h3><canvas id="st"></canvas></div></div>
+    <div class="cb"><h3><i class="fa-solid fa-table"></i> Timeframe Breakdown <span class="tooltip-icon" data-tooltip="Analyze which timeframes are most profitable for your trading style">?</span></h3><table class="bt"><thead><tr><th>Timeframe</th><th>Trades</th><th>Wins</th><th>Win Rate</th><th>Total PNL</th></tr></thead><tbody id="tfb"></tbody></table></div>
     <div class="ad-slot visible" style="margin-bottom:14px">
       <div class="ad-slot-label">Advertisement</div>
       <div class="ad-slot-inner">
         <ins class="adsbygoogle" style="display:block;width:100%;min-height:70px" data-ad-client="ca-pub-XXXXXXXXXXXXXXXX" data-ad-slot="XXXXXXXXXX" data-ad-format="horizontal" data-full-width-responsive="true"></ins>
       </div>
     </div>
-    <div class="c2"><div class="cb"><h3><i class="fa-solid fa-face-smile"></i> Mood Distribution</h3><canvas id="md"></canvas></div><div class="cb"><h3><i class="fa-solid fa-face-smile-beam"></i> Mood vs Performance</h3><table class="bt"><thead><tr><th>Mood</th><th>Trades</th><th>Win Rate</th><th>Avg PNL</th></tr></thead><tbody id="mdb"></tbody></table></div></div>
-    <div class="cb"><h3><i class="fa-solid fa-fire-flame-curved"></i> Hour Heatmap</h3><canvas id="hh"></canvas></div>
-    <div class="c2"><div class="cb"><h3><i class="fa-solid fa-trophy"></i> Best Hours (Avg PNL)</h3><canvas id="hp"></canvas></div><div class="cb"><h3><i class="fa-solid fa-table"></i> Time of Day</h3><table class="bt"><thead><tr><th>Hour</th><th>Trades</th><th>Wins</th><th>Win Rate</th><th>Avg PNL</th></tr></thead><tbody id="tb"></tbody></table></div></div>
-    <div class="c2"><div class="cb"><h3><i class="fa-solid fa-arrow-right-arrow-left"></i> Long vs Short</h3><canvas id="ls"></canvas></div><div class="cb"><h3><i class="fa-solid fa-ranking-star"></i> Top Pairs by PNL</h3><div id="pb"></div></div></div>
-    <div class="cb"><h3><i class="fa-solid fa-calendar-week"></i> Trades by Day of Week</h3><canvas id="dow"></canvas></div>
-    <div class="cb"><h3><i class="fa-solid fa-star"></i> Confidence vs Performance</h3><table class="bt"><thead><tr><th>Confidence</th><th>Trades</th><th>Win Rate</th><th>Avg PNL</th><th>Avg R</th></tr></thead><tbody id="confb"></tbody></table></div>`}`;
+    <div class="c2"><div class="cb"><h3><i class="fa-solid fa-face-smile"></i> Mood Distribution <span class="tooltip-icon" data-tooltip="See how your emotional state correlates with trading frequency">?</span></h3><canvas id="md"></canvas></div><div class="cb"><h3><i class="fa-solid fa-face-smile-beam"></i> Mood vs Performance <span class="tooltip-icon" data-tooltip="Identify which moods lead to better trading outcomes">?</span></h3><table class="bt"><thead><tr><th>Mood</th><th>Trades</th><th>Win Rate</th><th>Avg PNL</th></tr></thead><tbody id="mdb"></tbody></table></div></div>
+    <div class="cb"><h3><i class="fa-solid fa-fire-flame-curved"></i> Hour Heatmap <span class="tooltip-icon" data-tooltip="Find the best trading hours when you're most profitable">?</span></h3><canvas id="hh"></canvas></div>
+    <div class="c2"><div class="cb"><h3><i class="fa-solid fa-trophy"></i> Best Hours (Avg PNL) <span class="tooltip-icon" data-tooltip="See which hours generate the most profit on average">?</span></h3><canvas id="hp"></canvas></div><div class="cb"><h3><i class="fa-solid fa-table"></i> Time of Day <span class="tooltip-icon" data-tooltip="Detailed performance breakdown by hour">?</span></h3><table class="bt"><thead><tr><th>Hour</th><th>Trades</th><th>Wins</th><th>Win Rate</th><th>Avg PNL</th></tr></thead><tbody id="tb"></tbody></table></div></div>
+    <div class="c2"><div class="cb"><h3><i class="fa-solid fa-arrow-right-arrow-left"></i> Long vs Short <span class="tooltip-icon" data-tooltip="Compare profitability between long and short positions">?</span></h3><canvas id="ls"></canvas></div><div class="cb"><h3><i class="fa-solid fa-ranking-star"></i> Top Pairs by PNL <span class="tooltip-icon" data-tooltip="See which trading pairs generate the most profit">?</span></h3><div id="pb"></div></div></div>
+    <div class="cb"><h3><i class="fa-solid fa-calendar-week"></i> Trades by Day of Week <span class="tooltip-icon" data-tooltip="Find days of the week where you trade best">?</span></h3><canvas id="dow"></canvas></div>
+    <div class="cb"><h3><i class="fa-solid fa-star"></i> Confidence vs Performance <span class="tooltip-icon" data-tooltip="See if higher confidence trades correlate with better results">?</span></h3><table class="bt"><thead><tr><th>Confidence</th><th>Trades</th><th>Win Rate</th><th>Avg PNL</th><th>Avg R</th></tr></thead><tbody id="confb"></tbody></table></div>`}`;
 
   if(!isPro){try{(adsbygoogle=window.adsbygoogle||[]).push({});}catch(e){}}
 
@@ -284,7 +307,7 @@ Chart.register({
         data:initD,
         borderColor:G,backgroundColor:G+'18',fill:true,
         tension:.35,borderWidth:2,
-        pointRadius:3,pointHoverRadius:7,
+        pointRadius:0,pointHoverRadius:7,
         pointBackgroundColor:G,pointHoverBackgroundColor:G
       }]
     },
@@ -295,16 +318,17 @@ Chart.register({
       plugins:{
         legend:{display:false},
         tooltip:{
-          backgroundColor:'rgba(11,15,12,.93)',
-          borderColor:'rgba(255,255,255,.1)',
+          backgroundColor:'rgba(11,15,12,.95)',
+          borderColor:'rgba(255,255,255,.15)',
           borderWidth:1,
           titleColor:'#8fa39a',
+          bodyFont:{family:"'Space Grotesk', sans-serif",size:13,weight:600},
           bodyColor:'#e6f2ec',
-          padding:10,
+          padding:12,
           displayColors:false,
           callbacks:{
             title:ctx=>ctx[0]?.label||'',
-            label:ctx=>{const v=ctx.raw;return(v>=0?'+':'')+fP(v).slice(0);}
+            label:ctx=>{const v=ctx.raw;return(v>=0?'🟢 +':v<0?'🔴 ':'')+(v>=0?'':'')+fP(v);}
           }
         }
       },
@@ -317,7 +341,8 @@ Chart.register({
 
   if(!isPro){try{(adsbygoogle=window.adsbygoogle||[]).push({});}catch(e){}return;}
 
-  new Chart(document.getElementById('wl'),{type:'doughnut',data:{labels:['Wins','Losses','BE'],datasets:[{data:[wins.length,losses.length,be.length],backgroundColor:[G,R+'cc','#8fa39a44'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{position:'bottom',labels:{padding:14,boxWidth:10}}},cutout:'62%'}});
+  const wlChart=new Chart(document.getElementById('wl'),{type:'doughnut',data:{labels:['Wins','Losses','BE'],datasets:[{data:[wins.length,losses.length,be.length],backgroundColor:[G,R+'cc','#8fa39a44'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{position:'bottom',labels:{padding:14,boxWidth:10}}},cutout:'62%'}});
+  wlChart._centerText=fPct(wr);
 
   const sm={};trades.forEach(t=>(t.strategy||[]).forEach(s=>{if(!sm[s])sm[s]=0;sm[s]+=(parseFloat(t.pnl)||0);}));
   const sl=Object.keys(sm);
