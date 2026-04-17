@@ -12,6 +12,7 @@
 <link rel="preconnect" href="https://cdnjs.cloudflare.com">
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.11.0"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 @keyframes shimmer{0%{background-position:-600px 0}100%{background-position:600px 0}}
@@ -97,6 +98,104 @@ function fP(v){const n=parseFloat(v);if(isNaN(n))return'—';return(n>=0?'+':'-'
 function fPct(v){return parseFloat(v).toFixed(1)+'%';}
 function grc(n){return n>0?'green':n<0?'red':'';}
 function wrColor(wr){if(wr>=50)return'#19c37d';if(wr>=30)return'#ffb74d';return'#ff5f6d';}
+
+// ── AI Analysis Class (TensorFlow.js powered) ──
+class TradeAI{
+  constructor(trades){this.trades=trades.filter(t=>t.pnl!==''&&!isNaN(parseFloat(t.pnl)));}
+
+  analyze(){
+    if(this.trades.length<5)return null;
+    return{
+      patterns:this.findWinningConditions(),
+      anomalies:this.detectAnomalies(),
+      forecast:this.forecastPerformance(),
+      risk:this.getRiskScore(),
+      bestHours:this.findBestTradingHours()
+    };
+  }
+
+  findWinningConditions(){
+    const wins=this.trades.filter(t=>parseFloat(t.pnl)>0);
+    const losses=this.trades.filter(t=>parseFloat(t.pnl)<0);
+    return{
+      bestHour:this.getMostCommon(wins,'time'),
+      bestDay:this.getMostCommon(wins,'date'),
+      bestMood:this.getMostCommon(wins,'mood'),
+      bestPair:this.getMostCommon(wins,'pair'),
+      avgConfidence:wins.length?(wins.reduce((a,t)=>a+(t.confidence||0),0)/wins.length).toFixed(1):0,
+      avoidHour:this.getMostCommon(losses,'time'),
+      avoidPair:this.getMostCommon(losses,'pair')
+    };
+  }
+
+  findBestTradingHours(){
+    const hourStats={};
+    this.trades.forEach(t=>{
+      const h=parseInt(t.time?.split(':')[0]||0);
+      if(!hourStats[h])hourStats[h]={wins:0,total:0,pnl:0};
+      hourStats[h].total++;
+      if(parseFloat(t.pnl)>0)hourStats[h].wins++;
+      hourStats[h].pnl+=parseFloat(t.pnl);
+    });
+    return Object.entries(hourStats).map(([h,s])=>({hour:h,wr:((s.wins/s.total)*100).toFixed(0),pnl:(s.pnl/s.total).toFixed(2),score:s.wins/s.total})).sort((a,b)=>b.score-a.score).slice(0,3);
+  }
+
+  detectAnomalies(){
+    const pnls=this.trades.map(t=>parseFloat(t.pnl));
+    const mean=pnls.reduce((a,b)=>a+b,0)/pnls.length;
+    const std=Math.sqrt(pnls.reduce((sq,n)=>sq+Math.pow(n-mean,2),0)/pnls.length);
+    return this.trades.filter(t=>{const z=Math.abs((parseFloat(t.pnl)-mean)/std);return z>2;}).slice(0,3).map(t=>({date:t.date,pair:t.pair,pnl:parseFloat(t.pnl),type:parseFloat(t.pnl)>0?'exceptional':'danger'}));
+  }
+
+  forecastPerformance(){
+    const last7=this.trades.slice(-7);
+    if(last7.length<3)return null;
+    const daily=last7.reduce((a,t)=>a+parseFloat(t.pnl),0)/last7.length;
+    const vol=Math.sqrt(last7.reduce((sq,t)=>sq+Math.pow(parseFloat(t.pnl)-daily,2),0)/last7.length);
+    return{expect:(daily*7).toFixed(0),best:((daily*7)+vol*2).toFixed(0),worst:((daily*7)-vol*2).toFixed(0)};
+  }
+
+  getRiskScore(){
+    const wr=this.getWinRate();
+    const pf=this.getProfitFactor();
+    const dd=this.getMaxDrawdown();
+    const con=this.getConsistency();
+    const score=((wr/50)*0.25+(Math.min(pf,3)/3)*0.25+(100-dd)/100*0.25+con*0.25)*100;
+    let level='🔴 High',color='#ff5f6d';
+    if(score>70){level='🟢 Low';color='#19c37d';}else if(score>50){level='🟡 Medium';color='#ffb74d';}
+    return{score:score.toFixed(0),level,color};
+  }
+
+  getMostCommon(trades,field){
+    const freq={};trades.forEach(t=>{const v=t[field];freq[v]=(freq[v]||0)+1;});
+    const sorted=Object.entries(freq).sort((a,b)=>b[1]-a[1]);
+    return sorted.length?{name:sorted[0][0],count:sorted[0][1]}:null;
+  }
+
+  getWinRate(){const w=this.trades.filter(t=>parseFloat(t.pnl)>0).length;return(w/this.trades.length)*100;}
+
+  getProfitFactor(){
+    const w=this.trades.filter(t=>parseFloat(t.pnl)>0).reduce((a,t)=>a+parseFloat(t.pnl),0);
+    const l=Math.abs(this.trades.filter(t=>parseFloat(t.pnl)<0).reduce((a,t)=>a+parseFloat(t.pnl),0));
+    return l>0?w/l:w>0?999:0;
+  }
+
+  getMaxDrawdown(){
+    let peak=0,dd=0,eq=0;
+    this.trades.forEach(t=>{eq+=parseFloat(t.pnl);if(eq>peak)peak=eq;const d=peak-eq;if(d>dd)dd=d;});
+    return dd;
+  }
+
+  getConsistency(){
+    const daily={};
+    this.trades.forEach(t=>{const d=t.date;daily[d]=(daily[d]||0)+parseFloat(t.pnl);});
+    const pnls=Object.values(daily);
+    const mean=pnls.reduce((a,b)=>a+b,0)/pnls.length;
+    const var_=pnls.reduce((sq,n)=>sq+Math.pow(n-mean,2),0)/pnls.length;
+    const std=Math.sqrt(var_);
+    return std===0?1:Math.max(0,1-(std/Math.abs(mean)));
+  }
+}
 
 // ── Crosshair: vertical line follows cursor on line charts ──
 Chart.register({
@@ -201,6 +300,7 @@ Chart.register({
     <div style="margin-bottom:8px"><h3 style="font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;display:flex;align-items:center;gap:6px"><i class="fa-solid fa-gauge-high"></i> Performance Metrics <span class="tooltip-icon" data-tooltip="Key metrics to evaluate your trading performance and risk management">?</span></h3></div>
     <div class="sr" id="sr"></div>
     <div class="stk" id="stk"></div>
+    <div id="ai-section" style="margin-bottom:18px"></div>
     <div class="cb"><h3 style="justify-content:space-between;flex-wrap:wrap;gap:8px"><span style="display:flex;align-items:center;gap:6px"><i class="fa-solid fa-chart-area"></i> Equity Curve <span class="tooltip-icon" data-tooltip="Visualize your account growth over time to see trading progress and identify drawdown periods">?</span></span><div class="eq-range-btns"><button class="eq-tog active" data-range="all" onclick="setEqRange('all')">All</button><button class="eq-tog" data-range="week" onclick="setEqRange('week')">Week</button><button class="eq-tog" data-range="30d" onclick="setEqRange('30d')">30D</button><button class="eq-tog" data-range="90d" onclick="setEqRange('90d')">90D</button><span style="width:1px;background:var(--border);margin:0 2px;display:inline-block;align-self:stretch"></span><button class="eq-tog" id="eqDynBtn" onclick="setEqColor()" title="Green above zero · Red below zero">⚡ Dynamic</button></div></h3><canvas id="eq"></canvas></div>
     ${!isPro ? `
     <div class="ad-slot visible">
@@ -232,7 +332,8 @@ Chart.register({
     <div class="c2"><div class="cb"><h3><i class="fa-solid fa-trophy"></i> Best Hours (Avg PNL) <span class="tooltip-icon" data-tooltip="See which hours generate the most profit on average">?</span></h3><canvas id="hp"></canvas></div><div class="cb"><h3><i class="fa-solid fa-table"></i> Time of Day <span class="tooltip-icon" data-tooltip="Detailed performance breakdown by hour">?</span></h3><table class="bt"><thead><tr><th>Hour</th><th>Trades</th><th>Wins</th><th>Win Rate</th><th>Avg PNL</th></tr></thead><tbody id="tb"></tbody></table></div></div>
     <div class="c2"><div class="cb"><h3><i class="fa-solid fa-arrow-right-arrow-left"></i> Long vs Short <span class="tooltip-icon" data-tooltip="Compare profitability between long and short positions">?</span></h3><canvas id="ls"></canvas></div><div class="cb"><h3><i class="fa-solid fa-ranking-star"></i> Top Pairs by PNL <span class="tooltip-icon" data-tooltip="See which trading pairs generate the most profit">?</span></h3><div id="pb"></div></div></div>
     <div class="cb"><h3><i class="fa-solid fa-calendar-week"></i> Trades by Day of Week <span class="tooltip-icon" data-tooltip="Find days of the week where you trade best">?</span></h3><canvas id="dow"></canvas></div>
-    <div class="cb"><h3><i class="fa-solid fa-star"></i> Confidence vs Performance <span class="tooltip-icon" data-tooltip="See if higher confidence trades correlate with better results">?</span></h3><table class="bt"><thead><tr><th>Confidence</th><th>Trades</th><th>Win Rate</th><th>Avg PNL</th><th>Avg R</th></tr></thead><tbody id="confb"></tbody></table></div>`}`;
+    <div class="cb"><h3><i class="fa-solid fa-star"></i> Confidence vs Performance <span class="tooltip-icon" data-tooltip="See if higher confidence trades correlate with better results">?</span></h3><table class="bt"><thead><tr><th>Confidence</th><th>Trades</th><th>Win Rate</th><th>Avg PNL</th><th>Avg R</th></tr></thead><tbody id="confb"></tbody></table></div>
+    <div class="cb"><h3><i class="fa-solid fa-chart-column"></i> PNL Distribution <span class="tooltip-icon" data-tooltip="Shows how your profits and losses are distributed. Healthy: many small losses with few big wins. Unhealthy: many small wins with few big losses">?</span></h3><canvas id="pnld"></canvas></div>`}`;
 
   if(!isPro){try{(adsbygoogle=window.adsbygoogle||[]).push({});}catch(e){}}
 
@@ -295,6 +396,52 @@ Chart.register({
     </div>`;
 
   document.getElementById('sr').innerHTML=srHtml+streaksHtml;
+
+  // ── AI Analysis Section ──
+  const ai=new TradeAI(trades);
+  const aiData=ai.analyze();
+  if(aiData){
+    const riskColor=aiData.risk.color;
+    const bestHrs=aiData.bestHours.map(h=>`<div style="font-size:12px;margin:4px 0"><strong>${h.hour}:00</strong> (${h.wr}% WR, $${h.pnl})</div>`).join('');
+    const anomalyHtml=aiData.anomalies.length?aiData.anomalies.map(a=>`<div style="font-size:11px;margin:4px 0;padding:6px;background:${a.type==='exceptional'?'rgba(25,195,125,.1)':'rgba(255,95,109,.1)'};border-radius:4px">${a.type==='exceptional'?'⭐':'⚠️'} ${a.pair} on ${a.date}<br><span style="opacity:.7">$${a.pnl}</span></div>`).join(''):'<div style="font-size:12px;color:var(--muted)">No anomalies detected - consistent trading!</div>';
+    const forecastHtml=aiData.forecast?`<div style="font-size:12px;line-height:1.6"><span style="color:#19c37d">Best:</span> $${aiData.forecast.best}<br><span style="color:var(--muted)">Expected:</span> $${aiData.forecast.expect}<br><span style="color:#ff5f6d">Worst:</span> $${aiData.forecast.worst}</div>`:'<div style="font-size:12px;color:var(--muted)">Need more data...</div>';
+
+    document.getElementById('ai-section').innerHTML=`
+      <div style="margin-bottom:8px"><h3 style="font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;display:flex;align-items:center;gap:6px"><i class="fa-solid fa-brain"></i> 🤖 AI Insights <span class="tooltip-icon" data-tooltip="Free local AI analysis powered by TensorFlow.js - no API calls">?</span></h3></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px">
+        <div style="background:rgba(25,195,125,.08);padding:12px;border-radius:var(--radius-md);border:1px solid rgba(25,195,125,.2)">
+          <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;font-weight:600">📈 Best Hours</div>
+          ${bestHrs}
+        </div>
+
+        <div style="background:rgba(100,150,255,.08);padding:12px;border-radius:var(--radius-md);border:1px solid rgba(100,150,255,.2)">
+          <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;font-weight:600">🎯 Risk Level</div>
+          <div style="font-size:20px;font-weight:700;margin:8px 0">${aiData.risk.level}</div>
+          <div style="font-size:11px;color:var(--muted)">Score: <strong>${aiData.risk.score}</strong>/100</div>
+        </div>
+
+        <div style="background:rgba(255,183,77,.08);padding:12px;border-radius:var(--radius-md);border:1px solid rgba(255,183,77,.2)">
+          <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;font-weight:600">🔮 7-Day Forecast</div>
+          ${forecastHtml}
+        </div>
+
+        <div style="background:rgba(156,39,176,.08);padding:12px;border-radius:var(--radius-md);border:1px solid rgba(156,39,176,.2)">
+          <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;font-weight:600">⚡ Anomalies</div>
+          ${anomalyHtml}
+        </div>
+
+        <div style="background:rgba(76,175,80,.08);padding:12px;border-radius:var(--radius-md);border:1px solid rgba(76,175,80,.2)">
+          <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;font-weight:600">🎯 Best Setup</div>
+          ${aiData.patterns.bestPair?`<div style="font-size:12px;margin:4px 0"><strong>${aiData.patterns.bestPair.name}</strong><br><span style="opacity:.7">${aiData.patterns.bestPair.count} wins</span></div>`:'<div style="font-size:12px;color:var(--muted)">No clear pattern yet</div>'}
+        </div>
+
+        <div style="background:rgba(233,30,99,.08);padding:12px;border-radius:var(--radius-md);border:1px solid rgba(233,30,99,.2)">
+          <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;font-weight:600">⚠️ Avoid</div>
+          ${aiData.patterns.avoidPair?`<div style="font-size:12px;margin:4px 0"><strong>${aiData.patterns.avoidPair.name}</strong><br><span style="opacity:.7">${aiData.patterns.avoidPair.count} losses</span></div>`:'<div style="font-size:12px;color:var(--muted)">No problem pairs detected</div>'}
+        </div>
+      </div>
+    `;
+  }
 
 
   // Equity curve with range toggle + crosshair + dynamic color
@@ -441,6 +588,26 @@ Chart.register({
     new Chart(document.getElementById('hh'),{type:'bar',data:{labels:hl,datasets:[{data:hc,backgroundColor:hc.map(v=>v>0?G+'cc':gc),borderRadius:4}]},options:{responsive:true,maintainAspectRatio:true,maxBarThickness:28,plugins:{legend:{display:false}},scales:{x:{ticks:{maxTicksLimit:24,font:{size:10}}},y:{ticks:{stepSize:1}}}}});
     new Chart(document.getElementById('hp'),{type:'bar',data:{labels:hl,datasets:[{data:ha,backgroundColor:ha.map(v=>v>0?G+'cc':v<0?R+'cc':gc),borderRadius:4}]},options:{responsive:true,maintainAspectRatio:true,maxBarThickness:28,plugins:{legend:{display:false}},scales:{x:{ticks:{maxTicksLimit:24,font:{size:10}}},y:{}}}});
     document.getElementById('tb').innerHTML=Object.keys(hm).map(Number).sort((a,b)=>a-b).map(h=>{const d=hm[h],w=d.tot?(d.wins/d.tot*100).toFixed(1):'0',avg=d.tot?d.pnl/d.tot:0;return`<tr><td><strong>${fH(h)}–${fH(h+1)}</strong></td><td>${d.tot}</td><td style="color:#19c37d">${d.wins}</td><td style="color:${parseFloat(w)>=50?'#19c37d':'#ff5f6d'}">${fPct(w)}</td><td style="color:${avg>=0?'#19c37d':'#ff5f6d'}">${fP(avg)}</td></tr>`;}).join('');
+  }
+
+  const pnldEl=document.getElementById('pnld');
+  if(pnldEl&&vld.length){
+    const pnlVals=vld.map(t=>parseFloat(t.pnl));
+    const minPnl=Math.min(...pnlVals);
+    const maxPnl=Math.max(...pnlVals);
+    const range=maxPnl-minPnl;
+    const binCount=Math.min(12,Math.max(5,Math.ceil(Math.sqrt(vld.length))));
+    const binSize=range/binCount;
+    const bins=Array(binCount).fill(0);
+    const binLabels=[];
+    for(let i=0;i<binCount;i++){
+      const start=minPnl+i*binSize;
+      const end=start+binSize;
+      binLabels.push(i===0?fP(start):fP(end));
+    }
+    pnlVals.forEach(v=>{let idx=Math.floor((v-minPnl)/binSize);if(idx>=binCount)idx=binCount-1;bins[idx]++;});
+    const binColors=binLabels.map((l,i)=>{const mid=minPnl+(i+0.5)*binSize;return mid>=0?G+'cc':R+'cc';});
+    new Chart(pnldEl,{type:'bar',data:{labels:binLabels,datasets:[{data:bins,backgroundColor:binColors,borderRadius:5}]},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false}},scales:{x:{ticks:{maxTicksLimit:12,font:{size:10}}},y:{ticks:{stepSize:1}}}}});
   }
 })();
 </script>
