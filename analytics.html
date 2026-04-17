@@ -482,50 +482,6 @@ Chart.register({
 
   document.getElementById('sr').innerHTML=srHtml+streaksHtml;
 
-  // ── Insights Analysis Section ──
-  const insights=new TradeInsights(trades);
-  const insightsData=insights.analyze();
-  if(insightsData){
-    const perf=insightsData.performance;
-    const recsHtml=insightsData.recommendations.map(r=>{
-      let bgColor='rgba(100,150,255,.08)',borderColor='rgba(100,150,255,.2)';
-      if(r.priority==='high'){bgColor='rgba(255,95,109,.08)';borderColor='rgba(255,95,109,.2)';}
-      else if(r.priority==='positive'){bgColor='rgba(25,195,125,.08)';borderColor='rgba(25,195,125,.2)';}
-      else if(r.priority==='neutral'){bgColor='rgba(150,150,150,.08)';borderColor='rgba(150,150,150,.2)';}
-      return`<div style="background:${bgColor};border:1px solid ${borderColor};border-radius:var(--radius-md);padding:12px;margin-bottom:10px">
-        <div style="display:flex;gap:10px;align-items:flex-start">
-          <div style="font-size:18px;color:var(--muted);flex-shrink:0;margin-top:2px"><i class="fa-solid ${r.icon}"></i></div>
-          <div style="flex:1">
-            <div style="font-weight:600;font-size:13px;color:var(--text);margin-bottom:4px">${r.action}</div>
-            <div style="font-size:12px;color:var(--muted);line-height:1.5">${r.reason}</div>
-          </div>
-        </div>
-      </div>`;
-    }).join('');
-
-    document.getElementById('ai-section').innerHTML=`
-      <div style="margin-bottom:8px"><h3 style="font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;display:flex;align-items:center;gap:6px"><i class="fa-solid fa-lightbulb"></i> Insights <span class="tooltip-icon" data-tooltip="Personalized trading analysis and recommendations based on your data">?</span></h3></div>
-      <div style="display:grid;grid-template-columns:1fr 2fr;gap:14px;margin-bottom:18px">
-        <div style="background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px">
-          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px;font-weight:600">Risk Assessment</div>
-          <div style="font-size:32px;font-weight:700;color:${perf.color};margin-bottom:6px">${perf.score}<span style="font-size:18px;opacity:.7">/100</span></div>
-          <div style="font-size:13px;color:var(--text);margin-bottom:12px;font-weight:500">${perf.level}</div>
-          <div style="border-top:1px solid var(--border);padding-top:12px;font-size:12px">
-            <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="color:var(--muted)">Win Rate</span><strong>${perf.wr}%</strong></div>
-            <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="color:var(--muted)">Profit Factor</span><strong>${perf.pf}</strong></div>
-            <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="color:var(--muted)">Max Drawdown</span><strong>$${perf.dd}</strong></div>
-            <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Consistency</span><strong>${(perf.con*100).toFixed(0)}%</strong></div>
-          </div>
-        </div>
-        <div>
-          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px;font-weight:600">Recommendations</div>
-          ${recsHtml}
-        </div>
-      </div>
-    `;
-  }
-
-
   // Equity curve with range toggle + crosshair + dynamic color
   const eqAllTrades=srtVld;
   let eqChart=null;
@@ -690,6 +646,51 @@ Chart.register({
     pnlVals.forEach(v=>{let idx=Math.floor((v-minPnl)/binSize);if(idx>=binCount)idx=binCount-1;bins[idx]++;});
     const binColors=binLabels.map((l,i)=>{const mid=minPnl+(i+0.5)*binSize;return mid>=0?G+'cc':R+'cc';});
     new Chart(pnldEl,{type:'bar',data:{labels:binLabels,datasets:[{data:bins,backgroundColor:binColors,borderRadius:5}]},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false}},scales:{x:{ticks:{maxTicksLimit:12,font:{size:10}}},y:{ticks:{stepSize:1}}}}});
+  }
+
+  // ── Insights Analysis Section (Bottom) ──
+  if(isPro){
+    const insights=new TradeInsights(trades);
+    const insightsData=insights.analyze();
+    if(insightsData){
+      const perf=insightsData.performance;
+      const recsHtml=insightsData.recommendations.map(r=>{
+        let bgColor='rgba(100,150,255,.08)',borderColor='rgba(100,150,255,.2)';
+        if(r.priority==='high'){bgColor='rgba(255,95,109,.08)';borderColor='rgba(255,95,109,.2)';}
+        else if(r.priority==='positive'){bgColor='rgba(25,195,125,.08)';borderColor='rgba(25,195,125,.2)';}
+        else if(r.priority==='neutral'){bgColor='rgba(150,150,150,.08)';borderColor='rgba(150,150,150,.2)';}
+        return`<div style="background:${bgColor};border:1px solid ${borderColor};border-radius:var(--radius-md);padding:12px;margin-bottom:10px">
+          <div style="display:flex;gap:10px;align-items:flex-start">
+            <div style="font-size:18px;color:var(--muted);flex-shrink:0;margin-top:2px"><i class="fa-solid ${r.icon}"></i></div>
+            <div style="flex:1">
+              <div style="font-weight:600;font-size:13px;color:var(--text);margin-bottom:4px">${r.action}</div>
+              <div style="font-size:12px;color:var(--muted);line-height:1.5">${r.reason}</div>
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+
+      document.getElementById('ai-section').innerHTML=`
+        <div style="margin-bottom:8px"><h3 style="font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;display:flex;align-items:center;gap:6px"><i class="fa-solid fa-lightbulb"></i> Insights <span class="tooltip-icon" data-tooltip="Personalized trading analysis and recommendations based on your data">?</span></h3></div>
+        <div style="display:grid;grid-template-columns:1fr 2fr;gap:14px;margin-bottom:18px">
+          <div style="background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px">
+            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px;font-weight:600">Risk Assessment</div>
+            <div style="font-size:32px;font-weight:700;color:${perf.color};margin-bottom:6px">${perf.score}<span style="font-size:18px;opacity:.7">/100</span></div>
+            <div style="font-size:13px;color:var(--text);margin-bottom:12px;font-weight:500">${perf.level}</div>
+            <div style="border-top:1px solid var(--border);padding-top:12px;font-size:12px">
+              <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="color:var(--muted)">Win Rate</span><strong>${perf.wr}%</strong></div>
+              <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="color:var(--muted)">Profit Factor</span><strong>${perf.pf}</strong></div>
+              <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="color:var(--muted)">Max Drawdown</span><strong>$${perf.dd}</strong></div>
+              <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Consistency</span><strong>${(perf.con*100).toFixed(0)}%</strong></div>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px;font-weight:600">Recommendations</div>
+            ${recsHtml}
+          </div>
+        </div>
+      `;
+    }
   }
 })();
 </script>
