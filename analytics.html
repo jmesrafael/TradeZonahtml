@@ -99,93 +99,172 @@ function fPct(v){return parseFloat(v).toFixed(1)+'%';}
 function grc(n){return n>0?'green':n<0?'red':'';}
 function wrColor(wr){if(wr>=50)return'#19c37d';if(wr>=30)return'#ffb74d';return'#ff5f6d';}
 
-// ── AI Analysis Class (TensorFlow.js powered) ──
-class TradeAI{
+// ── Insights Analysis Class ──
+class TradeInsights{
   constructor(trades){this.trades=trades.filter(t=>t.pnl!==''&&!isNaN(parseFloat(t.pnl)));}
 
   analyze(){
     if(this.trades.length<5)return null;
-    return{
-      patterns:this.findWinningConditions(),
-      anomalies:this.detectAnomalies(),
-      forecast:this.forecastPerformance(),
-      risk:this.getRiskScore(),
-      bestHours:this.findBestTradingHours()
+    const metrics={
+      performance:this.getPerformanceMetrics(),
+      issues:this.detectIssues(),
+      recommendations:this.generateRecommendations()
     };
+    return metrics;
   }
 
-  findWinningConditions(){
-    const wins=this.trades.filter(t=>parseFloat(t.pnl)>0);
-    const losses=this.trades.filter(t=>parseFloat(t.pnl)<0);
-    return{
-      bestHour:this.getMostCommon(wins,'time'),
-      bestDay:this.getMostCommon(wins,'date'),
-      bestMood:this.getMostCommon(wins,'mood'),
-      bestPair:this.getMostCommon(wins,'pair'),
-      avgConfidence:wins.length?(wins.reduce((a,t)=>a+(t.confidence||0),0)/wins.length).toFixed(1):0,
-      avoidHour:this.getMostCommon(losses,'time'),
-      avoidPair:this.getMostCommon(losses,'pair')
-    };
-  }
-
-  findBestTradingHours(){
-    const hourStats={};
-    this.trades.forEach(t=>{
-      const h=parseInt(t.time?.split(':')[0]||0);
-      if(!hourStats[h])hourStats[h]={wins:0,total:0,pnl:0};
-      hourStats[h].total++;
-      if(parseFloat(t.pnl)>0)hourStats[h].wins++;
-      hourStats[h].pnl+=parseFloat(t.pnl);
-    });
-    return Object.entries(hourStats).map(([h,s])=>({hour:h,wr:((s.wins/s.total)*100).toFixed(0),pnl:(s.pnl/s.total).toFixed(2),score:s.wins/s.total})).sort((a,b)=>b.score-a.score).slice(0,3);
-  }
-
-  detectAnomalies(){
-    const pnls=this.trades.map(t=>parseFloat(t.pnl));
-    const mean=pnls.reduce((a,b)=>a+b,0)/pnls.length;
-    const std=Math.sqrt(pnls.reduce((sq,n)=>sq+Math.pow(n-mean,2),0)/pnls.length);
-    return this.trades.filter(t=>{const z=Math.abs((parseFloat(t.pnl)-mean)/std);return z>2;}).slice(0,3).map(t=>({date:t.date,pair:t.pair,pnl:parseFloat(t.pnl),type:parseFloat(t.pnl)>0?'exceptional':'danger'}));
-  }
-
-  forecastPerformance(){
-    const last7=this.trades.slice(-7);
-    if(last7.length<3)return null;
-    const daily=last7.reduce((a,t)=>a+parseFloat(t.pnl),0)/last7.length;
-    const vol=Math.sqrt(last7.reduce((sq,t)=>sq+Math.pow(parseFloat(t.pnl)-daily,2),0)/last7.length);
-    return{expect:(daily*7).toFixed(0),best:((daily*7)+vol*2).toFixed(0),worst:((daily*7)-vol*2).toFixed(0)};
-  }
-
-  getRiskScore(){
+  getPerformanceMetrics(){
     const wr=this.getWinRate();
     const pf=this.getProfitFactor();
     const dd=this.getMaxDrawdown();
     const con=this.getConsistency();
     const score=((wr/50)*0.25+(Math.min(pf,3)/3)*0.25+(100-dd)/100*0.25+con*0.25)*100;
-    let level='🔴 High',color='#ff5f6d';
-    if(score>70){level='🟢 Low';color='#19c37d';}else if(score>50){level='🟡 Medium';color='#ffb74d';}
-    return{score:score.toFixed(0),level,color};
+    let level='High Risk',icon='fa-triangle-exclamation',color='#ff5f6d';
+    if(score>70){level='Low Risk';icon='fa-shield-check';color='#19c37d';}else if(score>50){level='Medium Risk';icon='fa-shield';color='#ffb74d';}
+    return{score:score.toFixed(0),level,icon,color,wr:wr.toFixed(1),pf:pf.toFixed(2),dd:dd.toFixed(2),con:con.toFixed(2)};
   }
 
-  getMostCommon(trades,field){
-    const freq={};trades.forEach(t=>{const v=t[field];freq[v]=(freq[v]||0)+1;});
-    const sorted=Object.entries(freq).sort((a,b)=>b[1]-a[1]);
-    return sorted.length?{name:sorted[0][0],count:sorted[0][1]}:null;
+  detectIssues(){
+    const issues=[];
+
+    // Overtrading detection
+    const dailyTrades={};
+    this.trades.forEach(t=>{
+      const d=t.date;
+      if(!dailyTrades[d])dailyTrades[d]={total:0,losses:0,loss_amt:0};
+      dailyTrades[d].total++;
+      if(parseFloat(t.pnl)<0){dailyTrades[d].losses++;dailyTrades[d].loss_amt+=Math.abs(parseFloat(t.pnl));}
+    });
+    const avgTradesPerDay=this.trades.length/Object.keys(dailyTrades).length;
+    Object.entries(dailyTrades).forEach(([date,stats])=>{
+      if(stats.total>avgTradesPerDay*1.5&&stats.losses>stats.total*0.6){
+        issues.push({type:'overtrading',severity:'high',date,trades:stats.total,losses:stats.losses});
+      }
+    });
+
+    // Near-loss detection (risk/loss ratio close to 1:1)
+    const nearLosses=this.trades.filter(t=>{
+      const pnl=parseFloat(t.pnl);
+      const risk=parseFloat(t.r)||0;
+      if(pnl<0&&risk>0){
+        const lossRatio=Math.abs(pnl)/risk;
+        return lossRatio>0.8&&lossRatio<=1.1;
+      }
+      return false;
+    }).length;
+    if(nearLosses>this.trades.length*0.2){
+      issues.push({type:'near_loss',severity:'medium',count:nearLosses,pct:(nearLosses/this.trades.length*100).toFixed(1)});
+    }
+
+    // Consistent loss days
+    const lossDays=Object.entries(dailyTrades).filter(([d,s])=>s.losses>0&&s.total===s.losses).length;
+    if(lossDays>Object.keys(dailyTrades).length*0.3){
+      issues.push({type:'consistent_losses',severity:'high',days:lossDays,total:Object.keys(dailyTrades).length});
+    }
+
+    // High drawdown
+    if(this.getMaxDrawdown()>this.getTotalProfit()*0.3){
+      issues.push({type:'high_drawdown',severity:'medium',dd:this.getMaxDrawdown().toFixed(2)});
+    }
+
+    return issues;
+  }
+
+  generateRecommendations(){
+    const recs=[];
+    const issues=this.detectIssues();
+    const wr=this.getWinRate();
+    const pf=this.getProfitFactor();
+    const dailyTrades=this.getAvgTradesPerDay();
+
+    // Based on overtrading
+    const overtrade=issues.find(i=>i.type==='overtrading');
+    if(overtrade){
+      recs.push({
+        action:'Limit trades per day',
+        reason:`You averaged ${overtrade.trades} trades on ${overtrade.date} with ${overtrade.losses} losses`,
+        priority:'high',
+        icon:'fa-hourglass-end'
+      });
+    }
+
+    // Based on near-loss
+    const nearLoss=issues.find(i=>i.type==='near_loss');
+    if(nearLoss){
+      recs.push({
+        action:'Tighten stop-loss discipline',
+        reason:`${nearLoss.pct}% of losses are near your risk limit (0.8-1.1R)`,
+        priority:'high',
+        icon:'fa-crosshairs'
+      });
+    }
+
+    // Based on consistent losses
+    if(issues.find(i=>i.type==='consistent_losses')){
+      recs.push({
+        action:'Review trading conditions',
+        reason:'You have multiple days with only losses - check market conditions on those days',
+        priority:'high',
+        icon:'fa-magnifying-glass'
+      });
+    }
+
+    // Based on win rate
+    if(wr<45){
+      recs.push({
+        action:'Improve entry signals',
+        reason:`Your win rate is ${wr.toFixed(1)}% - focus on trade quality over quantity`,
+        priority:'medium',
+        icon:'fa-bullseye'
+      });
+    }
+
+    // Based on profit factor
+    if(pf<1.5){
+      recs.push({
+        action:'Increase winner size or reduce losses',
+        reason:`Profit factor ${pf.toFixed(2)} indicates losses are too large relative to wins`,
+        priority:'medium',
+        icon:'fa-arrow-trend-up'
+      });
+    }
+
+    // Positive feedback
+    if(wr>60&&pf>2){
+      recs.push({
+        action:'Maintain current strategy',
+        reason:`Strong metrics: ${wr.toFixed(1)}% win rate with ${pf.toFixed(2)} profit factor`,
+        priority:'positive',
+        icon:'fa-check-circle'
+      });
+    }
+
+    if(recs.length===0){
+      recs.push({
+        action:'Continue monitoring',
+        reason:'No critical issues detected. Keep tracking metrics.',
+        priority:'neutral',
+        icon:'fa-chart-line'
+      });
+    }
+
+    return recs.sort((a,b)=>{
+      const p={high:0,medium:1,positive:2,neutral:3};
+      return (p[a.priority]||3)-(p[b.priority]||3);
+    });
   }
 
   getWinRate(){const w=this.trades.filter(t=>parseFloat(t.pnl)>0).length;return(w/this.trades.length)*100;}
-
   getProfitFactor(){
     const w=this.trades.filter(t=>parseFloat(t.pnl)>0).reduce((a,t)=>a+parseFloat(t.pnl),0);
     const l=Math.abs(this.trades.filter(t=>parseFloat(t.pnl)<0).reduce((a,t)=>a+parseFloat(t.pnl),0));
     return l>0?w/l:w>0?999:0;
   }
-
   getMaxDrawdown(){
     let peak=0,dd=0,eq=0;
     this.trades.forEach(t=>{eq+=parseFloat(t.pnl);if(eq>peak)peak=eq;const d=peak-eq;if(d>dd)dd=d;});
     return dd;
   }
-
   getConsistency(){
     const daily={};
     this.trades.forEach(t=>{const d=t.date;daily[d]=(daily[d]||0)+parseFloat(t.pnl);});
@@ -194,6 +273,12 @@ class TradeAI{
     const var_=pnls.reduce((sq,n)=>sq+Math.pow(n-mean,2),0)/pnls.length;
     const std=Math.sqrt(var_);
     return std===0?1:Math.max(0,1-(std/Math.abs(mean)));
+  }
+  getTotalProfit(){return this.trades.reduce((a,t)=>a+parseFloat(t.pnl),0);}
+  getAvgTradesPerDay(){
+    const daily={};
+    this.trades.forEach(t=>{const d=t.date;daily[d]=(daily[d]||0)+1;});
+    return Object.values(daily).reduce((a,b)=>a+b,0)/Object.keys(daily).length;
   }
 }
 
@@ -397,47 +482,44 @@ Chart.register({
 
   document.getElementById('sr').innerHTML=srHtml+streaksHtml;
 
-  // ── AI Analysis Section ──
-  const ai=new TradeAI(trades);
-  const aiData=ai.analyze();
-  if(aiData){
-    const riskColor=aiData.risk.color;
-    const bestHrs=aiData.bestHours.map(h=>`<div style="font-size:12px;margin:4px 0"><strong>${h.hour}:00</strong> (${h.wr}% WR, $${h.pnl})</div>`).join('');
-    const anomalyHtml=aiData.anomalies.length?aiData.anomalies.map(a=>`<div style="font-size:11px;margin:4px 0;padding:6px;background:${a.type==='exceptional'?'rgba(25,195,125,.1)':'rgba(255,95,109,.1)'};border-radius:4px">${a.type==='exceptional'?'⭐':'⚠️'} ${a.pair} on ${a.date}<br><span style="opacity:.7">$${a.pnl}</span></div>`).join(''):'<div style="font-size:12px;color:var(--muted)">No anomalies detected - consistent trading!</div>';
-    const forecastHtml=aiData.forecast?`<div style="font-size:12px;line-height:1.6"><span style="color:#19c37d">Best:</span> $${aiData.forecast.best}<br><span style="color:var(--muted)">Expected:</span> $${aiData.forecast.expect}<br><span style="color:#ff5f6d">Worst:</span> $${aiData.forecast.worst}</div>`:'<div style="font-size:12px;color:var(--muted)">Need more data...</div>';
+  // ── Insights Analysis Section ──
+  const insights=new TradeInsights(trades);
+  const insightsData=insights.analyze();
+  if(insightsData){
+    const perf=insightsData.performance;
+    const recsHtml=insightsData.recommendations.map(r=>{
+      let bgColor='rgba(100,150,255,.08)',borderColor='rgba(100,150,255,.2)';
+      if(r.priority==='high'){bgColor='rgba(255,95,109,.08)';borderColor='rgba(255,95,109,.2)';}
+      else if(r.priority==='positive'){bgColor='rgba(25,195,125,.08)';borderColor='rgba(25,195,125,.2)';}
+      else if(r.priority==='neutral'){bgColor='rgba(150,150,150,.08)';borderColor='rgba(150,150,150,.2)';}
+      return`<div style="background:${bgColor};border:1px solid ${borderColor};border-radius:var(--radius-md);padding:12px;margin-bottom:10px">
+        <div style="display:flex;gap:10px;align-items:flex-start">
+          <div style="font-size:18px;color:var(--muted);flex-shrink:0;margin-top:2px"><i class="fa-solid ${r.icon}"></i></div>
+          <div style="flex:1">
+            <div style="font-weight:600;font-size:13px;color:var(--text);margin-bottom:4px">${r.action}</div>
+            <div style="font-size:12px;color:var(--muted);line-height:1.5">${r.reason}</div>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
 
     document.getElementById('ai-section').innerHTML=`
-      <div style="margin-bottom:8px"><h3 style="font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;display:flex;align-items:center;gap:6px"><i class="fa-solid fa-brain"></i> 🤖 AI Insights <span class="tooltip-icon" data-tooltip="Free local AI analysis powered by TensorFlow.js - no API calls">?</span></h3></div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px">
-        <div style="background:rgba(25,195,125,.08);padding:12px;border-radius:var(--radius-md);border:1px solid rgba(25,195,125,.2)">
-          <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;font-weight:600">📈 Best Hours</div>
-          ${bestHrs}
+      <div style="margin-bottom:8px"><h3 style="font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;display:flex;align-items:center;gap:6px"><i class="fa-solid fa-lightbulb"></i> Insights <span class="tooltip-icon" data-tooltip="Personalized trading analysis and recommendations based on your data">?</span></h3></div>
+      <div style="display:grid;grid-template-columns:1fr 2fr;gap:14px;margin-bottom:18px">
+        <div style="background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px">
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px;font-weight:600">Risk Assessment</div>
+          <div style="font-size:32px;font-weight:700;color:${perf.color};margin-bottom:6px">${perf.score}<span style="font-size:18px;opacity:.7">/100</span></div>
+          <div style="font-size:13px;color:var(--text);margin-bottom:12px;font-weight:500">${perf.level}</div>
+          <div style="border-top:1px solid var(--border);padding-top:12px;font-size:12px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="color:var(--muted)">Win Rate</span><strong>${perf.wr}%</strong></div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="color:var(--muted)">Profit Factor</span><strong>${perf.pf}</strong></div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="color:var(--muted)">Max Drawdown</span><strong>$${perf.dd}</strong></div>
+            <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Consistency</span><strong>${(perf.con*100).toFixed(0)}%</strong></div>
+          </div>
         </div>
-
-        <div style="background:rgba(100,150,255,.08);padding:12px;border-radius:var(--radius-md);border:1px solid rgba(100,150,255,.2)">
-          <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;font-weight:600">🎯 Risk Level</div>
-          <div style="font-size:20px;font-weight:700;margin:8px 0">${aiData.risk.level}</div>
-          <div style="font-size:11px;color:var(--muted)">Score: <strong>${aiData.risk.score}</strong>/100</div>
-        </div>
-
-        <div style="background:rgba(255,183,77,.08);padding:12px;border-radius:var(--radius-md);border:1px solid rgba(255,183,77,.2)">
-          <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;font-weight:600">🔮 7-Day Forecast</div>
-          ${forecastHtml}
-        </div>
-
-        <div style="background:rgba(156,39,176,.08);padding:12px;border-radius:var(--radius-md);border:1px solid rgba(156,39,176,.2)">
-          <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;font-weight:600">⚡ Anomalies</div>
-          ${anomalyHtml}
-        </div>
-
-        <div style="background:rgba(76,175,80,.08);padding:12px;border-radius:var(--radius-md);border:1px solid rgba(76,175,80,.2)">
-          <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;font-weight:600">🎯 Best Setup</div>
-          ${aiData.patterns.bestPair?`<div style="font-size:12px;margin:4px 0"><strong>${aiData.patterns.bestPair.name}</strong><br><span style="opacity:.7">${aiData.patterns.bestPair.count} wins</span></div>`:'<div style="font-size:12px;color:var(--muted)">No clear pattern yet</div>'}
-        </div>
-
-        <div style="background:rgba(233,30,99,.08);padding:12px;border-radius:var(--radius-md);border:1px solid rgba(233,30,99,.2)">
-          <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;font-weight:600">⚠️ Avoid</div>
-          ${aiData.patterns.avoidPair?`<div style="font-size:12px;margin:4px 0"><strong>${aiData.patterns.avoidPair.name}</strong><br><span style="opacity:.7">${aiData.patterns.avoidPair.count} losses</span></div>`:'<div style="font-size:12px;color:var(--muted)">No problem pairs detected</div>'}
+        <div>
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px;font-weight:600">Recommendations</div>
+          ${recsHtml}
         </div>
       </div>
     `;
