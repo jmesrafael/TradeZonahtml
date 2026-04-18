@@ -68,6 +68,15 @@
         <i class="fa-solid fa-trash"></i> Delete
       </button>
     </div>
+    <div class="page-size-selector">
+      <label for="pageSizeSelect" style="font-size:12px;color:var(--muted);margin-right:6px">Show:</label>
+      <select id="pageSizeSelect" onchange="changePageSize(parseInt(this.value))" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:12px;cursor:pointer">
+        <option value="10" selected>10</option>
+        <option value="20">20</option>
+        <option value="50">50</option>
+        <option value="100">100</option>
+      </select>
+    </div>
     <button class="btn-select-mode" id="btnSelectMode" onclick="toggleSelectMode()">Select</button>
     <button class="btn-primary" onclick="addRow()"><i class="fa-solid fa-plus"></i> Add Trade</button>
   </div>

@@ -31,7 +31,7 @@ const _valInputTimers={};
 const _pending=new Set();
 let sortDir='desc';
 let searchQuery='';
-const PAGE_SIZE=20;
+let PAGE_SIZE=localStorage.getItem('logsPageSize')?parseInt(localStorage.getItem('logsPageSize')):10;
 let currentPage=1;
 let selectMode=false;
 let selectedIds=new Set();
@@ -285,6 +285,7 @@ function render(){
   document.getElementById('mainTable').classList.toggle('select-mode',selectMode);
   pageItems.forEach(t=>{if(selectedIds.has(t.id)){const cb=document.getElementById('cb_'+t.id);if(cb)cb.checked=true;const tr=document.querySelector(`tr[data-id="${t.id}"]`);if(tr)tr.classList.add('selected-row');}});
   renderPagination(filtered.length,currentPage,totalPages);
+  setTimeout(()=>{const tw=document.getElementById('tableWrap');if(tw)tw.scrollTop=0;},0);
 }
 function renderPagination(total,page,totalPages){
   const bar=document.getElementById('paginationBar');
@@ -298,6 +299,7 @@ function renderPagination(total,page,totalPages){
 }
 function getPageNums(cur,total){if(total<=7)return Array.from({length:total},(_,i)=>i+1);const nums=[1];if(cur>3)nums.push(null);for(let p=Math.max(2,cur-1);p<=Math.min(total-1,cur+1);p++)nums.push(p);if(cur<total-2)nums.push(null);nums.push(total);return nums;}
 function goPage(p){const filtered=getFilteredTrades(),totalPages=Math.max(1,Math.ceil(filtered.length/PAGE_SIZE));currentPage=Math.max(1,Math.min(totalPages,p));render();document.getElementById('tableWrap').scrollIntoView({behavior:'smooth',block:'nearest'});}
+function changePageSize(newSize){PAGE_SIZE=newSize;localStorage.setItem('logsPageSize',newSize);currentPage=1;document.getElementById('pageSizeSelect').value=newSize;render();}
 
 function toggleSelectMode(){
   selectMode=!selectMode;const btn=document.getElementById('btnSelectMode'),inlineEl=document.getElementById('selectInline');
@@ -396,8 +398,10 @@ function vBlur(el,id,field){
 function confirmPair(id,el){const v=el.value.trim().toUpperCase();el.value=v;if(v)localUpd(id,'pair',v,true);scheduleSave(id,true);}
 function setConf(id,n){localUpd(id,'confidence',n,true);document.querySelectorAll(`[data-id="${id}"] .star`).forEach((s,i)=>s.classList.toggle('on',i<n));scheduleSave(id,true);}
 
+function syncActiveInputs(){document.querySelectorAll('#mainTable input, #mainTable select').forEach(el=>{const tr=el.closest('tr');if(!tr)return;const id=tr.dataset.id;if(!id)return;const match=el.id.match(/^([a-z]+)_/);if(!match)return;const field=match[1];if(field==='pnl'||field==='r'){localUpd(id,field,el.value.trim(),true);}else if(field==='pair'){localUpd(id,'pair',el.value.toUpperCase().trim(),true);}else if(field==='dinp'){localUpd(id,'date',el.value,true);}else if(field==='tinp'){localUpd(id,'time',el.value,true);}else if(field==='pos'){localUpd(id,'position',el.value,true);}});}
+
 async function addRow(){
-  const date=todayLocal(),time=nowTimeLocal(),tempId='temp_'+(++_tempIdCounter)+'_'+Date.now();
+  const date=todayLocal(),time=nowTimeLocal(),tempId='temp_'+Date.now();
   const intent=getActiveIntent();
   const initPos=intent?.direction||'Long';
   const initStrat=intent?.setup_name?[intent.setup_name]:[];
@@ -769,7 +773,7 @@ document.getElementById('cOverlay').addEventListener('click',function(e){if(e.ta
 document.getElementById('mDelOverlay').addEventListener('click',function(e){if(e.target===this)closeMDel();});
 window.addEventListener('resize',()=>{if(document.getElementById('shareOverlay').classList.contains('open'))_refreshPreview();if(window.innerWidth<=520&&_fmOpen){const modal=document.getElementById('filterModal');modal.style.left='';modal.style.top='';_fmPosX=null;_fmPosY=null;}});
 window.addEventListener('beforeunload',e=>{delete e.returnValue;e.stopImmediatePropagation();});
-const _origCloseNotes=closeNotes;
+document.getElementById('pageSizeSelect').value=PAGE_SIZE;const tableWrap=document.getElementById('tableWrap');tableWrap.addEventListener('scroll',()=>{const{scrollTop,scrollHeight,clientHeight}=tableWrap;if(scrollHeight-scrollTop-clientHeight<300){const filtered=getFilteredTrades(),totalPages=Math.max(1,Math.ceil(filtered.length/PAGE_SIZE));if(currentPage<totalPages){currentPage++;const startIdx=(currentPage-1)*PAGE_SIZE,pageItems=filtered.slice(startIdx,startIdx+PAGE_SIZE);const tb=document.getElementById('tbody');pageItems.forEach(t=>tb.appendChild(buildRow(t,startIdx+pageItems.indexOf(t)+1)));renderPagination(filtered.length,currentPage,totalPages);}}}); const _origCloseNotes=closeNotes;
 closeNotes=function(){const ta=document.getElementById('nmText');if(ta)ta.defaultValue=ta.value;_origCloseNotes();};
 document.addEventListener('input',e=>{const el=e.target;if(el.tagName==='TEXTAREA'||el.tagName==='INPUT'){if('defaultValue' in el)el.defaultValue=el.value;}},true);
 document.addEventListener('contextmenu',e=>e.preventDefault());
