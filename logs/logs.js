@@ -39,13 +39,37 @@ const G='#19c37d',R='#ff5f6d';
 let _isEditing=false;
 let _tempIdCounter=0;
 let pageItems=[];
+let _isSaving=false;
+const _savingIndicators=new Map();
 
 function getLocalCacheKey(id){return`tz_draft_${jid}_${id}`;}
 function saveToLocalCache(id){const t=trades.find(x=>x.id===id);if(!t)return;try{const cache={pair:t.pair||'',position:t.position||'Long',pnl:t.pnl||'',r:t.r||'',confidence:t.confidence||0,date:t.date||'',time:t.time||'',strategy:t.strategy||[],timeframe:t.timeframe||[],mood:t.mood||[]};localStorage.setItem(getLocalCacheKey(id),JSON.stringify(cache));}catch(e){console.warn('Failed to save to local cache:',e);}}
 function restoreFromLocalCache(id){try{const cached=localStorage.getItem(getLocalCacheKey(id));if(!cached)return null;return JSON.parse(cached);}catch(e){console.warn('Failed to restore from local cache:',e);return null;}}
 function clearLocalCache(id){try{localStorage.removeItem(getLocalCacheKey(id));}catch(e){console.warn('Failed to clear local cache:',e);}}
+function showLoadingIndicator(el,show=true){if(!el)return;if(show){el.disabled=true;el.innerHTML=`<i class="fa-solid fa-spinner" style="animation:spin 1s linear infinite;margin-right:6px"></i>${el.dataset.originalText||'Loading...'}`;}else{el.disabled=false;el.innerHTML=el.dataset.originalText||el.innerHTML;}}
+async function preSaveRow(id){if(id.startsWith('temp_'))return true;if(!_pending.has(id))return true;const row=document.querySelector(`tr[data-id="${id}"]`);if(!row)return true;_isSaving=true;try{await commitSave(id);return true;}catch(e){console.error('Pre-save failed:',e);showToast('Failed to save inputs. Please try again.','fa-solid fa-circle-exclamation','red');_isSaving=false;return false;}}
 function scheduleSave(id,immediate=false){_pending.add(id);clearTimeout(_saveTimers[id]);if(immediate)commitSave(id);else _saveTimers[id]=setTimeout(()=>commitSave(id),800);}
-async function commitSave(id){if(!_pending.has(id))return;if(id.startsWith('temp_'))return;const t=trades.find(x=>x.id===id);if(!t){_pending.delete(id);return;}clearTimeout(_saveTimers[id]);delete _saveTimers[id];try{await updateTrade(id,t);_pending.delete(id);clearLocalCache(id);}catch(e){showToast('Save error: '+e.message,'fa-solid fa-circle-exclamation','red');}}
+async function commitSave(id){
+  if(!_pending.has(id))return;
+  if(id.startsWith('temp_'))return;
+  const t=trades.find(x=>x.id===id);
+  if(!t){_pending.delete(id);return;}
+  clearTimeout(_saveTimers[id]);
+  delete _saveTimers[id];
+  const tr=document.querySelector(`tr[data-id="${id}"]`);
+  if(tr){tr.classList.add('saving');}
+  try{
+    await updateTrade(id,t);
+    _pending.delete(id);
+    clearLocalCache(id);
+    _isSaving=false;
+    if(tr)tr.classList.remove('saving');
+  }catch(e){
+    _isSaving=false;
+    if(tr)tr.classList.remove('saving');
+    showToast('Save error: '+e.message,'fa-solid fa-circle-exclamation','red');
+  }
+}
 async function flushAll(){const ids=[..._pending];if(!ids.length){try{parent.postMessage({type:'tz_flushed'},'*');}catch(e){}return;}try{await Promise.all(ids.map(id=>commitSave(id)));}finally{try{parent.postMessage({type:'tz_flushed'},'*');}catch(e){}}}
 
 function todayLocal(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
@@ -321,13 +345,15 @@ function askDelSelected(){if(selectedIds.size===0)return;document.getElementById
 function closeMDel(){document.getElementById('mDelOverlay').classList.remove('open');}
 async function confirmMultiDelete(){
   const ids=[...selectedIds];
-  const progressEl=document.createElement('div');
-  progressEl.style.cssText='margin-top:12px;font-size:12px;color:var(--muted);';
-  progressEl.innerHTML='<div style="margin-bottom:6px;">Deleting trades...</div><div style="background:var(--border);border-radius:4px;height:6px;overflow:hidden;"><div id="mDelBar" style="background:var(--accent);height:100%;width:0%;transition:width 0.3s;"></div></div><div id="mDelStatus" style="margin-top:6px;font-size:11px;">0 / '+ids.length+'</div>';
+  const progressEl=document.getElementById('mDelProgress');
   const msgEl=document.getElementById('mDelMsg');
-  if(msgEl)msgEl.parentNode.insertBefore(progressEl,msgEl.nextSibling);
-  document.getElementById('mDelCancel').disabled=true;
-  document.getElementById('mDelConfirm').disabled=true;
+  const cancelBtn=document.getElementById('mDelCancel');
+  const confirmBtn=document.getElementById('mDelConfirm');
+
+  if(msgEl)msgEl.style.display='none';
+  if(progressEl){progressEl.style.display='block';document.getElementById('mDelStatus').textContent='0 / '+ids.length;}
+  if(cancelBtn)cancelBtn.disabled=true;
+  if(confirmBtn)confirmBtn.disabled=true;
 
   let deleted=0;
   try{
@@ -348,7 +374,10 @@ async function confirmMultiDelete(){
     showToast(`${ids.length} trade${ids.length!==1?'s':''} deleted.`,'fa-solid fa-circle-check','green');
   }catch(e){
     showToast('Delete error: '+e.message,'fa-solid fa-circle-exclamation','red');
-    closeMDel();
+    if(msgEl)msgEl.style.display='block';
+    if(progressEl)progressEl.style.display='none';
+    if(cancelBtn)cancelBtn.disabled=false;
+    if(confirmBtn)confirmBtn.disabled=false;
   }
 }
 
@@ -395,9 +424,14 @@ function vBlur(el,id,field){
   // Auto-fill ratio with -1 if PnL is negative and ratio is empty
   if(field==='pnl'&&n<0){
     const ratioEl=document.getElementById('r_'+id);
-    if(ratioEl&&!ratioEl.value.trim()){
-      ratioEl.value='-1';
-      localUpd(id,'r','-1',true);
+    if(ratioEl){
+      const currentRatio=ratioEl.value.trim();
+      if(!currentRatio||currentRatio===''){
+        ratioEl.value='-1';
+        localUpd(id,'r','-1',true);
+        ratioEl.style.color=pnlCol('-1');
+        saveToLocalCache(id);
+      }
     }
   }
 
@@ -410,6 +444,8 @@ function setConf(id,n){localUpd(id,'confidence',n,true);document.querySelectorAl
 function syncActiveInputs(){document.querySelectorAll('#mainTable input, #mainTable select').forEach(el=>{const tr=el.closest('tr');if(!tr)return;const id=tr.dataset.id;if(!id)return;const match=el.id.match(/^([a-z]+)_/);if(!match)return;const field=match[1];if(field==='pnl'||field==='r'){localUpd(id,field,el.value.trim(),true);}else if(field==='pair'){localUpd(id,'pair',el.value.toUpperCase().trim(),true);}else if(field==='dinp'){localUpd(id,'date',el.value,true);}else if(field==='tinp'){localUpd(id,'time',el.value,true);}else if(field==='pos'){localUpd(id,'position',el.value,true);}});}
 
 async function addRow(){
+  const btn=document.getElementById('btnAddTrade');
+  if(btn){btn.dataset.originalText=btn.innerHTML;showLoadingIndicator(btn,true);}
   const date=todayLocal(),time=nowTimeLocal(),tempId='temp_'+Date.now();
   const intent=getActiveIntent();
   const initPos=intent?.direction||'Long';
@@ -436,6 +472,7 @@ async function addRow(){
         tr.querySelectorAll('[id]').forEach(el=>{el.id=el.id.replace(tempId,row.id);});
         tr.querySelectorAll('[onclick]').forEach(el=>{el.setAttribute('onclick',el.getAttribute('onclick').replace(new RegExp(tempId,'g'),row.id));});
       }
+      if(btn)showLoadingIndicator(btn,false);
       if(intent?.id){try{await db.from('trade_intents').update({trade_id:row.id,status:'executed'}).eq('id',intent.id);}catch(e){}}
     }else{
       console.error('Trade not found after creation:',tempId);
@@ -443,6 +480,8 @@ async function addRow(){
       await refreshTrades();
     }
   }catch(e){
+    const btn=document.getElementById('btnAddTrade');
+    if(btn)showLoadingIndicator(btn,false);
     console.error('Error creating trade:',e);
     showToast('❌ Error saving trade: '+e.message,'fa-solid fa-circle-exclamation','red');
     trades=trades.filter(t=>t.id!==tempId);
@@ -453,10 +492,27 @@ async function addRow(){
 
 function askDel(id){pendingDelId=id;document.getElementById('cOverlay').classList.add('open');}
 function closeCon(){pendingDelId=null;document.getElementById('cOverlay').classList.remove('open');}
-async function confirmDelete(){if(!pendingDelId)return;try{await deleteTrade(pendingDelId);trades=trades.filter(t=>t.id!==pendingDelId);_pending.delete(pendingDelId);updateAnalytics();render();closeCon();}catch(e){showToast('Error: '+e.message,'fa-solid fa-circle-exclamation','red');}}
+async function confirmDelete(){
+  if(!pendingDelId)return;
+  const confirmBtn=document.querySelector('#cOverlay .btn-del');
+  if(confirmBtn){confirmBtn.dataset.originalText=confirmBtn.innerHTML;showLoadingIndicator(confirmBtn,true);}
+  try{
+    await deleteTrade(pendingDelId);
+    trades=trades.filter(t=>t.id!==pendingDelId);
+    _pending.delete(pendingDelId);
+    clearLocalCache(pendingDelId);
+    updateAnalytics();
+    render();
+    showToast('Trade deleted.','fa-solid fa-circle-check','green');
+    closeCon();
+  }catch(e){
+    if(confirmBtn)showLoadingIndicator(confirmBtn,false);
+    showToast('Error: '+e.message,'fa-solid fa-circle-exclamation','red');
+  }
+}
 
 function showSugOnFocus(el,id){const all=getPairSuggestions();const box=document.getElementById('sug_'+id);if(!box)return;const v=el.value.toUpperCase().trim();const m=v?all.filter(p=>p.includes(v)&&p!==v):all;if(!m.length){box.style.display='none';return;}box.innerHTML=m.slice(0,10).map(p=>`<div class="sug" onmousedown="pickPair('${id}','${p}')">${p}</div>`).join('');box.style.display='block';}
-function showSug(el,id){const v=el.value.toUpperCase().trim();if(!v){hideSugImmediate(id);return;}const box=document.getElementById('sug_'+id),all=getPairSuggestions(),m=all.filter(p=>p.includes(v)&&p!==v);if(!m.length){box.style.display='none';return;}box.innerHTML=m.slice(0,8).map(p=>`<div class="sug" onmousedown="pickPair('${id}','${p}')">${p}</div>`).join('');box.style.display='block';}
+function showSug(el,id){const v=el.value.toUpperCase().trim();const box=document.getElementById('sug_'+id),all=getPairSuggestions();if(!v){box.style.display='none';return;}const m=all.filter(p=>p.includes(v)&&p!==v);if(!m.length){box.style.display='none';return;}box.innerHTML=m.slice(0,12).map(p=>`<div class="sug" onmousedown="pickPair('${id}','${p}')">${p}</div>`).join('');box.style.display='block';}
 function hideSug(){setTimeout(()=>document.querySelectorAll('.sugs').forEach(s=>s.style.display='none'),180);}
 function hideSugImmediate(id){const box=document.getElementById('sug_'+id);if(box)box.style.display='none';}
 function pickPair(id,p){localUpd(id,'pair',p,true);const inp=document.getElementById('sug_'+id)?.previousElementSibling;if(inp)inp.value=p;document.getElementById('sug_'+id).style.display='none';saveToLocalCache(id);scheduleSave(id,true);}
@@ -609,6 +665,8 @@ async function saveNotes(){
   const t=trades.find(x=>x.id===activeNotesId);
   if(!t)return;
   const newNotes=document.getElementById('nmText').value;
+  const saveBtn=document.querySelector('#nOverlay .nmftr .btn-primary');
+  if(saveBtn){saveBtn.dataset.originalText=saveBtn.innerHTML;showLoadingIndicator(saveBtn,true);}
   try{
     t.notes=newNotes;
     const keepIds=new Set(imgBuffer.filter(i=>i.id).map(i=>i.id));
@@ -657,8 +715,13 @@ async function saveNotes(){
         btn.innerHTML=nb.html;
       }
     }
+    clearLocalCache(activeNotesId);
     closeNotes();
-  }catch(e){showToast('Save error: '+e.message,'fa-solid fa-circle-exclamation','red');}
+    showToast('Notes saved.','fa-solid fa-circle-check','green');
+  }catch(e){
+    if(saveBtn)showLoadingIndicator(saveBtn,false);
+    showToast('Save error: '+e.message,'fa-solid fa-circle-exclamation','red');
+  }
 }
 function renderImgs(){
   const box=document.getElementById('nmImgs'),cnt=document.getElementById('imgCntLbl');
