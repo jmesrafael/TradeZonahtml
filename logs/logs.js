@@ -38,9 +38,14 @@ let selectedIds=new Set();
 const G='#19c37d',R='#ff5f6d';
 let _isEditing=false;
 let _tempIdCounter=0;
+let pageItems=[];
 
+function getLocalCacheKey(id){return`tz_draft_${jid}_${id}`;}
+function saveToLocalCache(id){const t=trades.find(x=>x.id===id);if(!t)return;try{const cache={pair:t.pair||'',position:t.position||'Long',pnl:t.pnl||'',r:t.r||'',confidence:t.confidence||0,date:t.date||'',time:t.time||'',strategy:t.strategy||[],timeframe:t.timeframe||[],mood:t.mood||[]};localStorage.setItem(getLocalCacheKey(id),JSON.stringify(cache));}catch(e){console.warn('Failed to save to local cache:',e);}}
+function restoreFromLocalCache(id){try{const cached=localStorage.getItem(getLocalCacheKey(id));if(!cached)return null;return JSON.parse(cached);}catch(e){console.warn('Failed to restore from local cache:',e);return null;}}
+function clearLocalCache(id){try{localStorage.removeItem(getLocalCacheKey(id));}catch(e){console.warn('Failed to clear local cache:',e);}}
 function scheduleSave(id,immediate=false){_pending.add(id);clearTimeout(_saveTimers[id]);if(immediate)commitSave(id);else _saveTimers[id]=setTimeout(()=>commitSave(id),800);}
-async function commitSave(id){if(!_pending.has(id))return;if(id.startsWith('temp_'))return;const t=trades.find(x=>x.id===id);if(!t){_pending.delete(id);return;}clearTimeout(_saveTimers[id]);delete _saveTimers[id];try{await updateTrade(id,t);_pending.delete(id);}catch(e){showToast('Save error: '+e.message,'fa-solid fa-circle-exclamation','red');}}
+async function commitSave(id){if(!_pending.has(id))return;if(id.startsWith('temp_'))return;const t=trades.find(x=>x.id===id);if(!t){_pending.delete(id);return;}clearTimeout(_saveTimers[id]);delete _saveTimers[id];try{await updateTrade(id,t);_pending.delete(id);clearLocalCache(id);}catch(e){showToast('Save error: '+e.message,'fa-solid fa-circle-exclamation','red');}}
 async function flushAll(){const ids=[..._pending];if(!ids.length){try{parent.postMessage({type:'tz_flushed'},'*');}catch(e){}return;}try{await Promise.all(ids.map(id=>commitSave(id)));}finally{try{parent.postMessage({type:'tz_flushed'},'*');}catch(e){}}}
 
 function todayLocal(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
@@ -274,16 +279,18 @@ function getFilteredTrades(){
   return items;
 }
 
+function restoreCachedValues(){pageItems.forEach(t=>{const cached=restoreFromLocalCache(t.id);if(!cached)return;const tr=document.querySelector(`tr[data-id="${t.id}"]`);if(!tr)return;const pnlEl=document.getElementById('pnl_'+t.id),rEl=document.getElementById('r_'+t.id),posEl=document.getElementById('pos_'+t.id),dateEl=document.getElementById('dinp_'+t.id),timeEl=document.getElementById('tinp_'+t.id);const pairEl=tr.querySelector('.pw-cell input');if(pairEl&&cached.pair)pairEl.value=cached.pair.toUpperCase();if(pnlEl&&cached.pnl)pnlEl.value=cached.pnl;if(rEl&&cached.r)rEl.value=cached.r;if(posEl&&cached.position)posEl.value=cached.position;if(dateEl&&cached.date)dateEl.value=cached.date;if(timeEl&&cached.time)timeEl.value=cached.time;});}
 function render(){
   if(_isEditing)return;
   const tb=document.getElementById('tbody'),filtered=getFilteredTrades();
   const totalPages=Math.max(1,Math.ceil(filtered.length/PAGE_SIZE));
   if(currentPage>totalPages)currentPage=totalPages;
   if(!filtered.length){const msg=trades.length?'No trades match your filters.':'No trades yet. Click "+ Add Trade" to begin.';const icon=trades.length?'fa-solid fa-filter':'fa-solid fa-inbox';tb.innerHTML=`<tr class="er"><td colspan="12"><i class="${icon}" style="font-size:28px;display:block;margin-bottom:12px;opacity:.3"></i>${msg}</td></tr>`;renderPagination(0,1,1);return;}
-  const startIdx=(currentPage-1)*PAGE_SIZE,pageItems=filtered.slice(startIdx,startIdx+PAGE_SIZE);
+  const startIdx=(currentPage-1)*PAGE_SIZE;pageItems=filtered.slice(startIdx,startIdx+PAGE_SIZE);
   tb.innerHTML='';pageItems.forEach((t,i)=>tb.appendChild(buildRow(t,startIdx+i+1)));
   document.getElementById('mainTable').classList.toggle('select-mode',selectMode);
   pageItems.forEach(t=>{if(selectedIds.has(t.id)){const cb=document.getElementById('cb_'+t.id);if(cb)cb.checked=true;const tr=document.querySelector(`tr[data-id="${t.id}"]`);if(tr)tr.classList.add('selected-row');}});
+  restoreCachedValues();
   renderPagination(filtered.length,currentPage,totalPages);
   setTimeout(()=>{const tw=document.getElementById('tableWrap');if(tw)tw.scrollTop=0;},0);
 }
@@ -359,16 +366,17 @@ function numericOnly(e){const allowed=['Backspace','Delete','ArrowLeft','ArrowRi
 
 let _dtEditing=null;
 function toggleDtEdit(id,field){const px=field==='date'?'d':'t';if(_dtEditing&&_dtEditing.id===id&&_dtEditing.field===field){commitDtEdit(id,field);return;}if(_dtEditing)commitDtEdit(_dtEditing.id,_dtEditing.field);_dtEditing={id,field};document.getElementById(px+'val_'+id).style.display='none';const inp=document.getElementById(px+'inp_'+id);inp.classList.add('active');inp.style.pointerEvents='';setTimeout(()=>{inp.focus();try{inp.showPicker();}catch(e){}},30);}
-function commitDtEdit(id,field){const px=field==='date'?'d':'t';const v=document.getElementById(px+'val_'+id),i=document.getElementById(px+'inp_'+id);if(!v||!i)return;const val=i.value;v.textContent=field==='time'?(val?fmt12(val):'—'):(val||'—');v.classList.toggle('empty',!val);v.style.display='';i.classList.remove('active');localUpd(id,field,val,true);scheduleSave(id,true);if(_dtEditing&&_dtEditing.id===id&&_dtEditing.field===field)_dtEditing=null;}
+function commitDtEdit(id,field){const px=field==='date'?'d':'t';const v=document.getElementById(px+'val_'+id),i=document.getElementById(px+'inp_'+id);if(!v||!i)return;const val=i.value;v.textContent=field==='time'?(val?fmt12(val):'—'):(val||'—');v.classList.toggle('empty',!val);v.style.display='';i.classList.remove('active');localUpd(id,field,val,true);saveToLocalCache(id);scheduleSave(id,true);if(_dtEditing&&_dtEditing.id===id&&_dtEditing.field===field)_dtEditing=null;}
 function dtKey(e,id,field){if(['Enter','Tab','Escape'].includes(e.key)){e.preventDefault();commitDtEdit(id,field);}}
 document.addEventListener('click',function(e){if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT'||e.target.tagName==='TEXTAREA')return;if(!_dtEditing)return;const{id,field}=_dtEditing;const cel=document.getElementById('dcel_'+id);if(cel&&cel.contains(e.target))return;commitDtEdit(id,field);},{capture:true});
 
 function localUpd(id,field,val,skipRender=false){const t=trades.find(x=>x.id===id);if(!t)return;t[field]=val;if(field==='pnl'||field==='r'){const el=document.getElementById((field==='pnl'?'pnl_':'r_')+id);if(el)el.style.color=pnlCol(val);}updateAnalytics();if(!skipRender)render();}
-function updPos(sel,id){const isLong=sel.value!=='Short';sel.className='csel '+(isLong?'long':'short');localUpd(id,'position',sel.value,true);scheduleSave(id,true);}
-function onPairInput(el,id){const t=trades.find(x=>x.id===id);if(t)t.pair=el.value.toUpperCase();_pending.add(id);const v=el.value.trim();if(v.length>0)showSug(el,id);else hideSugImmediate(id);}
+function updPos(sel,id){const isLong=sel.value!=='Short';sel.className='csel '+(isLong?'long':'short');localUpd(id,'position',sel.value,true);saveToLocalCache(id);scheduleSave(id,true);}
+function onPairInput(el,id){const t=trades.find(x=>x.id===id);if(t)t.pair=el.value.toUpperCase();_pending.add(id);const v=el.value.trim();if(v.length>0)showSug(el,id);else hideSugImmediate(id);saveToLocalCache(id);}
 function onValInput(id,field,val){
   localUpd(id,field,val,true);
   _pending.add(id);
+  saveToLocalCache(id);
   clearTimeout(_valInputTimers[id]);
   _valInputTimers[id]=setTimeout(()=>scheduleSave(id,true),400);
 }
@@ -393,10 +401,11 @@ function vBlur(el,id,field){
     }
   }
 
+  saveToLocalCache(id);
   scheduleSave(id,true);
 }
-function confirmPair(id,el){const v=el.value.trim().toUpperCase();el.value=v;if(v)localUpd(id,'pair',v,true);scheduleSave(id,true);}
-function setConf(id,n){localUpd(id,'confidence',n,true);document.querySelectorAll(`[data-id="${id}"] .star`).forEach((s,i)=>s.classList.toggle('on',i<n));scheduleSave(id,true);}
+function confirmPair(id,el){const v=el.value.trim().toUpperCase();el.value=v;if(v)localUpd(id,'pair',v,true);saveToLocalCache(id);scheduleSave(id,true);}
+function setConf(id,n){localUpd(id,'confidence',n,true);document.querySelectorAll(`[data-id="${id}"] .star`).forEach((s,i)=>s.classList.toggle('on',i<n));saveToLocalCache(id);scheduleSave(id,true);}
 
 function syncActiveInputs(){document.querySelectorAll('#mainTable input, #mainTable select').forEach(el=>{const tr=el.closest('tr');if(!tr)return;const id=tr.dataset.id;if(!id)return;const match=el.id.match(/^([a-z]+)_/);if(!match)return;const field=match[1];if(field==='pnl'||field==='r'){localUpd(id,field,el.value.trim(),true);}else if(field==='pair'){localUpd(id,'pair',el.value.toUpperCase().trim(),true);}else if(field==='dinp'){localUpd(id,'date',el.value,true);}else if(field==='tinp'){localUpd(id,'time',el.value,true);}else if(field==='pos'){localUpd(id,'position',el.value,true);}});}
 
@@ -417,6 +426,9 @@ async function addRow(){
       _pending.delete(tempId);
       clearTimeout(_saveTimers[tempId]);
       delete _saveTimers[tempId];
+      const cachedData=restoreFromLocalCache(tempId);
+      if(cachedData){try{localStorage.setItem(getLocalCacheKey(row.id),JSON.stringify(cachedData));}catch(e){}}
+      clearLocalCache(tempId);
       scheduleSave(row.id,true);
       const tr=document.querySelector(`tr[data-id="${tempId}"]`);
       if(tr){
@@ -443,11 +455,11 @@ function askDel(id){pendingDelId=id;document.getElementById('cOverlay').classLis
 function closeCon(){pendingDelId=null;document.getElementById('cOverlay').classList.remove('open');}
 async function confirmDelete(){if(!pendingDelId)return;try{await deleteTrade(pendingDelId);trades=trades.filter(t=>t.id!==pendingDelId);_pending.delete(pendingDelId);updateAnalytics();render();closeCon();}catch(e){showToast('Error: '+e.message,'fa-solid fa-circle-exclamation','red');}}
 
-function showSugOnFocus(el,id){}
+function showSugOnFocus(el,id){const all=getPairSuggestions();const box=document.getElementById('sug_'+id);if(!box)return;const v=el.value.toUpperCase().trim();const m=v?all.filter(p=>p.includes(v)&&p!==v):all;if(!m.length){box.style.display='none';return;}box.innerHTML=m.slice(0,10).map(p=>`<div class="sug" onmousedown="pickPair('${id}','${p}')">${p}</div>`).join('');box.style.display='block';}
 function showSug(el,id){const v=el.value.toUpperCase().trim();if(!v){hideSugImmediate(id);return;}const box=document.getElementById('sug_'+id),all=getPairSuggestions(),m=all.filter(p=>p.includes(v)&&p!==v);if(!m.length){box.style.display='none';return;}box.innerHTML=m.slice(0,8).map(p=>`<div class="sug" onmousedown="pickPair('${id}','${p}')">${p}</div>`).join('');box.style.display='block';}
 function hideSug(){setTimeout(()=>document.querySelectorAll('.sugs').forEach(s=>s.style.display='none'),180);}
 function hideSugImmediate(id){const box=document.getElementById('sug_'+id);if(box)box.style.display='none';}
-function pickPair(id,p){localUpd(id,'pair',p,true);const inp=document.getElementById('sug_'+id)?.previousElementSibling;if(inp)inp.value=p;document.getElementById('sug_'+id).style.display='none';scheduleSave(id,true);}
+function pickPair(id,p){localUpd(id,'pair',p,true);const inp=document.getElementById('sug_'+id)?.previousElementSibling;if(inp)inp.value=p;document.getElementById('sug_'+id).style.display='none';saveToLocalCache(id);scheduleSave(id,true);}
 
 function openPP(e,id,field){
   e.stopPropagation();if(_ppCurrentId===id&&_ppCurrentField===field&&document.getElementById('pp').style.display!=='none'){closePP();return;}
@@ -476,9 +488,9 @@ function _renderPPPills(filter){
   if(filter&&!all.find(x=>x.toLowerCase()===filter.toLowerCase())){newEl.style.display='block';newPill.innerHTML='';const span=document.createElement('span');span.className='ppl';span.style.borderStyle='dashed';span.textContent='+ Create "'+filter+'"';span.addEventListener('mousedown',function(ev){ev.preventDefault();ev.stopPropagation();_ppCreate(id,field,filter);});newPill.appendChild(span);}
   else{newEl.style.display='none';}
 }
-async function _ppToggle(id,field,val){const t=trades.find(x=>x.id===id);if(!t)return;if(!t[field])t[field]=[];const idx=t[field].indexOf(val);if(idx>-1)t[field].splice(idx,1);else t[field].push(val);const pre={strategy:'st_',timeframe:'tf_',mood:'md_'}[field]||'st_';const c=document.getElementById(pre+id);if(c)c.innerHTML=field==='mood'?buildMoodPills(t[field]):buildPills(t[field]);_renderPPPills(document.getElementById('pp-search').value||'');_updatePPSelCount();scheduleSave(id,true);}
+async function _ppToggle(id,field,val){const t=trades.find(x=>x.id===id);if(!t)return;if(!t[field])t[field]=[];const idx=t[field].indexOf(val);if(idx>-1)t[field].splice(idx,1);else t[field].push(val);const pre={strategy:'st_',timeframe:'tf_',mood:'md_'}[field]||'st_';const c=document.getElementById(pre+id);if(c)c.innerHTML=field==='mood'?buildMoodPills(t[field]):buildPills(t[field]);_renderPPPills(document.getElementById('pp-search').value||'');_updatePPSelCount();saveToLocalCache(id);scheduleSave(id,true);}
 async function _ppCreate(id,field,val){const v=val.trim();if(!v||!settings)return;const k={strategy:'strategies',timeframe:'timeframes',mood:'moods',pair:'pairs'}[field];if(k&&!settings[k].find(x=>x.toLowerCase()===v.toLowerCase())){settings[k]=[...settings[k],v];await updateJournalSettings(jid,{[k]:settings[k]});}await _ppToggle(id,field,v);const searchEl=document.getElementById('pp-search');searchEl.value='';_renderPPPills('');searchEl.focus();}
-function closePP(){document.getElementById('pp').style.display='none';activePill=null;_ppCurrentId=null;_ppCurrentField=null;}
+function closePP(){if(_ppCurrentId)saveToLocalCache(_ppCurrentId);document.getElementById('pp').style.display='none';activePill=null;_ppCurrentId=null;_ppCurrentField=null;}
 document.addEventListener('click',e=>{const pop=document.getElementById('pp');if(pop.style.display!=='none'&&!pop.contains(e.target))closePP();});
 document.addEventListener('focusin',e=>{if((e.target.tagName==='INPUT'||e.target.tagName==='SELECT'||e.target.tagName==='TEXTAREA')&&e.target.closest('#mainTable'))_isEditing=true;});
 document.addEventListener('focusout',e=>{if((e.target.tagName==='INPUT'||e.target.tagName==='SELECT'||e.target.tagName==='TEXTAREA')&&e.target.closest('#mainTable'))_isEditing=false;});
