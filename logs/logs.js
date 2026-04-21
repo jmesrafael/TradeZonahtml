@@ -43,13 +43,50 @@ let pageItems=[];
 let _isSaving=false;
 const _savingIndicators=new Map();
 
+// ─── DRAFT LOCK SYSTEM ────────────────────────────────────────────────────────
+// Prevents any action (notes, new trade, etc.) while a draft has unsaved inputs
+let _draftLockActive=false;
+
+function isDraftLocked(){
+  if(_newDraftIds.size===0)return false;
+  return true;
+}
+
+function flashDraftRow(id){
+  const tr=document.querySelector(`tr[data-id="${id}"]`);
+  if(!tr)return;
+  tr.classList.remove('draft-flash');
+  void tr.offsetWidth; // reflow
+  tr.classList.add('draft-flash');
+  setTimeout(()=>tr.classList.remove('draft-flash'),1200);
+  tr.scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+function showDraftBlockToast(){
+  const draftId=[..._newDraftIds][0];
+  showToast('Save or fill the current trade first.','fa-solid fa-triangle-exclamation','red');
+  flashDraftRow(draftId);
+  highlightEmpty(draftId);
+}
+
+// ─── LOCAL CACHE ──────────────────────────────────────────────────────────────
 function getLocalCacheKey(id){return`tz_draft_${jid}_${id}`;}
-function saveToLocalCache(id){const t=trades.find(x=>x.id===id);if(!t)return;try{const cache={pair:t.pair||'',position:t.position||'Long',pnl:t.pnl||'',r:t.r||'',confidence:t.confidence||0,date:t.date||'',time:t.time||'',strategy:t.strategy||[],timeframe:t.timeframe||[],mood:t.mood||[]};localStorage.setItem(getLocalCacheKey(id),JSON.stringify(cache));}catch(e){console.warn('Failed to save to local cache:',e);}}
+function saveToLocalCache(id){
+  const t=trades.find(x=>x.id===id);if(!t)return;
+  try{
+    const cache={pair:t.pair||'',position:t.position||'Long',pnl:t.pnl||'',r:t.r||'',confidence:t.confidence||0,date:t.date||'',time:t.time||'',strategy:t.strategy||[],timeframe:t.timeframe||[],mood:t.mood||[]};
+    localStorage.setItem(getLocalCacheKey(id),JSON.stringify(cache));
+  }catch(e){console.warn('Failed to save to local cache:',e);}
+}
 function restoreFromLocalCache(id){try{const cached=localStorage.getItem(getLocalCacheKey(id));if(!cached)return null;return JSON.parse(cached);}catch(e){console.warn('Failed to restore from local cache:',e);return null;}}
 function clearLocalCache(id){try{localStorage.removeItem(getLocalCacheKey(id));}catch(e){console.warn('Failed to clear local cache:',e);}}
+
 function showLoadingIndicator(el,show=true){if(!el)return;if(show){el.disabled=true;el.innerHTML=`<i class="fa-solid fa-spinner" style="animation:spin 1s linear infinite;margin-right:6px"></i>${el.dataset.originalText||'Loading...'}`;}else{el.disabled=false;el.innerHTML=el.dataset.originalText||el.innerHTML;}}
+
 async function preSaveRow(id){if(id.startsWith('temp_'))return true;if(!_pending.has(id))return true;const row=document.querySelector(`tr[data-id="${id}"]`);if(!row)return true;_isSaving=true;try{await commitSave(id);return true;}catch(e){console.error('Pre-save failed:',e);showToast('Failed to save inputs. Please try again.','fa-solid fa-circle-exclamation','red');_isSaving=false;return false;}}
+
 function scheduleSave(id,immediate=false){_pending.add(id);clearTimeout(_saveTimers[id]);clearTimeout(_saveTimers[id+'_c']);if(immediate){commitSave(id).then(()=>{_saveTimers[id+'_c']=setTimeout(()=>{if(_pending.has(id))commitSave(id);},2000);});}else{_saveTimers[id]=setTimeout(()=>{commitSave(id).then(()=>{_saveTimers[id+'_c']=setTimeout(()=>{if(_pending.has(id))commitSave(id);},2000);});},2000);}}
+
 async function commitSave(id){
   if(!_pending.has(id))return;
   if(id.startsWith('temp_'))return;
@@ -71,6 +108,7 @@ async function commitSave(id){
     showToast('Save error: '+e.message,'fa-solid fa-circle-exclamation','red');
   }
 }
+
 async function flushAll(){const ids=[..._pending];if(!ids.length){try{parent.postMessage({type:'tz_flushed'},'*');}catch(e){}return;}try{await Promise.all(ids.map(id=>commitSave(id)));}finally{try{parent.postMessage({type:'tz_flushed'},'*');}catch(e){}}}
 
 function todayLocal(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
@@ -92,9 +130,6 @@ function fmt12(timeStr){if(!timeStr)return'';const[h,m]=timeStr.split(':').map(N
   updateAnalytics();
   render();
   document.body.style.visibility='visible';
-  // TODO: Enable ads integration after freemium model is stable
-  // if(!userIsPro){document.getElementById('logsAdSlot').style.display='block';document.getElementById('logsUpgradeNudge').style.display='flex';try{(adsbygoogle=window.adsbygoogle||[]).push({});}catch(e){}}
-  // For now, just show upgrade nudge
   if(!userIsPro){document.getElementById('logsUpgradeNudge').style.display='flex';}
   let _refreshDebounce=null;
   subscribeTrades(jid,()=>{if(_pending.size>0)return;clearTimeout(_refreshDebounce);_refreshDebounce=setTimeout(refreshTrades,800);});
@@ -104,6 +139,8 @@ function fmt12(timeStr){if(!timeStr)return'';const[h,m]=timeStr.split(':').map(N
 
 async function reloadSettings(){settings=await getJournalSettings(jid);render();}
 async function refreshTrades(){
+  // Don't refresh if there are unsaved drafts — would lose inputs
+  if(_newDraftIds.size>0)return;
   const r=await getTrades(jid);
   const existingCounts={};
   trades.forEach(t=>{existingCounts[t.id]=t.images?.length||0;});
@@ -118,6 +155,7 @@ function fmtVal(v,type){const n=parseFloat(v);if(isNaN(n)||v==null||v==='')retur
 function pnlCol(v){const n=parseFloat(v);return n>0?G:n<0?R:'var(--muted)';}
 function esc(s){const d=document.createElement('div');d.textContent=String(s||'');return d.innerHTML;}
 
+// ─── FILTER MODAL ─────────────────────────────────────────────────────────────
 let _fmOpen=false,_fmConfSel=0,_fmDragging=false,_fmDragOffX=0,_fmDragOffY=0,_fmPosX=null,_fmPosY=null;
 let fmCalYear=new Date().getFullYear(),fmCalMonth=new Date().getMonth();
 let fmRangeStart='',fmRangeEnd='',fmPickingEnd=false;
@@ -305,6 +343,7 @@ function getFilteredTrades(){
 }
 
 function restoreCachedValues(){pageItems.forEach(t=>{const cached=restoreFromLocalCache(t.id);if(!cached)return;const tr=document.querySelector(`tr[data-id="${t.id}"]`);if(!tr)return;const pnlEl=document.getElementById('pnl_'+t.id),rEl=document.getElementById('r_'+t.id),posEl=document.getElementById('pos_'+t.id),dateEl=document.getElementById('dinp_'+t.id),timeEl=document.getElementById('tinp_'+t.id);const pairEl=tr.querySelector('.pw-cell input');if(pairEl&&cached.pair)pairEl.value=cached.pair.toUpperCase();if(pnlEl&&cached.pnl)pnlEl.value=cached.pnl;if(rEl&&cached.r)rEl.value=cached.r;if(posEl&&cached.position)posEl.value=cached.position;if(dateEl&&cached.date)dateEl.value=cached.date;if(timeEl&&cached.time)timeEl.value=cached.time;});}
+
 function render(){
   if(_isEditing)return;
   const tb=document.getElementById('tbody'),filtered=getFilteredTrades();
@@ -334,6 +373,7 @@ function goPage(p){const filtered=getFilteredTrades(),totalPages=Math.max(1,Math
 function changePageSize(newSize){PAGE_SIZE=newSize;localStorage.setItem('logsPageSize',newSize);currentPage=1;document.getElementById('pageSizeSelect').value=newSize;render();}
 
 function toggleSelectMode(){
+  if(isDraftLocked()){showDraftBlockToast();return;}
   selectMode=!selectMode;const btn=document.getElementById('btnSelectMode'),inlineEl=document.getElementById('selectInline');
   if(selectMode){selectedIds.clear();btn.classList.add('active');btn.textContent='Cancel';inlineEl.classList.add('show');updateSelectUI();render();}
   else{exitSelectMode();}
@@ -386,7 +426,7 @@ function buildNotesBtnHTML(t){const hasNotes=t.notes&&t.notes.trim(),imgCount=t.
 function buildRow(t,num){
   const tr=document.createElement('tr');tr.dataset.id=t.id;
   const nb=buildNotesBtnHTML(t),isLong=t.position!=='Short';
-  tr.innerHTML=`<td class="row-cb-cell"><input type="checkbox" class="row-cb" id="cb_${t.id}" onchange="toggleRowSelect('${t.id}')"></td><td><div class="dt-cell" id="dcel_${t.id}"><div style="display:flex;flex-direction:column;align-items:center;gap:2px"><div style="display:flex;align-items:center;gap:3px"><span class="dt-val${t.date?'':' empty'}" id="dval_${t.id}" onclick="toggleDtEdit('${t.id}','date')" style="cursor:pointer">${t.date||'—'}</span><input class="dt-input" type="date" id="dinp_${t.id}" value="${t.date||''}" autocomplete="off" onblur="commitDtEdit('${t.id}','date')" onkeydown="dtKey(event,'${t.id}','date')"></div><div style="display:flex;align-items:center;gap:3px"><span class="dt-val${t.time?'':' empty'}" id="tval_${t.id}" onclick="toggleDtEdit('${t.id}','time')" style="font-size:10px;color:var(--muted);cursor:pointer">${t.time?fmt12(t.time):'—'}</span><input class="dt-input" type="time" id="tinp_${t.id}" value="${t.time||''}" autocomplete="off" onblur="commitDtEdit('${t.id}','time')" onkeydown="dtKey(event,'${t.id}','time')"></div></div></div></td><td class="pw-cell"><input class="ci" value="${esc(t.pair||'')}" placeholder="EURUSD" oninput="onPairInput(this,'${t.id}')" onfocus="showSugOnFocus(this,'${t.id}')" autocomplete="off" onblur="confirmPair('${t.id}',this);hideSug()" style="min-width:80px"><div class="sugs" id="sug_${t.id}" style="display:none"></div></td><td><select class="csel ${isLong?'long':'short'}" id="pos_${t.id}" onchange="updPos(this,'${t.id}')"><option ${isLong?'selected':''}>Long</option><option ${!isLong?'selected':''}>Short</option></select></td><td><div class="tc" id="st_${t.id}" onclick="openPP(event,'${t.id}','strategy')">${buildPills(t.strategy)}</div></td><td><div class="tc" id="tf_${t.id}" onclick="openPP(event,'${t.id}','timeframe')">${buildPills(t.timeframe)}</div></td><td><input class="ci" id="pnl_${t.id}" type="text" inputmode="decimal" autocomplete="off" value="${fmtVal(t.pnl,'pnl')}" placeholder="0.00" onfocus="vFocus(this)" oninput="onValInput('${t.id}','pnl',this.value)" onkeydown="numericOnly(event)" onblur="vBlur(this,'${t.id}','pnl')" style="min-width:58px;font-weight:600;font-family:var(--font-mono,'Space Grotesk',sans-serif);color:${pnlCol(t.pnl)}"></td><td><input class="ci" id="r_${t.id}" type="text" inputmode="decimal" autocomplete="off" value="${fmtVal(t.r,'r')}" placeholder="+2R" onfocus="vFocus(this)" oninput="onValInput('${t.id}','r',this.value)" onkeydown="numericOnly(event)" onblur="vBlur(this,'${t.id}','r')" style="min-width:40px;font-weight:600;font-family:var(--font-mono,'Space Grotesk',sans-serif);color:${pnlCol(t.r)}"></td><td><div class="stars" id="s_${t.id}">${[1,2,3,4,5].map(n=>`<span class="star${(t.confidence||0)>=n?' on':''}" onclick="setConf('${t.id}',${n})">★</span>`).join('')}</div></td><td><div class="tc" id="md_${t.id}" onclick="openPP(event,'${t.id}','mood')">${buildMoodPills(t.mood)}</div></td><td><button class="${nb.cls}" onclick="openNotes('${t.id}')">${nb.html}</button></td><td><button class="del-btn" onclick="askDel('${t.id}')"><i class="fa-solid fa-xmark"></i></button></td>`;
+  tr.innerHTML=`<td class="row-cb-cell"><input type="checkbox" class="row-cb" id="cb_${t.id}" onchange="toggleRowSelect('${t.id}')"></td><td><div class="dt-cell" id="dcel_${t.id}"><div style="display:flex;flex-direction:column;align-items:center;gap:2px"><div style="display:flex;align-items:center;gap:3px"><span class="dt-val${t.date?'':' empty'}" id="dval_${t.id}" onclick="toggleDtEdit('${t.id}','date')" style="cursor:pointer">${t.date||'—'}</span><input class="dt-input" type="date" id="dinp_${t.id}" value="${t.date||''}" autocomplete="off" onblur="commitDtEdit('${t.id}','date')" onkeydown="dtKey(event,'${t.id}','date')"></div><div style="display:flex;align-items:center;gap:3px"><span class="dt-val${t.time?'':' empty'}" id="tval_${t.id}" onclick="toggleDtEdit('${t.id}','time')" style="font-size:10px;color:var(--muted);cursor:pointer">${t.time?fmt12(t.time):'—'}</span><input class="dt-input" type="time" id="tinp_${t.id}" value="${t.time||''}" autocomplete="off" onblur="commitDtEdit('${t.id}','time')" onkeydown="dtKey(event,'${t.id}','time')"></div></div></div></td><td class="pw-cell"><input class="ci" value="${esc(t.pair||'')}" placeholder="EURUSD" oninput="onPairInput(this,'${t.id}')" onfocus="showSugOnFocus(this,'${t.id}')" autocomplete="off" onblur="confirmPair('${t.id}',this);hideSug()" style="min-width:80px"><div class="sugs" id="sug_${t.id}" style="display:none"></div></td><td><select class="csel ${isLong?'long':'short'}" id="pos_${t.id}" onchange="updPos(this,'${t.id}')"><option ${isLong?'selected':''}>Long</option><option ${!isLong?'selected':''}>Short</option></select></td><td><div class="tc" id="st_${t.id}" onclick="openPP(event,'${t.id}','strategy')">${buildPills(t.strategy)}</div></td><td><div class="tc" id="tf_${t.id}" onclick="openPP(event,'${t.id}','timeframe')">${buildPills(t.timeframe)}</div></td><td><input class="ci" id="pnl_${t.id}" type="text" inputmode="decimal" autocomplete="off" value="${fmtVal(t.pnl,'pnl')}" placeholder="0.00" onfocus="vFocus(this)" oninput="onValInput('${t.id}','pnl',this.value)" onkeydown="numericOnly(event)" onblur="vBlur(this,'${t.id}','pnl')" style="min-width:58px;font-weight:600;font-family:var(--font-mono,'Space Grotesk',sans-serif);color:${pnlCol(t.pnl)}"></td><td><input class="ci" id="r_${t.id}" type="text" inputmode="decimal" autocomplete="off" value="${fmtVal(t.r,'r')}" placeholder="+2R" onfocus="vFocus(this)" oninput="onValInput('${t.id}','r',this.value)" onkeydown="numericOnly(event)" onblur="vBlur(this,'${t.id}','r')" style="min-width:40px;font-weight:600;font-family:var(--font-mono,'Space Grotesk',sans-serif);color:${pnlCol(t.r)}"></td><td><div class="stars" id="s_${t.id}">${[1,2,3,4,5].map(n=>`<span class="star${(t.confidence||0)>=n?' on':''}" onclick="setConf('${t.id}',${n})">★</span>`).join('')}</div></td><td><div class="tc" id="md_${t.id}" onclick="openPP(event,'${t.id}','mood')">${buildMoodPills(t.mood)}</div></td><td><button class="${nb.cls}" onclick="openNotesGuarded('${t.id}')">${nb.html}</button></td><td><button class="del-btn" onclick="askDel('${t.id}')"><i class="fa-solid fa-xmark"></i></button></td>`;
   return tr;
 }
 function buildPills(arr){const a=arr||[];if(!a.length)return'<span class="pill ep"><i class="fa-solid fa-plus" style="font-size:9px"></i></span>';return a.map(s=>`<span class="pill">${esc(s)}</span>`).join('');}
@@ -453,7 +493,32 @@ function highlightEmpty(id){
   if(pnlInput)pnlInput.classList.toggle('field-required',!t.pnl&&t.pnl!==0);
 }
 
+// ─── CAPTURE ALL ACTIVE INPUTS BEFORE NAVIGATING AWAY ─────────────────────────
+function captureActiveInputs(){
+  document.querySelectorAll('#mainTable input, #mainTable select').forEach(el=>{
+    const tr=el.closest('tr');if(!tr)return;
+    const id=tr.dataset.id;if(!id)return;
+    const t=trades.find(x=>x.id===id);if(!t)return;
+    if(el.type==='text'||el.type==='number'){
+      const raw=el.value.trim();
+      if(el.id.startsWith('pnl_')){t.pnl=raw;_pending.add(id);}
+      else if(el.id.startsWith('r_')){t.r=raw;_pending.add(id);}
+    }else if(el.classList.contains('ci')&&el.closest('.pw-cell')){
+      const v=el.value.trim().toUpperCase();if(v){t.pair=v;_pending.add(id);}
+    }else if(el.id&&el.id.startsWith('dinp_')){
+      if(el.value){t.date=el.value;_pending.add(id);}
+    }else if(el.id&&el.id.startsWith('tinp_')){
+      if(el.value){t.time=el.value;_pending.add(id);}
+    }else if(el.tagName==='SELECT'){
+      t.position=el.value;_pending.add(id);
+    }
+    saveToLocalCache(id);
+  });
+}
+
 function saveLog(id){
+  // Capture any live input values first
+  captureActiveInputs();
   const t=trades.find(x=>x.id===id);
   if(!t)return;
   const missing=[];
@@ -483,15 +548,28 @@ function saveLog(id){
 
 function syncActiveInputs(){document.querySelectorAll('#mainTable input, #mainTable select').forEach(el=>{const tr=el.closest('tr');if(!tr)return;const id=tr.dataset.id;if(!id)return;const match=el.id.match(/^([a-z]+)_/);if(!match)return;const field=match[1];if(field==='pnl'||field==='r'){localUpd(id,field,el.value.trim(),true);}else if(field==='pair'){localUpd(id,'pair',el.value.toUpperCase().trim(),true);}else if(field==='dinp'){localUpd(id,'date',el.value,true);}else if(field==='tinp'){localUpd(id,'time',el.value,true);}else if(field==='pos'){localUpd(id,'position',el.value,true);}});}
 
-async function addRow(){
-  if(_newDraftIds.size>0){
-    showToast('Please save the current trade first.','fa-solid fa-circle-exclamation','red');
-    const draftId=[..._newDraftIds][0];
-    const tr=document.querySelector(`tr[data-id="${draftId}"]`);
-    if(tr)tr.scrollIntoView({behavior:'smooth',block:'center'});
-    highlightEmpty(draftId);
+// ─── NOTES — guarded open ─────────────────────────────────────────────────────
+// Notes button calls openNotesGuarded, which captures inputs first and blocks
+// if the draft for a DIFFERENT row hasn't been saved yet.
+function openNotesGuarded(id){
+  // Always capture current inputs so nothing is lost
+  captureActiveInputs();
+  // If there's a draft that ISN'T this trade, block
+  if(_newDraftIds.size>0&&!_newDraftIds.has(id)){
+    showDraftBlockToast();
     return;
   }
+  openNotes(id);
+}
+
+async function addRow(){
+  if(_newDraftIds.size>0){
+    showDraftBlockToast();
+    return;
+  }
+  // Flush any pending saves before adding
+  captureActiveInputs();
+
   const btn=document.getElementById('btnAddTrade');
   if(btn){btn.dataset.originalText=btn.innerHTML;showLoadingIndicator(btn,true);}
   const date=todayLocal(),time=nowTimeLocal(),tempId='temp_'+Date.now();
@@ -552,6 +630,7 @@ async function confirmDelete(){
     await deleteTrade(pendingDelId);
     trades=trades.filter(t=>t.id!==pendingDelId);
     _pending.delete(pendingDelId);
+    _newDraftIds.delete(pendingDelId);
     clearLocalCache(pendingDelId);
     updateAnalytics();
     render();
@@ -603,89 +682,68 @@ document.addEventListener('click',e=>{const pop=document.getElementById('pp');if
 document.addEventListener('focusin',e=>{if((e.target.tagName==='INPUT'||e.target.tagName==='SELECT'||e.target.tagName==='TEXTAREA')&&e.target.closest('#mainTable'))_isEditing=true;});
 document.addEventListener('focusout',e=>{if((e.target.tagName==='INPUT'||e.target.tagName==='SELECT'||e.target.tagName==='TEXTAREA')&&e.target.closest('#mainTable'))_isEditing=false;});
 
+// ─── IMAGE HELPERS ────────────────────────────────────────────────────────────
 const ALLOWED_IMG=['image/png','image/jpeg','image/jpg','image/gif','image/webp'];
 const MAX_IMG_MB=5;
 const MAX_IMG_DIMENSION=2000;
 
 function validateImg(file){
-  // Check file type
   if(!ALLOWED_IMG.includes(file.type)){
     showToast(`❌ Format not supported: ${file.type}. Use PNG, JPG, GIF, or WebP.`,'fa-solid fa-triangle-exclamation','red');
     return false;
   }
-
-  // Check file size
   const fileSizeMB=file.size/(1024*1024);
   if(fileSizeMB>MAX_IMG_MB){
-    showToast(`❌ Image too large: ${fileSizeMB.toFixed(1)}MB (max ${MAX_IMG_MB}MB).\n💡 Tip: Images are auto-optimized on upload.`,'fa-solid fa-triangle-exclamation','red');
+    showToast(`❌ Image too large: ${fileSizeMB.toFixed(1)}MB (max ${MAX_IMG_MB}MB).`,'fa-solid fa-triangle-exclamation','red');
     return false;
   }
-
-  // Warn if getting close to limit
-  if(fileSizeMB>MAX_IMG_MB*0.7){
-    console.warn(`[validateImg] ⚠️ Image is ${fileSizeMB.toFixed(1)}MB (getting close to 5MB limit). Will be optimized during upload.`);
-  }
-
   return true;
 }
 
-// Enhanced validation with async dimension check
-async function validateImageFull(file){
-  // Quick checks first
-  if(!ALLOWED_IMG.includes(file.type)){
-    return{valid:false,error:`Format not supported: ${file.type}`};
-  }
-
-  const fileSizeMB=file.size/(1024*1024);
-  if(fileSizeMB>MAX_IMG_MB){
-    return{valid:false,error:`Image too large: ${fileSizeMB.toFixed(1)}MB (max ${MAX_IMG_MB}MB)`};
-  }
-
-  // Check dimensions
-  return new Promise(resolve=>{
-    const reader=new FileReader();
-    reader.onload=ev=>{
-      const img=new Image();
-      img.onload=()=>{
-        if(img.width>MAX_IMG_DIMENSION||img.height>MAX_IMG_DIMENSION){
-          resolve({valid:false,error:`Image dimensions too large: ${img.width}x${img.height}px (max ${MAX_IMG_DIMENSION}x${MAX_IMG_DIMENSION}px). Will be scaled down during upload.`});
-        }else{
-          resolve({valid:true});
-        }
-      };
-      img.onerror=()=>resolve({valid:true});
-      img.src=ev.target.result;
+// Compress a File or data-URL string, always returns a data-URL string
+async function compressImageToDataUrl(input, quality=0.82){
+  return new Promise((resolve,reject)=>{
+    const img=new Image();
+    img.onload=()=>{
+      const canvas=document.createElement('canvas');
+      let w=img.width,h=img.height;
+      if(w>MAX_IMG_DIMENSION||h>MAX_IMG_DIMENSION){
+        const ratio=Math.min(MAX_IMG_DIMENSION/w,MAX_IMG_DIMENSION/h);
+        w=Math.round(w*ratio);h=Math.round(h*ratio);
+      }
+      canvas.width=w;canvas.height=h;
+      const ctx=canvas.getContext('2d');
+      ctx.drawImage(img,0,0,w,h);
+      // Prefer jpeg for compression unless original is png with transparency
+      const outType=(typeof input==='string'&&input.startsWith('data:image/png'))?'image/png':'image/jpeg';
+      const dataUrl=canvas.toDataURL(outType,quality);
+      resolve(dataUrl);
     };
-    reader.readAsDataURL(file);
+    img.onerror=()=>reject(new Error('Failed to load image for compression'));
+    if(typeof input==='string'){
+      // Already a data URL
+      img.src=input;
+    }else{
+      // It's a File/Blob — read it first
+      const reader=new FileReader();
+      reader.onload=ev=>{ img.src=ev.target.result; };
+      reader.onerror=()=>reject(new Error('Failed to read file'));
+      reader.readAsDataURL(input);
+    }
   });
 }
 
-// Compress image to reduce file size
-async function compressImage(file,quality=0.7){
-  return new Promise(resolve=>{
-    const reader=new FileReader();
-    reader.onload=ev=>{
-      const img=new Image();
-      img.onload=()=>{
-        const canvas=document.createElement('canvas');
-        let width=img.width,height=img.height;
-        if(width>MAX_IMG_DIMENSION||height>MAX_IMG_DIMENSION){
-          const ratio=Math.min(MAX_IMG_DIMENSION/width,MAX_IMG_DIMENSION/height);
-          width=Math.round(width*ratio);
-          height=Math.round(height*ratio);
-        }
-        canvas.width=width;
-        canvas.height=height;
-        const ctx=canvas.getContext('2d');
-        ctx.drawImage(img,0,0,width,height);
-        canvas.toBlob(blob=>{resolve(blob||file);},file.type||'image/jpeg',quality);
-      };
-      img.onerror=()=>resolve(file);
-      img.src=ev.target.result;
-    };
-    reader.readAsDataURL(file);
-  });
+// Convert a data URL to a Blob (needed by addTradeImage if it expects a Blob)
+function dataUrlToBlob(dataUrl){
+  const [header,data]=dataUrl.split(',');
+  const mime=header.match(/:(.*?);/)[1];
+  const binary=atob(data);
+  const bytes=new Uint8Array(binary.length);
+  for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+  return new Blob([bytes],{type:mime});
 }
+
+// ─── NOTES MODAL ──────────────────────────────────────────────────────────────
 async function openNotes(id){
   const t=trades.find(x=>x.id===id);
   if(!t)return;
@@ -712,6 +770,7 @@ async function openNotes(id){
   setTimeout(()=>document.getElementById('nmText').focus(),100);
 }
 function closeNotes(){document.getElementById('nOverlay').classList.remove('open');activeNotesId=null;imgBuffer=[];}
+
 async function saveNotes(){
   if(!activeNotesId)return;
   const t=trades.find(x=>x.id===activeNotesId);
@@ -728,33 +787,43 @@ async function saveNotes(){
       if(img.id&&!keepIds.has(img.id))await deleteTradeImage(img.id);
     }
 
-    // Count new images to upload
     const newImages=imgBuffer.filter(i=>!i.id);
     if(newImages.length>0){
       const progressEl=document.getElementById('nmUploadProgress');
-      if(progressEl){progressEl.style.display='flex';}
+      if(progressEl)progressEl.style.display='flex';
     }
 
     const final=[];
+    let uploadIdx=0;
     for(let idx=0;idx<imgBuffer.length;idx++){
       const img=imgBuffer[idx];
       if(img.id){
         final.push(img);
       }else{
-        // Update progress indicator
+        uploadIdx++;
         const progressEl=document.getElementById('nmUploadProgress');
         if(progressEl){
-          document.getElementById('nmUploadCount').textContent=`Uploading ${idx+1}/${newImages.length}...`;
+          document.getElementById('nmUploadCount').textContent=`Uploading ${uploadIdx}/${newImages.length}...`;
         }
 
-        const saved=await addTradeImage(currentUser.id,activeNotesId,img._previewUrl||img.data);
-        final.push({id:saved.id,storage_url:saved.storage_url,_previewUrl:img._previewUrl||img.data});
+        // _previewUrl is always a data URL string at this point.
+        // addTradeImage may expect a Blob — we convert it.
+        const dataUrl=img._previewUrl||img.data||'';
+        let uploadPayload;
+        try{
+          uploadPayload=dataUrlToBlob(dataUrl);
+        }catch(convErr){
+          console.warn('[saveNotes] Could not convert to Blob, sending raw dataUrl:',convErr);
+          uploadPayload=dataUrl;
+        }
+
+        const saved=await addTradeImage(currentUser.id,activeNotesId,uploadPayload);
+        final.push({id:saved.id,storage_url:saved.storage_url,_previewUrl:dataUrl});
       }
     }
 
-    // Hide progress indicator
     const progressEl=document.getElementById('nmUploadProgress');
-    if(progressEl){progressEl.style.display='none';}
+    if(progressEl)progressEl.style.display='none';
 
     t.images=final;
     await updateTrade(activeNotesId,t);
@@ -775,6 +844,7 @@ async function saveNotes(){
     showToast('Save error: '+e.message,'fa-solid fa-circle-exclamation','red');
   }
 }
+
 function renderImgs(){
   const box=document.getElementById('nmImgs'),cnt=document.getElementById('imgCntLbl');
   cnt.textContent=imgBuffer.length?`(${imgBuffer.length})`:'';
@@ -782,59 +852,60 @@ function renderImgs(){
     box.innerHTML='<div class="no-imgs"><i class="fa-solid fa-image" style="margin-right:5px;opacity:.4"></i>No images attached.</div>';
     return;
   }
-  box.innerHTML=imgBuffer.map((img,i)=>{
+  box.innerHTML='';
+  imgBuffer.forEach((img,i)=>{
     const src=img._previewUrl||img.data||'';
-    let sizeText='';
-    if(img._previewUrl||img.data){
-      const dataUrl=img._previewUrl||img.data;
-      const bytes=dataUrl.length*0.75;
-      const kb=Math.round(bytes/1024);
-      sizeText=kb>1024?`${(kb/1024).toFixed(1)}MB`:`${kb}KB`;
+    const wrapper=document.createElement('div');
+    wrapper.className='img-thumb';
+
+    const imgEl=document.createElement('img');
+    imgEl.alt='';
+    imgEl.loading='lazy';
+    // Only set src if it's a valid data URL or http URL to avoid broken images
+    if(src&&(src.startsWith('data:')||src.startsWith('http')||src.startsWith('blob:'))){
+      imgEl.src=src;
+    }else{
+      imgEl.src='';
     }
-    return`<div class="img-thumb"><img src="${src}" alt="" onclick="openLb(${i})" loading="lazy"><div class="img-size-badge">${sizeText}</div><div class="img-actions"><button class="img-act-btn img-act-del" onclick="event.stopPropagation();rmImg(${i})" title="Delete"><i class="fa-solid fa-trash" style="font-size:8px"></i></button></div></div>`;
-  }).join('');
+    imgEl.onclick=()=>openLb(i);
+
+    const delBtn=document.createElement('div');
+    delBtn.className='img-actions';
+    delBtn.innerHTML=`<button class="img-act-btn img-act-del" title="Delete"><i class="fa-solid fa-trash" style="font-size:8px"></i></button>`;
+    delBtn.querySelector('button').onclick=(e)=>{e.stopPropagation();rmImg(i);};
+
+    wrapper.appendChild(imgEl);
+    wrapper.appendChild(delBtn);
+    box.appendChild(wrapper);
+  });
 }
+
 function rmImg(i){imgBuffer.splice(i,1);renderImgs();}
+
+// ─── UPLOAD HANDLER (manual file picker) ──────────────────────────────────────
 async function handleUpload(e){
   const files=[...e.target.files];
-  console.log(`[handleUpload] Processing ${files.length} file(s)`);
-
   for(const f of files){
-    // Validate file
     if(!validateImg(f))continue;
-
-    // Check plan limits
     if(!userIsPro&&imgBuffer.length>=1){
-      showToast('📦 Free plan: 1 image per trade. 💡 Upgrade to Pro for more.','fa-solid fa-lock','red');
+      showToast('📦 Free plan: 1 image per trade. Upgrade to Pro for more.','fa-solid fa-lock','red');
       continue;
     }
-
-    const fileSizeMB=(f.size/(1024*1024)).toFixed(2);
-    console.log(`[handleUpload] ✅ File validated: ${f.name} (${fileSizeMB}MB)`);
-    console.log(`[handleUpload] ⚙️ Reading file as data URL...`);
-
-    // Step 1: Convert file to data URL
-    const fileDataUrl=await new Promise((resolve,reject)=>{
-      const reader=new FileReader();
-      reader.onload=(e)=>resolve(e.target.result);
-      reader.onerror=()=>reject(new Error('Failed to read file'));
-      reader.readAsDataURL(f);
-    });
-
-    console.log(`[handleUpload] ✅ File read as data URL`);
-    console.log(`[handleUpload] ⚙️ Compressing image...`);
-
-    // Step 2: Compress the data URL
-    const compressedDataUrl=await compressImage(fileDataUrl);
-    console.log(`[handleUpload] ✅ Compressed successfully`);
-
-    // Step 3: Add compressed data URL to buffer
-    imgBuffer.push({_previewUrl:compressedDataUrl});
-    renderImgs();
+    try{
+      // Compress the File directly → get back a data URL string
+      const dataUrl=await compressImageToDataUrl(f,0.82);
+      // Push to buffer with _previewUrl so renderImgs can display it
+      imgBuffer.push({_previewUrl:dataUrl});
+      renderImgs();
+    }catch(err){
+      console.error('[handleUpload] Error processing file:',err);
+      showToast('Error processing image: '+err.message,'fa-solid fa-exclamation','red');
+    }
   }
-
   e.target.value='';
 }
+
+// ─── PASTE HANDLER ────────────────────────────────────────────────────────────
 document.addEventListener('paste',async e=>{
   if(!document.getElementById('nOverlay').classList.contains('open'))return;
   for(const item of e.clipboardData.items){
@@ -847,24 +918,20 @@ document.addEventListener('paste',async e=>{
       continue;
     }
     try{
-      const dataUrl=await new Promise((resolve,reject)=>{
-        const reader=new FileReader();
-        reader.onload=(e)=>resolve(e.target.result);
-        reader.onerror=()=>reject(new Error('Failed to read file'));
-        reader.readAsDataURL(file);
-      });
+      const dataUrl=await compressImageToDataUrl(file,0.82);
       imgBuffer.push({_previewUrl:dataUrl});
       renderImgs();
     }catch(err){
       console.error('[paste] Error reading file:',err);
-      showToast('Error reading file: '+err.message,'fa-solid fa-exclamation','red');
+      showToast('Error reading image: '+err.message,'fa-solid fa-exclamation','red');
     }
   }
 });
 
+// ─── LIGHTBOX ─────────────────────────────────────────────────────────────────
 let lbImages=[],lbIndex=0,lbScale=1,lbPanX=0,lbPanY=0,lbDragging=false,lbLastX=0,lbLastY=0;
 function openLb(i){lbImages=[...imgBuffer];lbIndex=i;lbScale=1;lbPanX=0;lbPanY=0;_lbRender();document.getElementById('lb').classList.add('open');}
-function _lbRender(){const img=document.getElementById('lbImg'),cur=lbImages[lbIndex];if(!cur)return;img.src=cur._previewUrl||cur.data||'';img.style.transform=`translate(${lbPanX}px,${lbPanY}px) scale(${lbScale})`;document.getElementById('lbPrev').style.display=lbIndex>0?'flex':'none';document.getElementById('lbNext').style.display=lbIndex<lbImages.length-1?'flex':'none';const dots=document.getElementById('lbDots');dots.innerHTML=lbImages.length>1?lbImages.map((_,i)=>`<div class="lb-dot${i===lbIndex?' active':''}"></div>`).join(''):'';}
+function _lbRender(){const img=document.getElementById('lbImg'),cur=lbImages[lbIndex];if(!cur)return;const src=cur._previewUrl||cur.data||'';img.src=(src&&(src.startsWith('data:')||src.startsWith('http')||src.startsWith('blob:')))?src:'';img.style.transform=`translate(${lbPanX}px,${lbPanY}px) scale(${lbScale})`;document.getElementById('lbPrev').style.display=lbIndex>0?'flex':'none';document.getElementById('lbNext').style.display=lbIndex<lbImages.length-1?'flex':'none';const dots=document.getElementById('lbDots');dots.innerHTML=lbImages.length>1?lbImages.map((_,i)=>`<div class="lb-dot${i===lbIndex?' active':''}"></div>`).join(''):'';}
 function lbNav(dir){lbIndex=Math.max(0,Math.min(lbImages.length-1,lbIndex+dir));lbScale=1;lbPanX=0;lbPanY=0;_lbRender();}
 function lbZoom(delta){lbScale=Math.max(.5,Math.min(5,lbScale+delta));document.getElementById('lbImg').style.transform=`translate(${lbPanX}px,${lbPanY}px) scale(${lbScale})`;}
 function lbResetZoom(){lbScale=1;lbPanX=0;lbPanY=0;document.getElementById('lbImg').style.transform='';}
@@ -878,10 +945,12 @@ lbWrap.addEventListener('wheel',e=>{e.preventDefault();lbZoom(e.deltaY>0?-.15:.1
 document.getElementById('lb').addEventListener('click',e=>{if(e.target===document.getElementById('lb'))closeLb();});
 document.addEventListener('keydown',e=>{if(!document.getElementById('lb').classList.contains('open'))return;if(e.key==='Escape')closeLb();if(e.key==='ArrowLeft')lbNav(-1);if(e.key==='ArrowRight')lbNav(1);});
 
+// ─── ANALYTICS ────────────────────────────────────────────────────────────────
 function applyAnalyticsState(){document.getElementById('aBar').classList.toggle('show',analyticsOn);}
 function computeAnalytics(src){const vld=src.filter(t=>t.pnl!==''&&!isNaN(parseFloat(t.pnl)));const wins=vld.filter(t=>parseFloat(t.pnl)>0),losses=vld.filter(t=>parseFloat(t.pnl)<0);const total=vld.reduce((s,t)=>s+parseFloat(t.pnl),0);const rv=src.filter(t=>t.r&&!isNaN(parseFloat(t.r))).map(t=>parseFloat(t.r));const avgR=rv.length?rv.reduce((a,b)=>a+b,0)/rv.length:0;const wr=vld.length?wins.length/vld.length*100:0;let mxW=0,mxL=0,cW=0,cL=0;vld.forEach(t=>{const p=parseFloat(t.pnl);if(p>0){cW++;cL=0;if(cW>mxW)mxW=cW;}else if(p<0){cL++;cW=0;if(cL>mxL)mxL=cL;}else{cW=0;cL=0;}});return{count:src.length,vldCount:vld.length,winCount:wins.length,lossCount:losses.length,totalPnl:total,wr,avgR,mxW,mxL,rv};}
 function updateAnalytics(){if(!analyticsOn)return;const src=getFilteredTrades();const{count,vldCount,winCount,lossCount,totalPnl,wr,avgR,mxW,mxL}=computeAnalytics(src);document.getElementById('sTrades').textContent=count;const wrEl=document.getElementById('sWR');wrEl.textContent=vldCount?wr.toFixed(1)+'%':'—';wrEl.style.color=vldCount?(wr>=50?G:R):'';document.getElementById('sW').textContent=winCount;document.getElementById('sL').textContent=lossCount;document.getElementById('sWS').textContent=mxW;document.getElementById('sLS').textContent=mxL;const rEl=document.getElementById('sR');rEl.textContent=avgR?(avgR>=0?'+':'')+avgR.toFixed(2)+'R':'—';rEl.style.color=avgR?pnlCol(avgR):'';const pe=document.getElementById('sP');if(vldCount){pe.textContent=(totalPnl>=0?'+':'-')+'$'+Math.abs(totalPnl).toFixed(2);pe.style.color=pnlCol(totalPnl);}else{pe.textContent='—';pe.style.color='';}}
 
+// ─── SHARE MODAL ──────────────────────────────────────────────────────────────
 let _shareVisibility={totalPnl:true,winRate:true,totalTrades:true,wins:true,losses:true,avgR:true,winStreak:true,lossStreak:true};
 let _shareHighlighted=new Set();
 let _shareOrientation='landscape';
@@ -895,17 +964,9 @@ let _cachedReferralCount=null;
 async function getBrandingData(){
   const displayName=currentProfile?.name||currentUser?.user_metadata?.username||currentUser?.email?.split('@')[0]||'';
   const referralCode=currentProfile?.referral_code||currentUser?.user_metadata?.referral_code||currentUser?.user_metadata?.referralCode||'';
-
-  // Cache the referral count to avoid repeated database calls
   if(_cachedReferralCount===null){
-    try{
-      _cachedReferralCount=await getReferralCount(currentUser.id);
-    }catch(e){
-      console.warn('[logs] Failed to fetch referral count:',e);
-      _cachedReferralCount=0;
-    }
+    try{_cachedReferralCount=await getReferralCount(currentUser.id);}catch(e){console.warn('[logs] Failed to fetch referral count:',e);_cachedReferralCount=0;}
   }
-
   return{displayName,referralCode,referralCount:_cachedReferralCount};
 }
 function setOrientation(o){_shareOrientation=o;document.getElementById('orientLand').classList.toggle('active',o==='landscape');document.getElementById('orientPort').classList.toggle('active',o==='portrait');_refreshPreview().catch(e=>console.warn('[logs] Preview update failed:',e));}
@@ -922,17 +983,62 @@ async function doShareDownload(){_setExporting(true);await document.fonts.ready;
 async function doShareCopy(){_setExporting(true);await document.fonts.ready;try{const cv=await _buildExportCanvas();cv.toBlob(async blob=>{try{await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);showToast('Copied!','fa-solid fa-circle-check','green');}catch(clipErr){const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`tradezona-${todayLocal()}.png`;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);showToast('Clipboard unavailable — downloaded instead.','fa-solid fa-triangle-exclamation','');}finally{_setExporting(false);}},'image/png');}catch(e){showToast('Export failed: '+e.message,'fa-solid fa-circle-exclamation','red');_setExporting(false);}}
 async function doShareNative(){if(!navigator.share)return;_setExporting(true);await document.fonts.ready;try{const cv=await _buildExportCanvas();cv.toBlob(async blob=>{const file=new File([blob],`tradezona-${todayLocal()}.png`,{type:'image/png'});try{await navigator.share({files:[file],title:'My TradeZona Performance',text:'Check out my trading performance!'});}catch(e){if(e.name!=='AbortError')showToast('Share failed.','fa-solid fa-circle-exclamation','red');}finally{_setExporting(false);}},'image/png');}catch(e){showToast('Export failed: '+e.message,'fa-solid fa-circle-exclamation','red');_setExporting(false);}}
 
+// ─── TOAST ────────────────────────────────────────────────────────────────────
 let _tt;
 function showToast(msg,icon='fa-solid fa-circle-check',type=''){const t=document.getElementById('toast');document.getElementById('toastIcon').className=icon;document.getElementById('toastMsg').textContent=msg;t.className='show'+(type==='green'?' toast-green':type==='red'?' toast-red':'');clearTimeout(_tt);_tt=setTimeout(()=>{t.classList.remove('show','toast-green','toast-red');},3500);}
+
+// ─── OVERLAY CLOSE HANDLERS ───────────────────────────────────────────────────
 document.getElementById('nOverlay').addEventListener('click',function(e){if(e.target===this)closeNotes();});
 document.getElementById('cOverlay').addEventListener('click',function(e){if(e.target===this)closeCon();});
 document.getElementById('mDelOverlay').addEventListener('click',function(e){if(e.target===this)closeMDel();});
+
+// ─── RESIZE / BEFOREUNLOAD ────────────────────────────────────────────────────
 window.addEventListener('resize',()=>{if(document.getElementById('shareOverlay').classList.contains('open'))_refreshPreview();if(window.innerWidth<=520&&_fmOpen){const modal=document.getElementById('filterModal');modal.style.left='';modal.style.top='';_fmPosX=null;_fmPosY=null;}});
-window.addEventListener('beforeunload',e=>{delete e.returnValue;e.stopImmediatePropagation();});
-document.getElementById('pageSizeSelect').value=PAGE_SIZE;const tableWrap=document.getElementById('tableWrap');tableWrap.addEventListener('scroll',()=>{const{scrollTop,scrollHeight,clientHeight}=tableWrap;if(scrollHeight-scrollTop-clientHeight<300){const filtered=getFilteredTrades(),totalPages=Math.max(1,Math.ceil(filtered.length/PAGE_SIZE));if(currentPage<totalPages){currentPage++;const startIdx=(currentPage-1)*PAGE_SIZE,pageItems=filtered.slice(startIdx,startIdx+PAGE_SIZE);const tb=document.getElementById('tbody');pageItems.forEach(t=>tb.appendChild(buildRow(t,startIdx+pageItems.indexOf(t)+1)));renderPagination(filtered.length,currentPage,totalPages);}}}); const _origCloseNotes=closeNotes;
+window.addEventListener('beforeunload',e=>{
+  // Capture all active inputs before page unload
+  captureActiveInputs();
+  delete e.returnValue;
+  e.stopImmediatePropagation();
+});
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+document.getElementById('pageSizeSelect').value=PAGE_SIZE;
+const tableWrap=document.getElementById('tableWrap');
+tableWrap.addEventListener('scroll',()=>{
+  const{scrollTop,scrollHeight,clientHeight}=tableWrap;
+  if(scrollHeight-scrollTop-clientHeight<300){
+    const filtered=getFilteredTrades(),totalPages=Math.max(1,Math.ceil(filtered.length/PAGE_SIZE));
+    if(currentPage<totalPages){
+      currentPage++;
+      const startIdx=(currentPage-1)*PAGE_SIZE,pageItems=filtered.slice(startIdx,startIdx+PAGE_SIZE);
+      const tb=document.getElementById('tbody');
+      pageItems.forEach(t=>tb.appendChild(buildRow(t,startIdx+pageItems.indexOf(t)+1)));
+      renderPagination(filtered.length,currentPage,totalPages);
+    }
+  }
+});
+
+// Preserve textarea content across re-renders
+const _origCloseNotes=closeNotes;
 closeNotes=function(){const ta=document.getElementById('nmText');if(ta)ta.defaultValue=ta.value;_origCloseNotes();};
 document.addEventListener('input',e=>{const el=e.target;if(el.tagName==='TEXTAREA'||el.tagName==='INPUT'){if('defaultValue' in el)el.defaultValue=el.value;}},true);
+
+// Security
 document.addEventListener('contextmenu',e=>e.preventDefault());
 document.addEventListener('keydown',e=>{const ctrl=e.ctrlKey||e.metaKey,shift=e.shiftKey;if(e.key==='F12'||(ctrl&&e.key.toLowerCase()==='u')||(ctrl&&shift&&['i','j','c'].includes(e.key.toLowerCase()))||(ctrl&&e.key.toLowerCase()==='s')||(ctrl&&e.key.toLowerCase()==='p')){e.preventDefault();e.stopPropagation();return false;}},true);
 document.addEventListener('selectstart',e=>{const tag=e.target.tagName;if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT')return;e.preventDefault();});
 document.addEventListener('dragstart',e=>e.preventDefault());
+
+// ─── CSS: draft-flash animation (injected so no CSS file change needed) ────────
+(()=>{
+  const style=document.createElement('style');
+  style.textContent=`
+    @keyframes draftFlash {
+      0%   { box-shadow: inset 0 0 0 2px #ff5f6d; background: rgba(255,95,109,0.08); }
+      50%  { box-shadow: inset 0 0 0 2px #ff5f6d88; background: rgba(255,95,109,0.04); }
+      100% { box-shadow: inset 0 0 0 2px #ff5f6d; background: rgba(255,95,109,0.08); }
+    }
+    tr.draft-flash td { animation: draftFlash 0.4s ease 3; }
+  `;
+  document.head.appendChild(style);
+})();
