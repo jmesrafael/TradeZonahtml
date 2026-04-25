@@ -6,7 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const url = require('url');
 
-const PORT = 3000;
+const PORT = 5500;
 const rootDir = __dirname;
 
 const server = http.createServer((req, res) => {
@@ -79,7 +79,7 @@ server.listen(PORT, () => {
   console.log('╔════════════════════════════════════════════════════════╗');
   console.log('║        TradeZona Dev Server Running                    ║');
   console.log('╠════════════════════════════════════════════════════════╣');
-  console.log(`║  🚀 URL: http://localhost:${PORT}                              ║`);
+  console.log(`║  🚀 URL: http://localhost:${PORT}                             ║`);
   console.log('║  ✅ Smart routing enabled (/auth → auth.html)          ║');
   console.log('║  ✅ CORS enabled for local API testing                 ║');
   console.log('║  📝 Press Ctrl+C to stop the server                    ║');

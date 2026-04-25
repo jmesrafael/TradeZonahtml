@@ -42,6 +42,8 @@ let _tempIdCounter=0;
 let pageItems=[];
 let _isSaving=false;
 const _savingIndicators=new Map();
+let _notesOriginalText='';
+let _notesDirty=false;
 
 // ─── DRAFT LOCK SYSTEM ────────────────────────────────────────────────────────
 // Prevents any action (notes, new trade, etc.) while a draft has unsaved inputs
@@ -50,6 +52,24 @@ let _draftLockActive=false;
 function isDraftLocked(){
   if(_newDraftIds.size===0)return false;
   return true;
+}
+
+// Rewrite every `id` and on* attribute inside a row from oldId → newId.
+// Without this, inline handlers like oninput="onPairInput(this,'temp_xxx')"
+// keep referencing the dead temp id after createTrade resolves, and any
+// keystroke during/after the swap is silently dropped.
+const _ON_ATTRS=['onclick','oninput','onchange','onblur','onfocus','onkeydown','onkeyup','onkeypress','onmousedown','onmouseup','onmouseover','onmouseout'];
+function rebindRowId(tr,oldId,newId){
+  if(!tr||oldId===newId)return;
+  tr.querySelectorAll('[id]').forEach(el=>{
+    if(el.id.includes(oldId))el.id=el.id.split(oldId).join(newId);
+  });
+  tr.querySelectorAll('*').forEach(el=>{
+    for(const attr of _ON_ATTRS){
+      const v=el.getAttribute(attr);
+      if(v&&v.includes(oldId))el.setAttribute(attr,v.split(oldId).join(newId));
+    }
+  });
 }
 
 function flashDraftRow(id){
@@ -132,19 +152,35 @@ function fmt12(timeStr){if(!timeStr)return'';const[h,m]=timeStr.split(':').map(N
   document.body.style.visibility='visible';
   if(!userIsPro){document.getElementById('logsUpgradeNudge').style.display='flex';}
   let _refreshDebounce=null;
-  subscribeTrades(jid,()=>{if(_pending.size>0)return;clearTimeout(_refreshDebounce);_refreshDebounce=setTimeout(refreshTrades,800);});
+  subscribeTrades(jid,()=>{
+    if(_pending.size>0||_newDraftIds.size>0||_isUserEditingTable())return;
+    clearTimeout(_refreshDebounce);
+    _refreshDebounce=setTimeout(refreshTrades,800);
+  });
   try{parent.postMessage({type:'tz_analytics_state',on:analyticsOn},'*');}catch(e){}
   checkPresessionNudge();
 })();
 
 async function reloadSettings(){settings=await getJournalSettings(jid);render();}
+function _isUserEditingTable(){
+  const ae=document.activeElement;
+  return !!(ae&&ae!==document.body&&ae.closest&&ae.closest('#mainTable'));
+}
 async function refreshTrades(){
   // Don't refresh if there are unsaved drafts — would lose inputs
   if(_newDraftIds.size>0)return;
+  // Don't refresh while user is mid-input or has pending unsaved keystrokes
+  if(_pending.size>0)return;
+  if(_isUserEditingTable())return;
   const r=await getTrades(jid);
-  const existingCounts={};
-  trades.forEach(t=>{existingCounts[t.id]=t.images?.length||0;});
-  trades=r.map(t=>{const dt=dbToTrade(t);return{...dt,images:Array(existingCounts[dt.id]||0).fill({})};});
+  // Merge: keep existing image counts and any locally-mutated fields for trades
+  // that are still _pending (defense in depth — _pending should be empty here).
+  const existing=new Map(trades.map(t=>[t.id,t]));
+  trades=r.map(row=>{
+    const dt=dbToTrade(row);
+    const ex=existing.get(dt.id);
+    return{...dt,images:Array(ex?.images?.length||0).fill({})};
+  });
   updateAnalytics();render();
 }
 
@@ -344,8 +380,11 @@ function getFilteredTrades(){
 
 function restoreCachedValues(){pageItems.forEach(t=>{const cached=restoreFromLocalCache(t.id);if(!cached)return;const tr=document.querySelector(`tr[data-id="${t.id}"]`);if(!tr)return;const pnlEl=document.getElementById('pnl_'+t.id),rEl=document.getElementById('r_'+t.id),posEl=document.getElementById('pos_'+t.id),dateEl=document.getElementById('dinp_'+t.id),timeEl=document.getElementById('tinp_'+t.id);const pairEl=tr.querySelector('.pw-cell input');if(pairEl&&cached.pair)pairEl.value=cached.pair.toUpperCase();if(pnlEl&&cached.pnl)pnlEl.value=cached.pnl;if(rEl&&cached.r)rEl.value=cached.r;if(posEl&&cached.position)posEl.value=cached.position;if(dateEl&&cached.date)dateEl.value=cached.date;if(timeEl&&cached.time)timeEl.value=cached.time;});}
 
+let _renderQueued=false;
 function render(){
-  if(_isEditing)return;
+  if(_isEditing||_isUserEditingTable()){_renderQueued=true;return;}
+  _renderQueued=false;
+  captureActiveInputs();
   const tb=document.getElementById('tbody'),filtered=getFilteredTrades();
   const totalPages=Math.max(1,Math.ceil(filtered.length/PAGE_SIZE));
   if(currentPage>totalPages)currentPage=totalPages;
@@ -494,25 +533,26 @@ function highlightEmpty(id){
 }
 
 // ─── CAPTURE ALL ACTIVE INPUTS BEFORE NAVIGATING AWAY ─────────────────────────
+// Detection is by element id/role, NOT by `type==='text'` (the pair input is also
+// type=text and was previously matched by the wrong branch — silently dropped).
 function captureActiveInputs(){
   document.querySelectorAll('#mainTable input, #mainTable select').forEach(el=>{
     const tr=el.closest('tr');if(!tr)return;
     const id=tr.dataset.id;if(!id)return;
     const t=trades.find(x=>x.id===id);if(!t)return;
-    if(el.type==='text'||el.type==='number'){
-      const raw=el.value.trim();
-      if(el.id.startsWith('pnl_')){t.pnl=raw;_pending.add(id);}
-      else if(el.id.startsWith('r_')){t.r=raw;_pending.add(id);}
-    }else if(el.classList.contains('ci')&&el.closest('.pw-cell')){
-      const v=el.value.trim().toUpperCase();if(v){t.pair=v;_pending.add(id);}
-    }else if(el.id&&el.id.startsWith('dinp_')){
-      if(el.value){t.date=el.value;_pending.add(id);}
-    }else if(el.id&&el.id.startsWith('tinp_')){
-      if(el.value){t.time=el.value;_pending.add(id);}
-    }else if(el.tagName==='SELECT'){
-      t.position=el.value;_pending.add(id);
+    const elId=el.id||'';
+    let touched=false;
+    if(elId.startsWith('pnl_')){t.pnl=el.value.trim();touched=true;}
+    else if(elId.startsWith('r_')){t.r=el.value.trim();touched=true;}
+    else if(elId.startsWith('pos_')){t.position=el.value;touched=true;}
+    else if(elId.startsWith('dinp_')){if(el.value){t.date=el.value;touched=true;}}
+    else if(elId.startsWith('tinp_')){if(el.value){t.time=el.value;touched=true;}}
+    else if(el.classList.contains('ci')&&el.closest('.pw-cell')){
+      const v=el.value.trim().toUpperCase();
+      // Always assign — even an empty string is meaningful (user cleared the field)
+      t.pair=v;touched=true;
     }
-    saveToLocalCache(id);
+    if(touched){_pending.add(id);saveToLocalCache(id);}
   });
 }
 
@@ -577,6 +617,7 @@ async function addRow(){
   const initPos=intent?.direction||'Long';
   const initStrat=intent?.setup_name?[intent.setup_name]:[];
   const nt={id:tempId,date,time,pair:'',position:initPos,strategy:initStrat,timeframe:[],pnl:'',r:'',confidence:0,mood:[],notes:'',images:[]};
+  _newDraftIds.add(tempId); // Guard against subscription refresh during async createTrade
   trades.unshift(nt);if(sortDir==='desc')currentPage=1;updateAnalytics();render();
   setTimeout(()=>{const inp=document.querySelector(`tr[data-id="${tempId}"] .pw-cell input`);if(inp)inp.focus();const tr=document.querySelector(`tr[data-id="${tempId}"]`);if(tr){tr.classList.add('new-row');setTimeout(()=>tr.classList.remove('new-row'),3000);}},30);
   try{
@@ -585,6 +626,7 @@ async function addRow(){
     if(idx>-1){
       trades[idx].id=row.id;
       if(activeNotesId===tempId)activeNotesId=row.id;
+      _newDraftIds.delete(tempId); // Swap temp guard for real ID guard
       _pending.delete(tempId);
       clearTimeout(_saveTimers[tempId]);
       delete _saveTimers[tempId];
@@ -595,8 +637,7 @@ async function addRow(){
       const tr=document.querySelector(`tr[data-id="${tempId}"]`);
       if(tr){
         tr.dataset.id=row.id;
-        tr.querySelectorAll('[id]').forEach(el=>{el.id=el.id.replace(tempId,row.id);});
-        tr.querySelectorAll('[onclick]').forEach(el=>{el.setAttribute('onclick',el.getAttribute('onclick').replace(new RegExp(tempId,'g'),row.id));});
+        rebindRowId(tr,tempId,row.id);
         tr.classList.add('draft-row');
         const delBtn=tr.querySelector('.del-btn');
         if(delBtn)delBtn.outerHTML=`<button class="save-log-btn" onclick="saveLog('${row.id}')"><i class="fa-solid fa-floppy-disk"></i> Save Log</button>`;
@@ -614,6 +655,7 @@ async function addRow(){
     if(btn)showLoadingIndicator(btn,false);
     console.error('Error creating trade:',e);
     showToast('❌ Error saving trade: '+e.message,'fa-solid fa-circle-exclamation','red');
+    _newDraftIds.delete(tempId);
     trades=trades.filter(t=>t.id!==tempId);
     updateAnalytics();
     render();
@@ -680,7 +722,14 @@ async function _ppCreate(id,field,val){const v=val.trim();if(!v||!settings)retur
 function closePP(){if(_ppCurrentId)saveToLocalCache(_ppCurrentId);document.getElementById('pp').style.display='none';activePill=null;_ppCurrentId=null;_ppCurrentField=null;}
 document.addEventListener('click',e=>{const pop=document.getElementById('pp');if(pop.style.display!=='none'&&!pop.contains(e.target))closePP();});
 document.addEventListener('focusin',e=>{if((e.target.tagName==='INPUT'||e.target.tagName==='SELECT'||e.target.tagName==='TEXTAREA')&&e.target.closest('#mainTable'))_isEditing=true;});
-document.addEventListener('focusout',e=>{if((e.target.tagName==='INPUT'||e.target.tagName==='SELECT'||e.target.tagName==='TEXTAREA')&&e.target.closest('#mainTable'))_isEditing=false;});
+document.addEventListener('focusout',e=>{
+  if((e.target.tagName==='INPUT'||e.target.tagName==='SELECT'||e.target.tagName==='TEXTAREA')&&e.target.closest('#mainTable')){
+    _isEditing=false;
+    // If a filter/sort/page-size change was deferred while the user was typing,
+    // run it now that focus has left the table.
+    if(_renderQueued)setTimeout(()=>{if(!_isEditing&&!_isUserEditingTable())render();},50);
+  }
+});
 
 // ─── IMAGE HELPERS ────────────────────────────────────────────────────────────
 const ALLOWED_IMG=['image/png','image/jpeg','image/jpg','image/gif','image/webp'];
@@ -747,7 +796,12 @@ function dataUrlToBlob(dataUrl){
 async function openNotes(id){
   const t=trades.find(x=>x.id===id);
   if(!t)return;
+  // Reset save button in case it was left in spinner state from a previous save
+  const saveBtn=document.querySelector('#nOverlay .nmftr .btn-primary');
+  if(saveBtn&&saveBtn.dataset.originalText)showLoadingIndicator(saveBtn,false);
   activeNotesId=id;
+  _notesOriginalText=t.notes||'';
+  _notesDirty=false;
   document.getElementById('nOverlay').classList.add('open');
   document.getElementById('nmTitle').textContent=`${t.pair||'Trade'} — ${t.date||'—'}`;
   document.getElementById('nmText').value=t.notes||'';
@@ -769,7 +823,21 @@ async function openNotes(id){
   if(loadingEl)loadingEl.style.display='none';
   setTimeout(()=>document.getElementById('nmText').focus(),100);
 }
-function closeNotes(){document.getElementById('nOverlay').classList.remove('open');activeNotesId=null;imgBuffer=[];}
+function _notesHasChanges(){
+  const currentText=document.getElementById('nmText')?.value||'';
+  return _notesDirty||currentText!==_notesOriginalText;
+}
+function closeNotes(force=false){
+  if(!force&&_notesHasChanges()){
+    if(!confirm('You have unsaved changes. Discard them?'))return;
+  }
+  const saveBtn=document.querySelector('#nOverlay .nmftr .btn-primary');
+  if(saveBtn&&saveBtn.dataset.originalText)showLoadingIndicator(saveBtn,false);
+  const ta=document.getElementById('nmText');if(ta)ta.defaultValue=ta.value;
+  document.getElementById('nOverlay').classList.remove('open');
+  activeNotesId=null;imgBuffer=[];
+  _notesOriginalText='';_notesDirty=false;
+}
 
 async function saveNotes(){
   if(!activeNotesId)return;
@@ -837,7 +905,8 @@ async function saveNotes(){
       }
     }
     clearLocalCache(activeNotesId);
-    closeNotes();
+    if(saveBtn)showLoadingIndicator(saveBtn,false);
+    closeNotes(true);
     showToast('Notes saved.','fa-solid fa-circle-check','green');
   }catch(e){
     if(saveBtn)showLoadingIndicator(saveBtn,false);
@@ -880,7 +949,7 @@ function renderImgs(){
   });
 }
 
-function rmImg(i){imgBuffer.splice(i,1);renderImgs();}
+function rmImg(i){imgBuffer.splice(i,1);_notesDirty=true;renderImgs();}
 
 // ─── UPLOAD HANDLER (manual file picker) ──────────────────────────────────────
 async function handleUpload(e){
@@ -896,6 +965,7 @@ async function handleUpload(e){
       const dataUrl=await compressImageToDataUrl(f,0.82);
       // Push to buffer with _previewUrl so renderImgs can display it
       imgBuffer.push({_previewUrl:dataUrl});
+      _notesDirty=true;
       renderImgs();
     }catch(err){
       console.error('[handleUpload] Error processing file:',err);
@@ -920,6 +990,7 @@ document.addEventListener('paste',async e=>{
     try{
       const dataUrl=await compressImageToDataUrl(file,0.82);
       imgBuffer.push({_previewUrl:dataUrl});
+      _notesDirty=true;
       renderImgs();
     }catch(err){
       console.error('[paste] Error reading file:',err);
@@ -935,7 +1006,7 @@ function _lbRender(){const img=document.getElementById('lbImg'),cur=lbImages[lbI
 function lbNav(dir){lbIndex=Math.max(0,Math.min(lbImages.length-1,lbIndex+dir));lbScale=1;lbPanX=0;lbPanY=0;_lbRender();}
 function lbZoom(delta){lbScale=Math.max(.5,Math.min(5,lbScale+delta));document.getElementById('lbImg').style.transform=`translate(${lbPanX}px,${lbPanY}px) scale(${lbScale})`;}
 function lbResetZoom(){lbScale=1;lbPanX=0;lbPanY=0;document.getElementById('lbImg').style.transform='';}
-function lbDeleteCurrent(){imgBuffer.splice(lbIndex,1);if(imgBuffer.length===0){closeLb();renderImgs();return;}lbImages=[...imgBuffer];if(lbIndex>=lbImages.length)lbIndex=lbImages.length-1;lbScale=1;lbPanX=0;lbPanY=0;_lbRender();renderImgs();}
+function lbDeleteCurrent(){_notesDirty=true;imgBuffer.splice(lbIndex,1);if(imgBuffer.length===0){closeLb();renderImgs();return;}lbImages=[...imgBuffer];if(lbIndex>=lbImages.length)lbIndex=lbImages.length-1;lbScale=1;lbPanX=0;lbPanY=0;_lbRender();renderImgs();}
 function closeLb(){document.getElementById('lb').classList.remove('open');lbScale=1;lbPanX=0;lbPanY=0;}
 const lbWrap=document.getElementById('lbImgWrap');
 lbWrap.addEventListener('mousedown',e=>{if(e.button!==0)return;lbDragging=true;lbLastX=e.clientX;lbLastY=e.clientY;lbWrap.classList.add('grabbing');});
@@ -994,33 +1065,40 @@ document.getElementById('mDelOverlay').addEventListener('click',function(e){if(e
 
 // ─── RESIZE / BEFOREUNLOAD ────────────────────────────────────────────────────
 window.addEventListener('resize',()=>{if(document.getElementById('shareOverlay').classList.contains('open'))_refreshPreview();if(window.innerWidth<=520&&_fmOpen){const modal=document.getElementById('filterModal');modal.style.left='';modal.style.top='';_fmPosX=null;_fmPosY=null;}});
-window.addEventListener('beforeunload',e=>{
-  // Capture all active inputs before page unload
+// Best-effort flush on tab close / hide. captureActiveInputs() alone only writes
+// to the in-memory trades array + localStorage — without firing the network
+// updates below, anything typed within the 2s save debounce window stays local
+// only. visibilitychange fires before pagehide, giving fetches the best chance
+// to complete; pagehide is the last-resort backstop.
+function _flushPendingNow(){
   captureActiveInputs();
-  delete e.returnValue;
+  if(_pending.size===0)return;
+  for(const id of [..._pending]){
+    if(id.startsWith('temp_'))continue;
+    clearTimeout(_saveTimers[id]);
+    clearTimeout(_saveTimers[id+'_c']);
+    clearTimeout(_valInputTimers[id]);
+    // Fire-and-forget. updateTrade returns a promise; we don't await — the
+    // browser will keep the in-flight fetch alive long enough on most platforms.
+    try{commitSave(id);}catch(e){}
+  }
+}
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='hidden')_flushPendingNow();
+});
+window.addEventListener('pagehide',_flushPendingNow);
+window.addEventListener('beforeunload',e=>{
+  _flushPendingNow();
   e.stopImmediatePropagation();
 });
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 document.getElementById('pageSizeSelect').value=PAGE_SIZE;
-const tableWrap=document.getElementById('tableWrap');
-tableWrap.addEventListener('scroll',()=>{
-  const{scrollTop,scrollHeight,clientHeight}=tableWrap;
-  if(scrollHeight-scrollTop-clientHeight<300){
-    const filtered=getFilteredTrades(),totalPages=Math.max(1,Math.ceil(filtered.length/PAGE_SIZE));
-    if(currentPage<totalPages){
-      currentPage++;
-      const startIdx=(currentPage-1)*PAGE_SIZE,pageItems=filtered.slice(startIdx,startIdx+PAGE_SIZE);
-      const tb=document.getElementById('tbody');
-      pageItems.forEach(t=>tb.appendChild(buildRow(t,startIdx+pageItems.indexOf(t)+1)));
-      renderPagination(filtered.length,currentPage,totalPages);
-    }
-  }
-});
+// (The previous infinite-scroll-on-tableWrap handler was removed — it fought
+// with the pagination buttons, mutated the global currentPage out from under
+// render(), and re-built rows with handlers bound to a stale page index. Use
+// the explicit pagination controls or page-size selector instead.)
 
-// Preserve textarea content across re-renders
-const _origCloseNotes=closeNotes;
-closeNotes=function(){const ta=document.getElementById('nmText');if(ta)ta.defaultValue=ta.value;_origCloseNotes();};
 document.addEventListener('input',e=>{const el=e.target;if(el.tagName==='TEXTAREA'||el.tagName==='INPUT'){if('defaultValue' in el)el.defaultValue=el.value;}},true);
 
 // Security

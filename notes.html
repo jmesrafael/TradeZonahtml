@@ -6,6 +6,7 @@
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <title>Notes</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3/dist/jszip.min.js"></script>
 <script src="theme.js"></script>
 <script src="supabase.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -38,6 +39,18 @@ body{visibility:hidden;background:var(--bg);color:var(--text);font-family:var(--
 .btn-export-pdf{display:flex;align-items:center;gap:6px;padding:7px 13px;background:none;border:1px solid rgba(255,95,109,.4);border-radius:8px;color:#ff5f6d;font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap;flex-shrink:0}
 .btn-export-pdf:hover{background:rgba(255,95,109,.08);border-color:#ff5f6d}
 .btn-export-pdf:disabled{opacity:.5;cursor:not-allowed}
+
+/* ── Export menu ── */
+.export-menu-wrap{position:relative;display:flex;align-items:center}
+.btn-export-menu{display:flex;align-items:center;justify-content:center;width:32px;height:32px;background:none;border:1px solid var(--border);border-radius:8px;color:var(--accent2);cursor:pointer;font-size:14px;transition:all .15s;flex-shrink:0}
+.btn-export-menu:hover{border-color:var(--accent2);background:rgba(var(--accent-rgb,25,195,125),.08)}
+.btn-export-menu.open{border-color:var(--accent2);background:rgba(var(--accent-rgb,25,195,125),.12)}
+.export-dropdown{display:none;position:absolute;top:100%;right:0;margin-top:6px;background:var(--panel);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.35);z-index:1000;min-width:160px;overflow:hidden;animation:calcSlideIn .15s ease}
+.export-dropdown.open{display:flex;flex-direction:column}
+.export-dropdown-item{padding:10px 14px;color:var(--text);background:none;border:none;cursor:pointer;font-family:var(--font-body,'Inter',sans-serif);font-size:12px;display:flex;align-items:center;gap:8px;transition:background .15s;white-space:nowrap;text-align:left}
+.export-dropdown-item:hover{background:rgba(var(--accent-rgb,25,195,125),.08)}
+.export-dropdown-item i{font-size:13px;color:var(--accent2);flex-shrink:0}
+.export-dropdown-item:disabled{opacity:.5;cursor:not-allowed}
 .tb-title{font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px;flex-shrink:0}
 .tb-title i{color:var(--accent2)}
 .tb-count{font-size:11px;color:var(--muted);background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:2px 9px}
@@ -513,9 +526,19 @@ body{visibility:hidden;background:var(--bg);color:var(--text);font-family:var(--
     <button class="btn-new-note" id="btnNewNote" style="display:none" onclick="openCNModal()">
       <i class="fa-solid fa-plus"></i> New Note
     </button>
-    <button class="btn-export-pdf" id="btnExportPdf" onclick="exportFilteredToPdf()">
-      <i class="fa-solid fa-file-pdf"></i> Export PDF
-    </button>
+    <div class="export-menu-wrap">
+      <button class="btn-export-menu" id="btnExportMenu" onclick="toggleExportMenu()" title="Export options">
+        <i class="fa-solid fa-share-nodes"></i>
+      </button>
+      <div class="export-dropdown" id="exportDropdown">
+        <button class="export-dropdown-item" onclick="exportFilteredToPdf();closeExportMenu()">
+          <i class="fa-solid fa-file-pdf"></i> Export PDF
+        </button>
+        <button class="export-dropdown-item" onclick="downloadFilteredImages();closeExportMenu()">
+          <i class="fa-solid fa-image"></i> Download Images
+        </button>
+      </div>
+    </div>
   </div>
 
   <!-- Main content -->
@@ -1039,6 +1062,72 @@ function buildFilterSummaryText(){
   if(fState.pinnedOnly)parts.push('Pinned only');
   if(searchQuery.trim())parts.push(`Search: "${searchQuery}"`);
   return parts.join(' · ');
+}
+
+// ─── Export Menu ───────────────────────────────────────────────────────────
+function toggleExportMenu(){
+  const btn=document.getElementById('btnExportMenu'),dropdown=document.getElementById('exportDropdown');
+  const isOpen=dropdown.classList.contains('open');
+  if(isOpen){closeExportMenu();}else{
+    btn.classList.add('open');dropdown.classList.add('open');
+    document.addEventListener('click',closeExportMenuOnClickOutside);
+  }
+}
+function closeExportMenu(){
+  const btn=document.getElementById('btnExportMenu'),dropdown=document.getElementById('exportDropdown');
+  btn.classList.remove('open');dropdown.classList.remove('open');
+  document.removeEventListener('click',closeExportMenuOnClickOutside);
+}
+function closeExportMenuOnClickOutside(e){
+  const menu=document.getElementById('exportDropdown'),btn=document.getElementById('btnExportMenu');
+  if(!menu.contains(e.target)&&!btn.contains(e.target)){closeExportMenu();}
+}
+
+// ─── Download Images ───────────────────────────────────────────────────────
+async function downloadFilteredImages(){
+  const btn=document.getElementById('btnExportImages');
+  const origHtml=btn.innerHTML;
+  btn.innerHTML='<i class="fa-solid fa-spinner" style="animation:spin 1s linear infinite"></i> Gathering…';
+  btn.disabled=true;
+  try{
+    if(activeTab!=='logs'){showToast('Only available for Logs Notes.','fa-solid fa-triangle-exclamation','r');return;}
+    if(typeof JSZip==='undefined'){showToast('ZIP library loading… try again.','fa-solid fa-triangle-exclamation','r');return;}
+    const items=getFilteredLogs();
+    const allImages=[];
+    items.forEach((t,idx)=>{
+      const imgs=(t.images||[]).filter(img=>img._previewUrl);
+      imgs.forEach((img,imgIdx)=>{
+        const pair=t.pair||'trade';
+        const pairSafe=pair.replace(/\//g,'-');
+        const date=t.date||'';
+        const filename=`${pairSafe}_${date}_${idx+1}_${imgIdx+1}.png`;
+        allImages.push({url:img._previewUrl,filename,trade:t});
+      });
+    });
+    if(!allImages.length){showToast('No images found in filtered results.','fa-solid fa-triangle-exclamation','r');return;}
+    btn.innerHTML='<i class="fa-solid fa-spinner" style="animation:spin 1s linear infinite"></i> Creating ZIP…';
+    const zip=new JSZip();
+    let successCount=0;
+    for(const img of allImages){
+      try{
+        const response=await fetch(img.url);
+        const blob=await response.blob();
+        zip.file(img.filename,blob);
+        successCount++;
+      }catch(e){console.error('Failed to add '+img.filename+' to ZIP',e);}
+    }
+    if(successCount===0){showToast('No images could be packaged.','fa-solid fa-triangle-exclamation','r');return;}
+    btn.innerHTML='<i class="fa-solid fa-spinner" style="animation:spin 1s linear infinite"></i> Compressing…';
+    const zipBlob=await zip.generateAsync({type:'blob',compression:'DEFLATE'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(zipBlob);
+    a.download=`tradzona-notes-images-${new Date().toISOString().split('T')[0]}.zip`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+    showToast(`Packaged ${successCount} image${successCount!==1?'s':''} into ZIP.`,'fa-solid fa-circle-check','g');
+  }catch(e){showToast('Download failed: '+e.message,'fa-solid fa-triangle-exclamation','r');}finally{btn.innerHTML=origHtml;btn.disabled=false;}
 }
 
 // ─── Render ────────────────────────────────────────────────────────────────
