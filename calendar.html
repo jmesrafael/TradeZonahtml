@@ -219,7 +219,7 @@ async function refreshCalendarTrades(){
   if(_calRefreshing||!jid)return;
   _calRefreshing=true;
   try{
-    const raw=await getTradesLight(jid);
+    const raw=await getTrades(jid);
     allTrades=raw.map(dbToTrade);
     renderMonth();
   }catch(err){console.warn('[calendar] refresh failed:',err);}
