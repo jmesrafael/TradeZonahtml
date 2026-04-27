@@ -12,380 +12,722 @@
 <link rel="preconnect" href="https://cdnjs.cloudflare.com">
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.11.0"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 @keyframes shimmer{0%{background-position:-600px 0}100%{background-position:600px 0}}
-body{visibility:hidden;background:var(--bg);color:var(--text);font-family:var(--font-body,'Inter',sans-serif);padding:20px}
-.pw{max-width:1100px;margin:0 auto}
-.skel-bar{height:20px;border-radius:var(--radius-md);background:linear-gradient(90deg,var(--panel) 25%,rgba(255,255,255,.04) 50%,var(--panel) 75%);background-size:600px 100%;animation:shimmer 1.4s infinite;margin-bottom:10px}
-.skel-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:10px;margin-bottom:18px}
-.skel-card{height:80px;border-radius:var(--radius-lg);background:linear-gradient(90deg,var(--panel) 25%,rgba(255,255,255,.04) 50%,var(--panel) 75%);background-size:600px 100%;animation:shimmer 1.4s infinite;border:1px solid var(--border)}
-.skel-chart{height:200px;border-radius:var(--radius-lg);background:linear-gradient(90deg,var(--panel) 25%,rgba(255,255,255,.04) 50%,var(--panel) 75%);background-size:600px 100%;animation:shimmer 1.4s infinite;border:1px solid var(--border);margin-bottom:14px}
-.sr{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px;margin-bottom:18px;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px}
-.sc{background:transparent;border:1px solid var(--border);border-radius:var(--radius-md);padding:10px 8px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:4px;transition:all .2s;cursor:help;position:relative}
-.sc:hover{background:rgba(25,195,125,.05);border-color:rgba(25,195,125,.3)}
-.sc .sl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;line-height:1.2}
-.sc .sv{font-family:var(--font-mono,'Space Grotesk',sans-serif);font-size:18px;font-weight:700;line-height:1.1}
-.sr{overflow:visible!important}
-.sc::after{content:attr(data-tooltip);position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:rgba(11,15,12,.95);color:var(--text);font-size:10px;padding:8px 12px;border-radius:var(--radius-md);opacity:0;pointer-events:none;transition:opacity .2s;z-index:10000;border:1px solid var(--border);margin-bottom:8px;font-weight:500;width:max-content;max-width:200px;white-space:normal;line-height:1.3;box-shadow:0 4px 12px rgba(0,0,0,.4)}
-.sc:hover::after{opacity:1}
-/* Hardcoded green/red — not theme-dependent */
-.green{color:#19c37d!important}
-.red{color:#ff5f6d!important}
-.stk{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
-.skc{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:5px}
-.skc .sl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px}
-.skc .sv{font-family:var(--font-mono,'Space Grotesk',sans-serif);font-size:32px;font-weight:700}
-.skc .ss{font-size:11px;color:var(--muted)}
-.cb{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;margin-bottom:14px}
-.cb h3{font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:14px;display:flex;align-items:center;gap:6px;position:relative}
-.cb h3 i{color:#19c37d}
-.tooltip-icon{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;border:1px solid var(--muted);font-size:10px;color:var(--muted);cursor:help;position:relative}
-.tooltip-icon:hover::after{content:attr(data-tooltip);position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-md);padding:8px 12px;font-size:11px;white-space:nowrap;z-index:10;color:var(--text);font-weight:500;text-transform:none;letter-spacing:normal;box-shadow:0 4px 12px rgba(0,0,0,.3)}
-.c2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
-canvas{max-height:190px}
+:root{--panel2:#192219;--border2:#253127}
+body{visibility:hidden;background:var(--bg);color:var(--text);font-family:var(--font-body,'Space Grotesk',sans-serif);padding:0}
+.pw{max-width:1100px;margin:0 auto;padding:28px 20px 60px}
+
+/* Skeleton */
+.skel-card{height:80px;border-radius:10px;background:linear-gradient(90deg,var(--panel) 25%,rgba(255,255,255,.04) 50%,var(--panel) 75%);background-size:600px 100%;animation:shimmer 1.4s infinite;border:1px solid var(--border)}
+.skel-chart{height:200px;border-radius:10px;background:linear-gradient(90deg,var(--panel) 25%,rgba(255,255,255,.04) 50%,var(--panel) 75%);background-size:600px 100%;animation:shimmer 1.4s infinite;border:1px solid var(--border)}
+.skel-hdr{height:36px;border-radius:8px;background:linear-gradient(90deg,var(--panel) 25%,rgba(255,255,255,.04) 50%,var(--panel) 75%);background-size:600px 100%;animation:shimmer 1.4s infinite}
+
+/* Page header */
+.page-hdr{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:24px}
+.page-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.page-title{font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:22px;font-weight:700;letter-spacing:-.3px}
+
+/* Range buttons */
+.range-group{display:flex;gap:4px;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:4px}
+.range-btn{background:none;border:1px solid transparent;border-radius:4px;padding:3px 10px;color:var(--muted);font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:10px;font-weight:700;cursor:pointer;transition:all .15s;letter-spacing:.4px}
+.range-btn.active{background:rgba(25,195,125,.12);border-color:rgba(25,195,125,.4);color:#19c37d}
+.range-btn:hover:not(.active){color:var(--text)}
+
+/* KPI strip */
+.kpi-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:20px}
+.kpi-card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:6px;position:relative;transition:border-color .2s;cursor:default}
+.kpi-card:hover{border-color:var(--border2,#253127)}
+.kpi-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;font-weight:600}
+.kpi-value{font-family:var(--font-mono,'Space Mono',monospace);font-size:24px;font-weight:700;line-height:1}
+.kpi-sub{font-size:11px;color:var(--muted)}
+.kpi-tip{position:absolute;bottom:calc(100% + 8px);left:0;background:#0e1a0f;border:1px solid var(--border2,#253127);border-radius:6px;padding:8px 12px;font-size:11px;color:var(--text);z-index:1000;box-shadow:0 4px 16px rgba(0,0,0,.5);line-height:1.5;max-width:220px;white-space:normal;pointer-events:none;opacity:0;transition:opacity .15s}
+.kpi-card:hover .kpi-tip{opacity:1}
+
+/* Insight bar */
+.insight-bar{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:11px 16px;margin-bottom:20px;font-size:13px}
+.insight-view-btn{margin-left:auto;background:none;border:none;color:#19c37d;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font-heading,'Space Grotesk',sans-serif);letter-spacing:.3px;flex-shrink:0;padding:0}
+
+/* Tabs */
+.tab-bar{display:flex;gap:6px;margin-bottom:20px}
+.tz-tab{background:none;border:1px solid transparent;border-radius:6px;padding:6px 16px;color:var(--muted);font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;letter-spacing:.2px}
+.tz-tab.active{background:var(--panel2,#192219);border-color:var(--border2,#253127);color:var(--text)}
+.tz-tab:hover:not(.active){color:var(--text)}
+
+/* Cards */
+.card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:20px}
+
+/* Section header */
+.sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.sec-hdr-l{display:flex;align-items:center;gap:7px}
+.sec-ico{color:#19c37d;font-size:13px}
+.sec-ttl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted)}
+.sec-tip{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;border:1px solid var(--muted);font-size:9px;color:var(--muted);cursor:help;position:relative;flex-shrink:0;margin-left:4px;font-weight:600;line-height:1}
+.sec-tip::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:#0e1a0f;border:1px solid var(--border2,#253127);border-radius:6px;padding:8px 12px;font-size:11px;color:var(--text);white-space:normal;width:max-content;max-width:240px;z-index:1000;box-shadow:0 4px 16px rgba(0,0,0,.5);line-height:1.5;text-transform:none;letter-spacing:normal;font-weight:400;pointer-events:none;opacity:0;transition:opacity .15s}
+.sec-tip:hover::after{opacity:1}
+
+/* Dynamic equity btn */
+.dyn-btn{background:none;border:1px solid var(--border);color:var(--muted);border-radius:4px;padding:3px 9px;font-size:10px;font-weight:600;font-family:var(--font-heading,'Space Grotesk',sans-serif);cursor:pointer;transition:all .15s}
+.dyn-btn.active{background:rgba(25,195,125,.12);border-color:rgba(25,195,125,.4);color:#19c37d}
+
+/* Grids */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.g-eq{display:grid;grid-template-columns:1fr 280px;gap:16px}
+
+/* Tables */
 .bt{width:100%;border-collapse:collapse}
-.bt th{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;padding:8px 12px;text-align:left;border-bottom:1px solid var(--border)}
-.bt td{padding:9px 12px;font-size:13px;border-bottom:1px solid var(--border)}
-.bt tr:last-child td{border-bottom:none}
-.ad-slot{display:none;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:14px}
-.ad-slot.visible{display:block}
+.bt th{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;padding:0 12px 10px;text-align:left;border-bottom:1px solid var(--border)}
+.bt td{padding:10px 12px;font-size:13px}
+.bt tr:not(:last-child) td{border-bottom:1px solid var(--border)}
+.scroll-tbl{overflow-y:auto;max-height:260px}
+
+/* Mini stats */
+.mini-stats{border-top:1px solid var(--border);margin-top:12px;padding-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ms-lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px;text-align:center}
+.ms-val{font-family:var(--font-mono,'Space Mono',monospace);font-size:13px;font-weight:700;text-align:center}
+
+/* Pair bars */
+.pair-row{margin-bottom:10px}
+.pair-meta{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px}
+.pair-track{height:4px;background:var(--border2,#253127);border-radius:3px}
+.pair-fill{height:4px;border-radius:3px;transition:width .4s}
+
+/* Ad slot */
+.ad-slot{background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:16px}
 .ad-slot-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;padding:6px 12px 0;opacity:.6}
 .ad-slot-inner{min-height:90px;display:flex;align-items:center;justify-content:center}
+
+/* Empty */
 .empty{color:var(--muted);font-size:14px;text-align:center;padding:60px 0;line-height:1.9}
 .empty i{font-size:36px;display:block;margin-bottom:12px;opacity:.3}
-.pro-upsell-box{border-color:rgba(25,195,125,.2)!important;background:linear-gradient(135deg,rgba(25,195,125,.03),var(--panel))!important}
-@media(max-width:600px){
-  body{padding:12px}
-  .c2{grid-template-columns:1fr}
-  .stk{grid-template-columns:1fr}
-  .sr{grid-template-columns:repeat(auto-fit,minmax(85px,1fr));padding:10px}
-  .sc .sv{font-size:16px}
-  .skc .sv{font-size:26px}
+
+/* Rec cards */
+.rec-card{border-radius:8px;padding:12px 16px;display:flex;gap:12px;align-items:flex-start;margin-bottom:10px}
+
+/* Hardcoded status */
+.c-g{color:#19c37d!important}
+.c-r{color:#f05165!important}
+
+@media(max-width:720px){
+  .kpi-strip{grid-template-columns:repeat(2,1fr)}
+  .g2,.g-eq{grid-template-columns:1fr}
+  .tab-bar{flex-wrap:wrap;gap:4px}
+  .tz-tab{font-size:11px;padding:5px 12px}
 }
-@media(max-width:400px){.sr{grid-template-columns:1fr 1fr}}
-/* Equity range toggle */
-.eq-range-btns{display:flex;gap:3px;flex-shrink:0}
-.eq-tog{background:none;border:1px solid var(--border);color:var(--muted);border-radius:var(--radius-md);padding:3px 9px;font-size:10px;font-weight:600;font-family:var(--font-heading,'Space Grotesk',sans-serif);cursor:pointer;transition:all .15s;letter-spacing:.3px}
-.eq-tog:hover{border-color:var(--accent2);color:var(--text)}
-.eq-tog.active{background:rgba(var(--accent-rgb,0,255,136),.12);border-color:var(--accent2);color:var(--accent2)}
-/* Pair PNL bars */
-.pair-bar-row{margin-bottom:9px}
-.pair-bar-meta{display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px}
-.pair-bar-track{height:5px;background:var(--border);border-radius:3px}
-.pair-bar-fill{height:5px;border-radius:3px;transition:width .3s}
+@media(max-width:420px){
+  .kpi-strip{grid-template-columns:1fr 1fr}
+  .kpi-value{font-size:20px}
+}
 </style>
 </head>
 <body>
 <div class="pw">
 <div id="skelView">
-  <div class="skel-cards"><div class="skel-card"></div><div class="skel-card"></div><div class="skel-card"></div><div class="skel-card"></div><div class="skel-card"></div><div class="skel-card"></div><div class="skel-card"></div><div class="skel-card"></div></div>
-  <div class="skel-chart"></div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px"><div class="skel-chart"></div><div class="skel-chart"></div></div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+    <div style="width:140px" class="skel-hdr"></div>
+    <div style="width:180px;height:36px;border-radius:8px" class="skel-hdr"></div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:20px">
+    <div class="skel-card"></div><div class="skel-card"></div><div class="skel-card"></div><div class="skel-card"></div><div class="skel-card"></div>
+  </div>
+  <div class="skel-chart" style="margin-bottom:16px"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px"><div class="skel-chart"></div><div class="skel-chart"></div></div>
 </div>
 <div id="root" style="display:none"></div>
 </div>
 
 <script>
+// ── Session ───────────────────────────────────────────────────────────────────
 const jid = sessionStorage.getItem('tz_current_journal') || (()=>{
   try { return parent?.sessionStorage?.getItem('tz_current_journal'); } catch(e) { return null; }
 })();
 
-const G='#19c37d', R='#ff5f6d';
+const G='#19c37d', R='#f05165', Y='#f5c518';
 
-// Live-update path: when logs (or any tab) saves a trade, journal.html relays
-// `tz_trades_changed` to every frame. Analytics is built inside an IIFE with
-// const-scoped state, so the cheapest reliable refresh is to reload the iframe.
-//
-// We used to reload on every save (debounced 1 s). With heavy editing that
-// meant 50+ full HTML+chart-library refetches in a short burst, even when
-// the user wasn't looking at the analytics tab. Now we only reload when:
-//   1) the user is actually on the analytics tab (parent broadcasts that), AND
-//   2) the parent tab is visible.
-// While analytics isn't the active tab the page just queues the reload and
-// fires it once when the user switches over — turning N reloads into 1.
-let _anaQueuedReload = false;
-let _anaReloadTimer = null;
-let _anaTabActive = false;        // true when journal.html's active tab is "analytics"
-
-function _anaIsParentVisible(){
-  // In an iframe, document.visibilityState mirrors the parent tab's state.
-  return document.visibilityState !== 'hidden';
-}
+// ── Smart reload ──────────────────────────────────────────────────────────────
+let _anaQueuedReload=false,_anaReloadTimer=null,_anaTabActive=false;
 function _anaMaybeReload(){
-  if(!_anaQueuedReload)return;
-  if(!_anaTabActive)return;
-  if(!_anaIsParentVisible())return;
-  // Tiny coalesce so a burst of changes still results in one reload.
-  clearTimeout(_anaReloadTimer);
-  _anaReloadTimer=setTimeout(()=>location.reload(),300);
+  if(!_anaQueuedReload||!_anaTabActive||document.visibilityState==='hidden')return;
+  clearTimeout(_anaReloadTimer);_anaReloadTimer=setTimeout(()=>location.reload(),300);
 }
-window.addEventListener('message', e => {
-  if (e.data?.type === 'tz_trades_changed') {
-    _anaQueuedReload=true;
-    _anaMaybeReload();
-  }
-  if (e.data?.type === 'tz_tab_changed') {
-    _anaTabActive=(e.data.tab==='analytics');
-    if(_anaTabActive)_anaMaybeReload();
-  }
+window.addEventListener('message',e=>{
+  if(e.data?.type==='tz_trades_changed'){_anaQueuedReload=true;_anaMaybeReload();}
+  if(e.data?.type==='tz_tab_changed'){_anaTabActive=(e.data.tab==='analytics');if(_anaTabActive)_anaMaybeReload();}
 });
 document.addEventListener('visibilitychange',_anaMaybeReload);
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
 function fP(v){const n=parseFloat(v);if(isNaN(n))return'—';return(n>=0?'+':'-')+'$'+Math.abs(n).toFixed(2);}
 function fPct(v){return parseFloat(v).toFixed(1)+'%';}
-function grc(n){return n>0?'green':n<0?'red':'';}
-function wrColor(wr){if(wr>=50)return'#19c37d';if(wr>=30)return'#ffb74d';return'#ff5f6d';}
-
-// ── Insights Analysis Class ──
-class TradeInsights{
-  constructor(trades){this.trades=trades.filter(t=>t.pnl!==''&&!isNaN(parseFloat(t.pnl)));}
-
-  analyze(){
-    if(this.trades.length<5)return null;
-    const metrics={
-      performance:this.getPerformanceMetrics(),
-      issues:this.detectIssues(),
-      recommendations:this.generateRecommendations()
-    };
-    return metrics;
-  }
-
-  getPerformanceMetrics(){
-    const wr=this.getWinRate();
-    const pf=this.getProfitFactor();
-    const dd=this.getMaxDrawdown();
-    const con=this.getConsistency();
-    const score=((wr/50)*0.25+(Math.min(pf,3)/3)*0.25+(100-dd)/100*0.25+con*0.25)*100;
-    let level='High Risk',icon='fa-triangle-exclamation',color='#ff5f6d';
-    if(score>70){level='Low Risk';icon='fa-shield-check';color='#19c37d';}else if(score>50){level='Medium Risk';icon='fa-shield';color='#ffb74d';}
-    return{score:score.toFixed(0),level,icon,color,wr:wr.toFixed(1),pf:pf.toFixed(2),dd:dd.toFixed(2),con:con.toFixed(2)};
-  }
-
-  detectIssues(){
-    const issues=[];
-
-    // Overtrading detection
-    const dailyTrades={};
-    this.trades.forEach(t=>{
-      const d=t.date;
-      if(!dailyTrades[d])dailyTrades[d]={total:0,losses:0,loss_amt:0};
-      dailyTrades[d].total++;
-      if(parseFloat(t.pnl)<0){dailyTrades[d].losses++;dailyTrades[d].loss_amt+=Math.abs(parseFloat(t.pnl));}
-    });
-    const avgTradesPerDay=this.trades.length/Object.keys(dailyTrades).length;
-    Object.entries(dailyTrades).forEach(([date,stats])=>{
-      if(stats.total>avgTradesPerDay*1.5&&stats.losses>stats.total*0.6){
-        issues.push({type:'overtrading',severity:'high',date,trades:stats.total,losses:stats.losses});
-      }
-    });
-
-    // Near-loss detection (risk/loss ratio close to 1:1)
-    const nearLosses=this.trades.filter(t=>{
-      const pnl=parseFloat(t.pnl);
-      const risk=parseFloat(t.r)||0;
-      if(pnl<0&&risk>0){
-        const lossRatio=Math.abs(pnl)/risk;
-        return lossRatio>0.8&&lossRatio<=1.1;
-      }
-      return false;
-    }).length;
-    if(nearLosses>this.trades.length*0.2){
-      issues.push({type:'near_loss',severity:'medium',count:nearLosses,pct:(nearLosses/this.trades.length*100).toFixed(1)});
-    }
-
-    // Consistent loss days
-    const lossDays=Object.entries(dailyTrades).filter(([d,s])=>s.losses>0&&s.total===s.losses).length;
-    if(lossDays>Object.keys(dailyTrades).length*0.3){
-      issues.push({type:'consistent_losses',severity:'high',days:lossDays,total:Object.keys(dailyTrades).length});
-    }
-
-    // High drawdown
-    if(this.getMaxDrawdown()>this.getTotalProfit()*0.3){
-      issues.push({type:'high_drawdown',severity:'medium',dd:this.getMaxDrawdown().toFixed(2)});
-    }
-
-    return issues;
-  }
-
-  generateRecommendations(){
-    const recs=[];
-    const issues=this.detectIssues();
-    const wr=this.getWinRate();
-    const pf=this.getProfitFactor();
-    const dailyTrades=this.getAvgTradesPerDay();
-
-    // Based on overtrading
-    const overtrade=issues.find(i=>i.type==='overtrading');
-    if(overtrade){
-      recs.push({
-        action:'Limit trades per day',
-        reason:`You averaged ${overtrade.trades} trades on ${overtrade.date} with ${overtrade.losses} losses`,
-        priority:'high',
-        icon:'fa-hourglass-end'
-      });
-    }
-
-    // Based on near-loss
-    const nearLoss=issues.find(i=>i.type==='near_loss');
-    if(nearLoss){
-      recs.push({
-        action:'Tighten stop-loss discipline',
-        reason:`${nearLoss.pct}% of losses are near your risk limit (0.8-1.1R)`,
-        priority:'high',
-        icon:'fa-crosshairs'
-      });
-    }
-
-    // Based on consistent losses
-    if(issues.find(i=>i.type==='consistent_losses')){
-      recs.push({
-        action:'Review trading conditions',
-        reason:'You have multiple days with only losses - check market conditions on those days',
-        priority:'high',
-        icon:'fa-magnifying-glass'
-      });
-    }
-
-    // Based on win rate
-    if(wr<45){
-      recs.push({
-        action:'Improve entry signals',
-        reason:`Your win rate is ${wr.toFixed(1)}% - focus on trade quality over quantity`,
-        priority:'medium',
-        icon:'fa-bullseye'
-      });
-    }
-
-    // Based on profit factor
-    if(pf<1.5){
-      recs.push({
-        action:'Increase winner size or reduce losses',
-        reason:`Profit factor ${pf.toFixed(2)} indicates losses are too large relative to wins`,
-        priority:'medium',
-        icon:'fa-arrow-trend-up'
-      });
-    }
-
-    // Positive feedback
-    if(wr>60&&pf>2){
-      recs.push({
-        action:'Maintain current strategy',
-        reason:`Strong metrics: ${wr.toFixed(1)}% win rate with ${pf.toFixed(2)} profit factor`,
-        priority:'positive',
-        icon:'fa-check-circle'
-      });
-    }
-
-    if(recs.length===0){
-      recs.push({
-        action:'Continue monitoring',
-        reason:'No critical issues detected. Keep tracking metrics.',
-        priority:'neutral',
-        icon:'fa-chart-line'
-      });
-    }
-
-    return recs.sort((a,b)=>{
-      const p={high:0,medium:1,positive:2,neutral:3};
-      return (p[a.priority]||3)-(p[b.priority]||3);
-    });
-  }
-
-  getWinRate(){const w=this.trades.filter(t=>parseFloat(t.pnl)>0).length;return(w/this.trades.length)*100;}
-  getProfitFactor(){
-    const w=this.trades.filter(t=>parseFloat(t.pnl)>0).reduce((a,t)=>a+parseFloat(t.pnl),0);
-    const l=Math.abs(this.trades.filter(t=>parseFloat(t.pnl)<0).reduce((a,t)=>a+parseFloat(t.pnl),0));
-    return l>0?w/l:w>0?999:0;
-  }
-  getMaxDrawdown(){
-    let peak=0,dd=0,eq=0;
-    this.trades.forEach(t=>{eq+=parseFloat(t.pnl);if(eq>peak)peak=eq;const d=peak-eq;if(d>dd)dd=d;});
-    return dd;
-  }
-  getConsistency(){
-    const daily={};
-    this.trades.forEach(t=>{const d=t.date;daily[d]=(daily[d]||0)+parseFloat(t.pnl);});
-    const pnls=Object.values(daily);
-    const mean=pnls.reduce((a,b)=>a+b,0)/pnls.length;
-    const var_=pnls.reduce((sq,n)=>sq+Math.pow(n-mean,2),0)/pnls.length;
-    const std=Math.sqrt(var_);
-    return std===0?1:Math.max(0,1-(std/Math.abs(mean)));
-  }
-  getTotalProfit(){return this.trades.reduce((a,t)=>a+parseFloat(t.pnl),0);}
-  getAvgTradesPerDay(){
-    const daily={};
-    this.trades.forEach(t=>{const d=t.date;daily[d]=(daily[d]||0)+1;});
-    return Object.values(daily).reduce((a,b)=>a+b,0)/Object.keys(daily).length;
-  }
+function grc(n){return n>0?G:n<0?R:'var(--muted)';}
+function wrColor(wr){return wr>=50?G:wr>=35?Y:R;}
+function fH(h){if(h===0)return'12 AM';if(h===12)return'12 PM';return h<12?h+' AM':(h-12)+' PM';}
+function fHs(h){if(h===0)return'12AM';if(h===12)return'12PM';return h<12?h+'AM':(h-12)+'PM';}
+function secHdr(icon,title,tip,right=''){
+  const t=tip?`<span class="sec-tip" data-tip="${tip}">?</span>`:'';
+  return `<div class="sec-hdr"><div class="sec-hdr-l"><span class="sec-ico"><i class="fa-solid ${icon}"></i></span><span class="sec-ttl">${title}</span>${t}</div>${right}</div>`;
 }
 
-// ── Crosshair: vertical line follows cursor on line charts ──
+function wrBarHtml(wr){
+  const color=wr>=50?G:wr>=35?Y:R;
+  const w=Math.min(Math.max(wr,0),100);
+  return`<div style="display:flex;align-items:center;gap:8px"><div style="flex:1;height:4px;background:var(--border2,#253127);border-radius:3px"><div style="height:4px;width:${w.toFixed(0)}%;background:${color};border-radius:3px"></div></div><span style="font-family:var(--font-mono,'Space Mono',monospace);font-size:11px;color:${color};min-width:34px">${w.toFixed(0)}%</span></div>`;
+}
+
+function computeStats(trades){
+  const vld=trades.filter(t=>t.pnl!==''&&!isNaN(parseFloat(t.pnl))).map(t=>({...t,pnl:parseFloat(t.pnl)}));
+  const wins=vld.filter(t=>t.pnl>0),losses=vld.filter(t=>t.pnl<0),be=vld.filter(t=>t.pnl===0);
+  const total=vld.reduce((s,t)=>s+t.pnl,0);
+  const wr=vld.length?(wins.length/vld.length)*100:0;
+  const totalW=wins.reduce((s,t)=>s+t.pnl,0);
+  const totalL=Math.abs(losses.reduce((s,t)=>s+t.pnl,0));
+  const pf=totalL>0?totalW/totalL:wins.length>0?999:0;
+  const avgWin=wins.length?totalW/wins.length:0;
+  const avgLoss=losses.length?totalL/losses.length:0;
+  const sorted=[...vld].sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  let peak=0,eq=0,maxDd=0;
+  sorted.forEach(t=>{eq+=t.pnl;if(eq>peak)peak=eq;const dd=peak-eq;if(dd>maxDd)maxDd=dd;});
+  let cW=0,cL=0,mxW=0,mxL=0;
+  sorted.forEach(t=>{
+    if(t.pnl>0){cW++;cL=0;mxW=Math.max(mxW,cW);}
+    else if(t.pnl<0){cL++;cW=0;mxL=Math.max(mxL,cL);}
+    else{cW=0;cL=0;}
+  });
+  const best=vld.length?Math.max(...vld.map(t=>t.pnl)):0;
+  const worst=vld.length?Math.min(...vld.map(t=>t.pnl)):0;
+  const rvs=vld.filter(t=>t.r!==undefined&&t.r!==''&&!isNaN(parseFloat(t.r)));
+  const avgR=rvs.length?rvs.reduce((s,t)=>s+parseFloat(t.r),0)/rvs.length:0;
+  const daily={};
+  sorted.forEach(t=>{daily[t.date]=(daily[t.date]||0)+t.pnl;});
+  const dpnls=Object.values(daily);
+  const mean=dpnls.length?dpnls.reduce((a,b)=>a+b,0)/dpnls.length:0;
+  const variance=dpnls.reduce((s,n)=>s+Math.pow(n-mean,2),0)/(dpnls.length||1);
+  const std=Math.sqrt(variance);
+  const consistency=std===0?1:Math.max(0,1-(std/Math.abs(mean||1)));
+  return{vld,wins,losses,be,total,wr,pf,avgWin,avgLoss,maxDd,mxW,mxL,best,worst,avgR,sorted,consistency,daily};
+}
+
+function filterByRange(trades,range){
+  if(range==='all')return trades;
+  const now=new Date(),cutoff=new Date(now);
+  if(range==='7d')cutoff.setDate(cutoff.getDate()-7);
+  else if(range==='30d')cutoff.setDate(cutoff.getDate()-30);
+  else if(range==='90d')cutoff.setDate(cutoff.getDate()-90);
+  return trades.filter(t=>new Date((t.date||'')+'T12:00:00')>=cutoff);
+}
+
+// ── Chart plugins ─────────────────────────────────────────────────────────────
 Chart.register({
   id:'crosshairLine',
   afterDraw(chart){
     if(!chart.options.showCrosshair)return;
-    const active=chart.tooltip?._active;
-    if(!active?.length)return;
-    const{ctx,chartArea:{top,bottom}}=chart;
-    const x=active[0].element.x;
-    ctx.save();
-    ctx.beginPath();
-    ctx.moveTo(x,top);ctx.lineTo(x,bottom);
-    ctx.lineWidth=1;ctx.strokeStyle='rgba(255,255,255,.13)';
-    ctx.setLineDash([4,4]);ctx.stroke();ctx.restore();
+    const active=chart.tooltip?._active;if(!active?.length)return;
+    const{ctx,chartArea:{top,bottom}}=chart;const x=active[0].element.x;
+    ctx.save();ctx.beginPath();ctx.moveTo(x,top);ctx.lineTo(x,bottom);
+    ctx.lineWidth=1;ctx.strokeStyle='rgba(255,255,255,.13)';ctx.setLineDash([4,4]);ctx.stroke();ctx.restore();
   }
 });
-
-// ── Dynamic gradient: green above zero, red below ──
 Chart.register({
   id:'dynamicColorGradient',
   beforeRender(chart){
     if(!chart._dynamicColor)return;
-    const{ctx,chartArea,scales}=chart;
-    if(!chartArea)return;
+    const{ctx,chartArea,scales}=chart;if(!chartArea)return;
     const{top,bottom}=chartArea;
     const zeroY=scales.y.getPixelForValue(0);
     const clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
     const zr=clamp((zeroY-top)/(bottom-top),0,1);
     const a=Math.max(0,zr-.001),b=Math.min(1,zr+.001);
     const bd=ctx.createLinearGradient(0,top,0,bottom);
-    bd.addColorStop(0,'#19c37d');bd.addColorStop(a,'#19c37d');
-    bd.addColorStop(b,'#ff5f6d');bd.addColorStop(1,'#ff5f6d');
+    bd.addColorStop(0,G);bd.addColorStop(a,G);bd.addColorStop(b,R);bd.addColorStop(1,R);
     const bg=ctx.createLinearGradient(0,top,0,bottom);
-    bg.addColorStop(0,'#19c37d30');bg.addColorStop(a,'#19c37d08');
-    bg.addColorStop(b,'#ff5f6d08');bg.addColorStop(1,'#ff5f6d30');
+    bg.addColorStop(0,G+'30');bg.addColorStop(a,G+'08');bg.addColorStop(b,R+'08');bg.addColorStop(1,R+'30');
     const ds=chart.data.datasets[0];
     ds.borderColor=bd;ds.backgroundColor=bg;
-    ds.pointBackgroundColor=(ds.data||[]).map(v=>v>=0?'#19c37d':'#ff5f6d');
+    ds.pointBackgroundColor=(ds.data||[]).map(v=>v>=0?G:R);
     ds.pointHoverBackgroundColor=ds.pointBackgroundColor;
   }
 });
-
-// ── Doughnut center text ──
 Chart.register({
   id:'doughnutCenterText',
   afterDatasetsDraw(chart){
     if(!chart._centerText)return;
-    const{ctx,chartArea,data}=chart;
-    const{x:cx,y:cy}=chart.getDatasetMeta(0).data[0]||{x:chartArea.left+chartArea.width/2,y:chartArea.top+chartArea.height/2};
-    const textColor=getComputedStyle(document.documentElement).getPropertyValue('--text').trim()||'#e6f2ec';
-    const mutedColor=getComputedStyle(document.documentElement).getPropertyValue('--muted').trim()||'#8fa39a';
-    const bodyFont=getComputedStyle(document.documentElement).getPropertyValue('--font-body').trim()||'Inter, sans-serif';
+    const{ctx,chartArea}=chart;
+    const meta=chart.getDatasetMeta(0);
+    const{x:cx,y:cy}=meta.data[0]||{x:chartArea.left+chartArea.width/2,y:chartArea.top+chartArea.height/2};
+    const textColor=getComputedStyle(document.documentElement).getPropertyValue('--text').trim()||'#dff0e4';
+    const mutedColor=getComputedStyle(document.documentElement).getPropertyValue('--muted').trim()||'#6b8f72';
+    const bodyFont=getComputedStyle(document.documentElement).getPropertyValue('--font-body').trim()||'Space Grotesk, sans-serif';
     ctx.save();
-    ctx.font=`bold 24px ${bodyFont}`;
-    ctx.fillStyle=chart._centerColor||textColor;
-    ctx.textAlign='center';
-    ctx.textBaseline='middle';
-    ctx.fillText(chart._centerText,cx,cy-6);
-    ctx.font=`11px ${bodyFont}`;
-    ctx.fillStyle=mutedColor;
-    ctx.fillText('Win Rate',cx,cy+12);
+    ctx.font=`bold 22px ${bodyFont}`;ctx.fillStyle=chart._centerColor||textColor;
+    ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(chart._centerText,cx,cy-6);
+    ctx.font=`10px ${bodyFont}`;ctx.fillStyle=mutedColor;ctx.fillText('Win Rate',cx,cy+11);
     ctx.restore();
   }
 });
 
+// ── Chart instance tracking ───────────────────────────────────────────────────
+let _charts=[];
+function _mkChart(el,cfg){if(!el)return null;const c=new Chart(el,cfg);_charts.push(c);return c;}
+function _destroyCharts(){_charts.forEach(c=>c.destroy());_charts=[];window._eqChart=null;}
+
+function _chartDefaults(){
+  const rs=getComputedStyle(document.documentElement);
+  Chart.defaults.color=rs.getPropertyValue('--muted').trim()||'#6b8f72';
+  Chart.defaults.borderColor=rs.getPropertyValue('--border').trim()||'#1e2e1f';
+  Chart.defaults.font.family="'Space Grotesk', sans-serif";
+}
+
+function _panelColor(){return getComputedStyle(document.documentElement).getPropertyValue('--panel').trim()||'#141f15';}
+function _tc(){return getComputedStyle(document.documentElement).getPropertyValue('--muted').trim()||'#6b8f72';}
+function _textColor(){return getComputedStyle(document.documentElement).getPropertyValue('--text').trim()||'#dff0e4';}
+function _gc(){return getComputedStyle(document.documentElement).getPropertyValue('--border').trim()||'#1e2e1f';}
+
+// ── Equity chart factory (shared by pro overview + free tier) ─────────────────
+function _makeEquityChart(canvasId, sorted){
+  let acc=0;
+  const labels=sorted.map(t=>t.date);
+  const data=sorted.map(t=>{acc+=t.pnl;return+acc.toFixed(2);});
+  const c=_mkChart(document.getElementById(canvasId),{
+    type:'line',
+    data:{labels,datasets:[{data,borderColor:G,backgroundColor:G+'14',fill:true,tension:.38,borderWidth:2,pointRadius:0,pointHoverRadius:6,pointBackgroundColor:G}]},
+    options:{
+      responsive:true,maintainAspectRatio:false,showCrosshair:true,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{display:false},
+        tooltip:{backgroundColor:_panelColor(),borderColor:'rgba(255,255,255,.1)',borderWidth:1,titleColor:_tc(),bodyColor:_textColor(),padding:12,displayColors:false,
+          callbacks:{title:ctx=>ctx[0]?.label||'',label:ctx=>{const v=ctx.raw;return(v>=0?'▲ ':'▼ ')+fP(v);}}}
+      },
+      scales:{
+        x:{ticks:{maxTicksLimit:8,font:{size:10}}},
+        y:{ticks:{callback:v=>(v>=0?'+':'-')+'$'+Math.abs(v).toFixed(0),font:{size:10}}}
+      }
+    }
+  });
+  return c;
+}
+
+// ── KPI Strip ─────────────────────────────────────────────────────────────────
+function renderKpiStrip(stats,container){
+  const{total,wr,pf,maxDd,mxW,mxL,vld,wins,losses}=stats;
+  const cards=[
+    {label:'Net P&L',value:fP(total),color:grc(total),sub:`${vld.length} trade${vld.length!==1?'s':''}`,tip:'Total profit/loss for the selected period'},
+    {label:'Win Rate',value:fPct(wr),color:wrColor(wr),sub:`${wins.length}W · ${losses.length}L`,tip:'Percentage of profitable trades'},
+    {label:'Profit Factor',value:pf===999?'∞':pf.toFixed(2),color:pf>=1.5?G:pf>=1?Y:R,sub:'gross W ÷ gross L',tip:'Ratio of gross profit to gross loss. >1.5 is strong.'},
+    {label:'Max Drawdown',value:maxDd>0?'-$'+maxDd.toFixed(0):'—',color:maxDd>0?R:'var(--muted)',sub:'peak-to-trough',tip:'Largest peak-to-trough equity decline'},
+    {label:'Streaks',value:`${mxW}W · ${mxL}L`,color:'var(--text)',sub:'best win / loss run',tip:'Longest consecutive winning and losing streaks'},
+  ];
+  container.innerHTML=cards.map(k=>`
+    <div class="kpi-card">
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-value" style="color:${k.color}">${k.value}</div>
+      <div class="kpi-sub">${k.sub}</div>
+      <div class="kpi-tip">${k.tip}</div>
+    </div>`).join('');
+}
+
+// ── Insight Bar ───────────────────────────────────────────────────────────────
+function renderInsightBar(stats,container,isPro){
+  const{wr,pf,vld}=stats;
+  if(!vld.length){container.innerHTML='';return;}
+  if(vld.length<5){container.innerHTML='';return;}
+  let msg='',color='var(--muted)';
+  if(wr<40){msg=`Win rate ${wr.toFixed(0)}% is below threshold — review entry criteria.`;color=R;}
+  else if(pf<1){msg=`Profit factor ${pf.toFixed(2)} — losses exceed gains. Widen RR or cut losers faster.`;color=R;}
+  else if(wr>58&&pf>1.8){msg=`Strong performance — ${wr.toFixed(0)}% WR with ${pf.toFixed(2)} PF. Focus on sizing up.`;color=G;}
+  else{msg=`${wr.toFixed(0)}% WR · ${pf.toFixed(2)} PF — stable.${isPro?' See Insights tab for full analysis.':''}`;}
+  const btn=isPro?`<button class="insight-view-btn" onclick="window._switchTab('insights')">View Insights →</button>`:'';
+  container.innerHTML=`<div class="insight-bar" style="border-left:3px solid ${color}"><span style="font-size:15px">💡</span><span style="color:var(--muted)">${msg}</span>${btn}</div>`;
+}
+
+// ── Overview Tab ──────────────────────────────────────────────────────────────
+function renderOverviewHtml(trades,stats){
+  const{wins,losses,be,wr,avgWin,avgLoss,best,worst}=stats;
+
+  // Timeframe
+  const tm={};
+  trades.forEach(t=>{
+    const tfs=Array.isArray(t.timeframe)?t.timeframe:(t.timeframe?[t.timeframe]:[]);
+    tfs.forEach(tf=>{if(!tm[tf])tm[tf]={w:0,tot:0,pnl:0};tm[tf].tot++;const p=parseFloat(t.pnl)||0;if(p>0)tm[tf].w++;tm[tf].pnl+=p;});
+  });
+  const tfRows=Object.keys(tm).map(tf=>{
+    const d=tm[tf],wrp=d.tot?d.w/d.tot*100:0;
+    return`<tr><td><strong>${tf}</strong></td><td>${d.tot}</td><td style="min-width:130px">${wrBarHtml(wrp)}</td><td style="font-family:var(--font-mono,'Space Mono',monospace);font-size:12px;color:${grc(d.pnl)}">${fP(d.pnl)}</td></tr>`;
+  }).join('')||`<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:18px">No timeframe data yet.</td></tr>`;
+
+  return`<div style="display:flex;flex-direction:column;gap:16px">
+    <div class="g-eq">
+      <div class="card">
+        ${secHdr('fa-chart-area','Equity Curve','Cumulative P&amp;L plotted over time — each point is the running total after that trade. A rising line means you are growing; a falling line means drawdown.','<button class="dyn-btn" id="eqDynBtn" onclick="window._toggleDynamic()">⚡ Dynamic</button>')}
+        <div style="height:260px;position:relative"><canvas id="eq"></canvas></div>
+      </div>
+      <div class="card">
+        ${secHdr('fa-trophy','Win / Loss','Count of winning, losing, and break-even trades. The number in the centre is your overall win rate — aim for above 50% or compensate with a high reward-to-risk ratio.')}
+        <div style="height:200px;position:relative"><canvas id="wl"></canvas></div>
+        <div class="mini-stats">
+          <div><div class="ms-lbl">Avg Win</div><div class="ms-val c-g">+$${avgWin.toFixed(2)}</div></div>
+          <div><div class="ms-lbl">Avg Loss</div><div class="ms-val c-r">-$${avgLoss.toFixed(2)}</div></div>
+          <div><div class="ms-lbl">Best</div><div class="ms-val c-g">+$${best.toFixed(2)}</div></div>
+          <div><div class="ms-lbl">Worst</div><div class="ms-val c-r">-$${Math.abs(worst).toFixed(2)}</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="g2">
+      <div class="card">
+        ${secHdr('fa-chess','Strategy PNL','Net profit or loss grouped by strategy tag. Green bars are profitable strategies; red bars are losing ones. Focus on growing the green ones.')}
+        <div style="height:200px;position:relative"><canvas id="st"></canvas></div>
+      </div>
+      <div class="card">
+        ${secHdr('fa-table','Timeframe Breakdown','Win rate and net P&amp;L split by chart timeframe (M5, H1, D1, etc.) — tells you which timeframe suits your edge best.')}
+        <table class="bt"><thead><tr><th>Timeframe</th><th>Trades</th><th>Win Rate</th><th>PNL</th></tr></thead><tbody>${tfRows}</tbody></table>
+      </div>
+    </div>
+    <div class="card">
+      ${secHdr('fa-chart-line','Rolling Win Rate (20 trades)','Your win rate recalculated after every trade using the last 20 trades. Rising line = good form. Falling = a losing streak forming. Dashed line = 50% breakeven.')}
+      <p style="font-size:12px;color:var(--muted);margin:-6px 0 14px;line-height:1.5">Are you getting better over time, or is your edge slipping?</p>
+      <div style="height:200px;position:relative"><canvas id="rwr"></canvas></div>
+    </div>
+    <div class="card">
+      ${secHdr('fa-scale-balanced','Avg Win vs Avg Loss','Compares the average size of your winning trades to your losing trades. If your avg win is bigger than your avg loss, you can be profitable even with a win rate below 50%.')}
+      <div id="awl"></div>
+    </div>
+  </div>`;
+}
+
+function initOverviewCharts(trades,stats){
+  const{wins,losses,be,wr,sorted,vld}=stats;
+
+  // Equity
+  window._eqChart=_makeEquityChart('eq',sorted);
+  window._toggleDynamic=function(){
+    if(!window._eqChart)return;
+    window._eqChart._dynamicColor=!window._eqChart._dynamicColor;
+    const btn=document.getElementById('eqDynBtn');
+    if(btn)btn.classList.toggle('active',window._eqChart._dynamicColor);
+    if(!window._eqChart._dynamicColor){
+      window._eqChart.data.datasets[0].borderColor=G;
+      window._eqChart.data.datasets[0].backgroundColor=G+'14';
+      window._eqChart.data.datasets[0].pointBackgroundColor=G;
+    }
+    window._eqChart.update();
+  };
+
+  // Win/Loss donut
+  const wl=_mkChart(document.getElementById('wl'),{
+    type:'doughnut',
+    data:{labels:['Wins','Losses','BE'],datasets:[{data:[wins.length,losses.length,be.length],backgroundColor:[G+'dd',R+'bb','#6b8f7244'],borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'68%',plugins:{legend:{position:'bottom',labels:{padding:14,boxWidth:8,font:{size:11}}}}}
+  });
+  if(wl){wl._centerText=fPct(wr);wl._centerColor=wrColor(wr);}
+
+  // Strategy PNL
+  const sm={};
+  trades.forEach(t=>{
+    const ss=Array.isArray(t.strategy)?t.strategy:(t.strategy?[t.strategy]:[]);
+    ss.forEach(s=>{if(!sm[s])sm[s]=0;sm[s]+=(parseFloat(t.pnl)||0);});
+  });
+  const sl=Object.keys(sm);
+  if(sl.length){
+    const sp=sl.map(s=>+sm[s].toFixed(2));
+    const stBw=sl.length<=3?36:sl.length<=6?26:sl.length<=10?18:sl.length<=16?12:undefined;
+    _mkChart(document.getElementById('st'),{
+      type:'bar',
+      data:{labels:sl,datasets:[{data:sp,backgroundColor:sp.map(v=>v>=0?G+'cc':R+'aa'),borderRadius:5,...(stBw?{barThickness:stBw}:{maxBarThickness:12})}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:sl.length>8?9:11}}},y:{ticks:{callback:v=>'$'+v.toFixed(0)}}}}
+    });
+  }
+
+  // Rolling Win Rate (20-trade window)
+  const RWR_WIN=20;
+  const rwrData=sorted.map((_,i)=>{
+    const slice=sorted.slice(Math.max(0,i-RWR_WIN+1),i+1);
+    return+(slice.filter(t=>t.pnl>0).length/slice.length*100).toFixed(1);
+  });
+  if(rwrData.length){
+    _mkChart(document.getElementById('rwr'),{
+      type:'line',
+      data:{
+        labels:sorted.map(t=>t.date),
+        datasets:[
+          {data:rwrData,borderColor:G,backgroundColor:G+'14',fill:true,tension:.4,borderWidth:2,pointRadius:0,pointHoverRadius:5,pointBackgroundColor:G},
+          {data:Array(rwrData.length).fill(50),borderColor:'rgba(255,255,255,.18)',borderWidth:1,borderDash:[5,4],pointRadius:0,fill:false,tension:0}
+        ]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        interaction:{mode:'index',intersect:false},
+        plugins:{
+          legend:{display:false},
+          tooltip:{
+            backgroundColor:_panelColor(),borderColor:'rgba(255,255,255,.1)',borderWidth:1,
+            titleColor:_tc(),bodyColor:_textColor(),padding:12,displayColors:false,
+            filter:item=>item.datasetIndex===0,
+            callbacks:{title:ctx=>ctx[0]?.label||'',label:ctx=>`Win Rate  ${ctx.raw}%`}
+          }
+        },
+        scales:{
+          x:{ticks:{maxTicksLimit:8,font:{size:10}}},
+          y:{min:0,max:100,ticks:{callback:v=>v+'%',font:{size:10}}}
+        }
+      }
+    });
+  }
+
+  // Avg Win vs Avg Loss
+  const awlEl=document.getElementById('awl');
+  if(awlEl){
+    const{avgWin,avgLoss}=stats;
+    const ratio=avgLoss>0?(avgWin/avgLoss).toFixed(2):'∞';
+    const ratioNum=parseFloat(ratio);
+    const ratioColor=ratioNum>=1?G:R;
+    const maxVal=Math.max(avgWin,avgLoss,1);
+    const wPct=(avgWin/maxVal*100).toFixed(0);
+    const lPct=(avgLoss/maxVal*100).toFixed(0);
+    const sub=ratio==='∞'?'No losses recorded yet':`For every $1 you risk, you make $${ratio} when right`;
+    awlEl.innerHTML=`
+      <div style="text-align:center;margin-bottom:20px">
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">Reward-to-Risk Ratio</div>
+        <div style="font-family:var(--font-mono,'Space Mono',monospace);font-size:32px;font-weight:700;color:${ratioColor};line-height:1">${ratio}<span style="font-size:16px;opacity:.6">:1</span></div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px">${sub}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px">
+            <span style="color:var(--muted);font-weight:600;text-transform:uppercase;font-size:10px;letter-spacing:.5px">Avg Win</span>
+            <span style="font-family:var(--font-mono,'Space Mono',monospace);color:${G};font-weight:700">+$${avgWin.toFixed(2)}</span>
+          </div>
+          <div style="height:8px;background:var(--border2,#253127);border-radius:4px">
+            <div style="height:8px;width:${wPct}%;background:${G};border-radius:4px"></div>
+          </div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px">
+            <span style="color:var(--muted);font-weight:600;text-transform:uppercase;font-size:10px;letter-spacing:.5px">Avg Loss</span>
+            <span style="font-family:var(--font-mono,'Space Mono',monospace);color:${R};font-weight:700">-$${avgLoss.toFixed(2)}</span>
+          </div>
+          <div style="height:8px;background:var(--border2,#253127);border-radius:4px">
+            <div style="height:8px;width:${lPct}%;background:${R};border-radius:4px"></div>
+          </div>
+        </div>
+      </div>`;
+  }
+}
+
+// ── Timing Tab ────────────────────────────────────────────────────────────────
+function renderTimingHtml(trades){
+  const hm={};
+  trades.filter(t=>t.time&&t.time.includes(':')).forEach(t=>{
+    const h=parseInt(t.time.split(':')[0],10);
+    if(!hm[h])hm[h]={tot:0,wins:0,pnl:0};
+    hm[h].tot++;const p=parseFloat(t.pnl)||0;if(p>0)hm[h].wins++;hm[h].pnl+=p;
+  });
+  const timeRows=Object.keys(hm).map(Number).sort((a,b)=>a-b).map(h=>{
+    const d=hm[h],wrp=d.tot?d.wins/d.tot*100:0,avg=d.tot?d.pnl/d.tot:0;
+    return`<tr><td><strong>${fH(h)}</strong></td><td>${d.tot}</td><td style="min-width:130px">${wrBarHtml(wrp)}</td><td style="font-family:var(--font-mono,'Space Mono',monospace);font-size:12px;color:${grc(avg)}">${fP(avg)}</td></tr>`;
+  }).join('')||`<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:18px">No time data yet.</td></tr>`;
+
+  return`<div style="display:flex;flex-direction:column;gap:16px">
+    <div class="card">
+      ${secHdr('fa-fire-flame-curved','Trade Volume by Hour','Number of trades taken at each hour of the day. Taller bars = your busiest windows. Use this to spot when you overtrade or when you are most active.')}
+      <div style="height:220px;position:relative"><canvas id="hh"></canvas></div>
+    </div>
+    <div class="g2">
+      <div class="card">
+        ${secHdr('fa-calendar-week','Day of Week','Number of trades placed on each day of the week — reveals your most active trading days.')}
+        <div style="height:220px;position:relative"><canvas id="dow"></canvas></div>
+      </div>
+      <div class="card">
+        ${secHdr('fa-table','Hour Breakdown','Win rate and average P&amp;L per hour. Sorted by time — scan the Avg PNL column to find your golden hours and dead zones.')}
+        <div class="scroll-tbl"><table class="bt"><thead><tr><th>Hour</th><th>Trades</th><th>Win Rate</th><th>Avg PNL</th></tr></thead><tbody>${timeRows}</tbody></table></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function initTimingCharts(trades){
+  const gc=_gc();
+  const hm={};
+  trades.filter(t=>t.time&&t.time.includes(':')).forEach(t=>{
+    const h=parseInt(t.time.split(':')[0],10);
+    if(!hm[h])hm[h]={tot:0,wins:0,pnl:0};
+    hm[h].tot++;const p=parseFloat(t.pnl)||0;if(p>0)hm[h].wins++;hm[h].pnl+=p;
+  });
+  const hl=Array.from({length:24},(_,i)=>fHs(i));
+  const hc=Array.from({length:24},(_,i)=>(hm[i]||{tot:0}).tot);
+  const hp=Array.from({length:24},(_,i)=>(hm[i]||{pnl:0}).pnl);
+  _mkChart(document.getElementById('hh'),{
+    type:'bar',
+    data:{labels:hl,datasets:[{data:hc,backgroundColor:hp.map(v=>v>0?G+'bb':v<0?R+'bb':gc),borderRadius:3,barThickness:18}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{
+        backgroundColor:_panelColor(),borderColor:'rgba(255,255,255,.1)',borderWidth:1,
+        titleColor:_tc(),bodyColor:_textColor(),padding:12,displayColors:false,
+        callbacks:{
+          title:ctx=>{const h=ctx[0].dataIndex;return`${fH(h)} – ${fH(h<23?h+1:0)}`;},
+          label:ctx=>{const h=ctx.dataIndex;const n=hc[h];if(!n)return'No trades';return[`${n} trade${n!==1?'s':''}`,`PNL  ${fP(hp[h])}`];}
+        }
+      }},
+      scales:{x:{grid:{display:false},ticks:{font:{size:9}}},y:{ticks:{stepSize:1,font:{size:10}}}}}
+  });
+
+  const DOW=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const dc=[0,0,0,0,0,0,0],dp=[0,0,0,0,0,0,0];
+  trades.forEach(t=>{
+    if(!t.date)return;
+    const d=new Date(t.date+'T12:00:00'),idx=d.getDay()===0?6:d.getDay()-1;
+    dc[idx]++;dp[idx]+=(parseFloat(t.pnl)||0);
+  });
+  _mkChart(document.getElementById('dow'),{
+    type:'bar',
+    data:{labels:DOW,datasets:[{data:dc,backgroundColor:dp.map(v=>v>0?G+'bb':v<0?R+'bb':gc),borderRadius:5,barThickness:36}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{
+        backgroundColor:_panelColor(),borderColor:'rgba(255,255,255,.1)',borderWidth:1,
+        titleColor:_tc(),bodyColor:_textColor(),padding:12,displayColors:false,
+        callbacks:{
+          title:ctx=>DOW[ctx[0].dataIndex],
+          label:ctx=>{const i=ctx.dataIndex;const n=dc[i];if(!n)return'No trades';return[`${n} trade${n!==1?'s':''}`,`PNL  ${fP(dp[i])}`];}
+        }
+      }},
+      scales:{x:{grid:{display:false},ticks:{font:{size:11}}},y:{ticks:{stepSize:1,font:{size:10}}}}}
+  });
+}
+
+// ── Assets & Behavior Tab ─────────────────────────────────────────────────────
+function renderAssetsHtml(trades,mc){
+  // Mood
+  const mm={};
+  trades.forEach(t=>{
+    const ms=Array.isArray(t.mood)?t.mood:(t.mood?[t.mood]:[]);
+    ms.forEach(m=>{if(!mm[m])mm[m]={tot:0,wins:0,pnl:0};mm[m].tot++;const p=parseFloat(t.pnl)||0;if(p>0)mm[m].wins++;mm[m].pnl+=p;});
+  });
+  const moodRows=Object.keys(mm).map(m=>{
+    const d=mm[m],wrp=d.tot?d.wins/d.tot*100:0,avg=d.tot?d.pnl/d.tot:0;
+    return`<tr><td><strong>${m}</strong></td><td>${d.tot}</td><td style="min-width:130px">${wrBarHtml(wrp)}</td><td style="font-family:var(--font-mono,'Space Mono',monospace);font-size:12px;color:${grc(avg)}">${fP(avg)}</td></tr>`;
+  }).join('')||`<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:18px">No mood data yet.</td></tr>`;
+
+  // Confidence
+  const cm={};
+  trades.forEach(t=>{const k=t.confidence;if(!k||k<1)return;if(!cm[k])cm[k]={tot:0,wins:0,pnl:0};cm[k].tot++;const p=parseFloat(t.pnl)||0;if(p>0)cm[k].wins++;cm[k].pnl+=p;});
+  const confRows=Object.keys(cm).map(Number).sort((a,b)=>b-a).map(stars=>{
+    const d=cm[stars],wrp=d.tot?d.wins/d.tot*100:0,avg=d.tot?d.pnl/d.tot:0;
+    return`<tr><td><span style="color:#f5c518;letter-spacing:1px">${'★'.repeat(stars)}<span style="opacity:.2">${'★'.repeat(5-stars)}</span></span></td><td>${d.tot}</td><td style="min-width:130px">${wrBarHtml(wrp)}</td><td style="font-family:var(--font-mono,'Space Mono',monospace);font-size:12px;color:${grc(avg)}">${fP(avg)}</td></tr>`;
+  }).join('')||`<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:18px">No confidence data yet.</td></tr>`;
+
+  // Pair bars
+  const pairMap={};
+  trades.forEach(t=>{if(!t.pair)return;if(!pairMap[t.pair])pairMap[t.pair]={pnl:0,cnt:0};pairMap[t.pair].pnl+=parseFloat(t.pnl)||0;pairMap[t.pair].cnt++;});
+  const pairList=Object.entries(pairMap).map(([p,d])=>({p,pnl:+d.pnl.toFixed(2),cnt:d.cnt})).sort((a,b)=>b.pnl-a.pnl);
+  const maxAbs=pairList.length?Math.max(...pairList.map(x=>Math.abs(x.pnl)),1):1;
+  const pairHtml=pairList.slice(0,8).map(x=>{
+    const color=x.pnl>=0?G:R,w=(Math.abs(x.pnl)/maxAbs*100).toFixed(0);
+    return`<div class="pair-row"><div class="pair-meta"><span style="font-weight:600">${x.p}</span><span><span style="font-family:var(--font-mono,'Space Mono',monospace);color:${color};font-size:12px">${fP(x.pnl)}</span><span style="color:var(--muted);margin-left:6px;font-size:11px">${x.cnt} Trade${x.cnt!==1?'s':''}</span></span></div><div class="pair-track"><div class="pair-fill" style="width:${w}%;background:${color}"></div></div></div>`;
+  }).join('')||`<span style="color:var(--muted);font-size:13px">No pair data yet.</span>`;
+
+  return`<div style="display:flex;flex-direction:column;gap:16px">
+    <div class="g2">
+      <div class="card">
+        ${secHdr('fa-ranking-star','Top Pairs by PNL','Cumulative net profit or loss per instrument, sorted best to worst. Bar width shows relative size. Tells you which markets you trade well and which drain your account.')}
+        ${pairHtml}
+      </div>
+      <div class="card">
+        ${secHdr('fa-arrow-right-arrow-left','Long vs Short','Split between buy-side (Long) and sell-side (Short) positions. A heavy skew in one direction could mean you have a directional bias — useful to know if the market is trending against you.')}
+        <div style="height:200px;position:relative"><canvas id="ls"></canvas></div>
+      </div>
+    </div>
+    <div class="g2">
+      <div class="card">
+        ${secHdr('fa-face-smile','Mood vs Performance','Win rate and average P&amp;L per mood tag. If Anxious or Tired moods have lower win rates, that is a signal to step back when you feel that way.')}
+        <table class="bt"><thead><tr><th>Mood</th><th>Trades</th><th>Win Rate</th><th>Avg PNL</th></tr></thead><tbody>${moodRows}</tbody></table>
+      </div>
+      <div class="card">
+        ${secHdr('fa-star','Confidence vs Performance','Win rate and average P&amp;L grouped by the star rating you gave each trade before entry. Ideally your 5-star trades outperform your 1-star trades — if not, your pre-trade confidence is not well-calibrated.')}
+        <table class="bt"><thead><tr><th>Confidence</th><th>Trades</th><th>Win Rate</th><th>Avg PNL</th></tr></thead><tbody>${confRows}</tbody></table>
+      </div>
+    </div>
+  </div>`;
+}
+
+function initAssetsCharts(trades){
+  const longs=trades.filter(t=>t.position==='Long').length;
+  const shorts=trades.filter(t=>t.position==='Short').length;
+  _mkChart(document.getElementById('ls'),{
+    type:'doughnut',
+    data:{labels:['Long','Short'],datasets:[{data:[longs,shorts],backgroundColor:[G+'cc',R+'aa'],borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{position:'bottom',labels:{padding:14,boxWidth:8,font:{size:11}}}}}
+  });
+}
+
+// ── Insights Tab ──────────────────────────────────────────────────────────────
+function renderInsightsHtml(trades,stats){
+  const{vld,wins,losses,wr,pf,maxDd,consistency}=stats;
+  if(vld.length<5)return`<div style="color:var(--muted);text-align:center;padding:40px;font-size:14px">Need at least 5 trades for insights.</div>`;
+
+  const totalEquity=Math.abs(vld.reduce((s,t)=>s+t.pnl,0))||1;
+  const ddPct=Math.min(maxDd/totalEquity,1);
+  const score=Math.round((wr/50)*25+(Math.min(pf,3)/3)*25+(1-ddPct)*25+consistency*25);
+  const level=score>70?'Low Risk':score>50?'Medium Risk':'High Risk';
+  const scoreColor=score>70?G:score>50?Y:R;
+  const circ=2*Math.PI*40;
+  const dash=circ*(1-score/100);
+
+  const dayCount=Object.keys(stats.daily||{}).length||1;
+  const avgPerDay=vld.length/dayCount;
+  const recs=[];
+  if(avgPerDay>6)recs.push({p:'high',icon:'fa-hourglass-end',a:'Reduce trade frequency',r:`You average ${avgPerDay.toFixed(1)} trades/day — overtrading erodes edge.`});
+  if(wr<45)recs.push({p:'high',icon:'fa-bullseye',a:'Tighten entry criteria',r:`Win rate ${wr.toFixed(1)}% — prioritise quality over quantity.`});
+  if(pf<1.5)recs.push({p:'medium',icon:'fa-arrow-trend-up',a:'Widen RR targets',r:`Profit factor ${pf.toFixed(2)} — losses are too large relative to wins.`});
+  const net=Math.abs(wins.reduce((s,t)=>s+t.pnl,0)-Math.abs(losses.reduce((s,t)=>s+t.pnl,0)));
+  if(maxDd>net*0.4&&net>0)recs.push({p:'medium',icon:'fa-shield',a:'Add daily loss limit',r:`Max drawdown $${maxDd.toFixed(0)} is excessive vs net P&L.`});
+  if(wr>58&&pf>1.8)recs.push({p:'positive',icon:'fa-check-circle',a:'Strategy is working',r:`Strong metrics — focus on position sizing to compound gains.`});
+  if(recs.length===0)recs.push({p:'neutral',icon:'fa-chart-line',a:'Continue monitoring',r:'No critical issues. Keep logging and reviewing.'});
+  recs.sort((a,b)=>({high:0,medium:1,positive:2,neutral:3}[a.p]||3)-({high:0,medium:1,positive:2,neutral:3}[b.p]||3));
+
+  const bg={high:'rgba(240,81,101,.07)',medium:'rgba(245,197,24,.07)',positive:'rgba(25,195,125,.07)',neutral:'rgba(107,143,114,.07)'};
+  const bd={high:'rgba(240,81,101,.25)',medium:'rgba(245,197,24,.25)',positive:'rgba(25,195,125,.25)',neutral:'rgba(107,143,114,.2)'};
+
+  const recsHtml=recs.map(r=>`
+    <div style="background:${bg[r.p]};border:1px solid ${bd[r.p]};border-radius:8px;padding:12px 16px;display:flex;gap:12px;align-items:flex-start;margin-bottom:10px">
+      <div style="font-size:16px;color:var(--muted);flex-shrink:0;margin-top:2px"><i class="fa-solid ${r.icon}"></i></div>
+      <div><div style="font-weight:600;font-size:13px;margin-bottom:3px;color:var(--text)">${r.a}</div><div style="font-size:12px;color:var(--muted);line-height:1.5">${r.r}</div></div>
+    </div>`).join('');
+
+  const miniRows=[
+    ['Win Rate',fPct(wr),grc(wr-50)],
+    ['Profit Factor',pf===999?'∞':pf.toFixed(2),grc(pf-1)],
+    ['Max Drawdown','-$'+maxDd.toFixed(0),R],
+    ['Consistency',fPct(consistency*100),grc(consistency-.5)],
+  ].map(([l,v,c])=>`<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:7px"><span style="color:var(--muted)">${l}</span><span style="font-family:var(--font-mono,'Space Mono',monospace);color:${c};font-weight:600">${v}</span></div>`).join('');
+
+  return`<div style="display:grid;grid-template-columns:260px 1fr;gap:16px">
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:14px"><span style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;font-weight:700">Risk Score</span><span class="sec-tip" data-tip="Composite score from 0–100 based on four pillars: win rate, profit factor, max drawdown, and daily consistency. Above 70 = Low Risk. 50–70 = Medium. Below 50 = High Risk. Higher is safer.">?</span></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:12px">
+        <div style="position:relative;width:110px;height:110px">
+          <svg width="110" height="110" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="40" fill="none" stroke="#253127" stroke-width="8"/>
+            <circle cx="50" cy="50" r="40" fill="none" stroke="${scoreColor}" stroke-width="8"
+              stroke-dasharray="${circ.toFixed(2)}" stroke-dashoffset="${dash.toFixed(2)}"
+              stroke-linecap="round" transform="rotate(-90 50 50)" style="transition:stroke-dashoffset .8s ease"/>
+          </svg>
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+            <span style="font-family:var(--font-mono,'Space Mono',monospace);font-size:22px;font-weight:700;color:${scoreColor}">${score}</span>
+            <span style="font-size:9px;color:var(--muted);letter-spacing:.5px">/ 100</span>
+          </div>
+        </div>
+        <div style="font-weight:700;font-size:14px;color:${scoreColor}">${level}</div>
+        <div style="width:100%;border-top:1px solid var(--border);padding-top:12px">${miniRows}</div>
+      </div>
+    </div>
+    <div>
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px"><span style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;font-weight:700">Recommendations</span><span class="sec-tip" data-tip="Personalized action items generated from your actual trading patterns — issues like overtrading, poor stop discipline, or loss streaks are detected automatically.">?</span></div>
+      ${recsHtml}
+    </div>
+  </div>`;
+}
+
+// ── Main IIFE ─────────────────────────────────────────────────────────────────
 (async()=>{
   if(!jid){
     document.getElementById('skelView').style.display='none';
@@ -393,7 +735,12 @@ Chart.register({
     document.getElementById('root').innerHTML='<div class="empty"><i class="fa-solid fa-chart-line"></i>No journal selected.</div>';
     document.body.style.visibility='visible';return;
   }
-  const raw=await getTrades(jid);const trades=raw.map(dbToTrade);const settings=await getJournalSettings(jid);const mc=settings?.mood_colors||{};
+
+  const raw=await getTrades(jid);
+  const allTrades=raw.map(dbToTrade);
+  const settings=await getJournalSettings(jid);
+  const mc=settings?.mood_colors||{};
+
   document.getElementById('skelView').style.display='none';
   document.getElementById('root').style.display='';
   document.body.style.visibility='visible';
@@ -405,332 +752,110 @@ Chart.register({
     catch(e){const p=await getProfile(authUser.id);isPro=p?.plan==='pro';}
   }
 
-  const rootStyle=getComputedStyle(document.documentElement);
-  const tc=rootStyle.getPropertyValue('--muted').trim()||'#8fa39a';
-  const gc=rootStyle.getPropertyValue('--border').trim()||'#1c2a25';
-  const textColor=rootStyle.getPropertyValue('--text').trim()||'#e6f2ec';
-  const panelColor=rootStyle.getPropertyValue('--panel').trim()||'rgba(11,15,12,.95)';
+  _chartDefaults();
 
-  Chart.defaults.color=tc;
-  Chart.defaults.borderColor=gc;
-  Chart.defaults.font.family='Inter,sans-serif';
-
-  if(!trades.length){
+  if(!allTrades.length){
     document.getElementById('root').innerHTML='<div class="empty"><i class="fa-solid fa-chart-line"></i>No trades yet.<br>Add trades in the Logs tab to see analytics.</div>';
     return;
   }
 
-  document.getElementById('root').innerHTML=`
-    <div style="margin-bottom:8px"><h3 style="font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;display:flex;align-items:center;gap:6px"><i class="fa-solid fa-gauge-high"></i> Performance Metrics <span class="tooltip-icon" data-tooltip="Key metrics to evaluate your trading performance and risk management">?</span></h3></div>
-    <div class="sr" id="sr"></div>
-    <div class="stk" id="stk"></div>
-    <div id="ai-section" style="margin-bottom:18px"></div>
-    <div class="cb"><h3 style="justify-content:space-between;flex-wrap:wrap;gap:8px"><span style="display:flex;align-items:center;gap:6px"><i class="fa-solid fa-chart-area"></i> Equity Curve <span class="tooltip-icon" data-tooltip="Visualize your account growth over time to see trading progress and identify drawdown periods">?</span></span><div class="eq-range-btns"><button class="eq-tog active" data-range="all" onclick="setEqRange('all')">All</button><button class="eq-tog" data-range="week" onclick="setEqRange('week')">Week</button><button class="eq-tog" data-range="30d" onclick="setEqRange('30d')">30D</button><button class="eq-tog" data-range="90d" onclick="setEqRange('90d')">90D</button><span style="width:1px;background:var(--border);margin:0 2px;display:inline-block;align-self:stretch"></span><button class="eq-tog" id="eqDynBtn" onclick="setEqColor()" title="Green above zero · Red below zero">⚡ Dynamic</button></div></h3><canvas id="eq"></canvas></div>
-    ${!isPro ? `
-    <div class="ad-slot visible">
-      <div class="ad-slot-label">Advertisement</div>
-      <div class="ad-slot-inner">
-        <ins class="adsbygoogle" style="display:block;width:100%;min-height:70px" data-ad-client="ca-pub-XXXXXXXXXXXXXXXX" data-ad-slot="XXXXXXXXXX" data-ad-format="horizontal" data-full-width-responsive="true"></ins>
+  let activeRange='all';
+  let activeTab='overview';
+
+  // ── Static shell ───────────────────────────────────────────────────────────
+  const root=document.getElementById('root');
+  root.innerHTML=`
+    <div class="page-hdr">
+      <div>
+        <div class="page-label">Trading Journal</div>
+        <h1 class="page-title">Analytics</h1>
+      </div>
+      <div class="range-group">
+        <button class="range-btn" data-range="7d" onclick="window._setRange('7d')">7D</button>
+        <button class="range-btn" data-range="30d" onclick="window._setRange('30d')">30D</button>
+        <button class="range-btn" data-range="90d" onclick="window._setRange('90d')">90D</button>
+        <button class="range-btn active" data-range="all" onclick="window._setRange('all')">All</button>
       </div>
     </div>
-    <div class="cb pro-upsell-box">
-      <div style="text-align:center;padding:20px 16px">
-        <i class="fa-solid fa-lock" style="font-size:28px;color:var(--muted);opacity:.4;display:block;margin-bottom:12px"></i>
-        <h3 style="font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:15px;font-weight:600;margin-bottom:8px;text-transform:none;letter-spacing:0;color:var(--text)">Advanced Analytics — Pro</h3>
-        <p style="font-size:13px;color:var(--muted);line-height:1.6;max-width:420px;margin:0 auto 16px">Unlock Strategy PNL, Mood heatmaps, Hour analysis, Day-of-week breakdown, Long vs Short, and more.</p>
-        <a href="/subscription" style="display:inline-flex;align-items:center;gap:7px;background:#19c37d;color:#0b0f0c;border:none;border-radius:var(--radius-md);padding:10px 20px;font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:13px;font-weight:700;text-decoration:none;transition:opacity .2s" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
-          <i class="fa-solid fa-chevron-up"></i> Upgrade to Pro — $5/mo
-        </a>
+    <div class="kpi-strip" id="kpiStrip"></div>
+    <div id="insightBarWrap"></div>
+    ${isPro?`
+      <div class="tab-bar">
+        <button class="tz-tab active" data-tab="overview" onclick="window._switchTab('overview')">Overview</button>
+        <button class="tz-tab" data-tab="timing" onclick="window._switchTab('timing')">Timing</button>
+        <button class="tz-tab" data-tab="assets" onclick="window._switchTab('assets')">Assets &amp; Behavior</button>
+        <button class="tz-tab" data-tab="insights" onclick="window._switchTab('insights')">Insights</button>
       </div>
-    </div>` : `
-    <div class="c2"><div class="cb"><h3><i class="fa-solid fa-circle-half-stroke"></i> Win / Loss <span class="tooltip-icon" data-tooltip="Your win/loss ratio shows how many winning vs losing trades you have. Win rate displayed in center">?</span></h3><canvas id="wl"></canvas></div><div class="cb"><h3><i class="fa-solid fa-chess"></i> Strategy PNL <span class="tooltip-icon" data-tooltip="Compare profitability across different trading strategies to identify your best performers">?</span></h3><canvas id="st"></canvas></div></div>
-    <div class="cb"><h3><i class="fa-solid fa-table"></i> Timeframe Breakdown <span class="tooltip-icon" data-tooltip="Analyze which timeframes are most profitable for your trading style">?</span></h3><table class="bt"><thead><tr><th>Timeframe</th><th>Trades</th><th>Wins</th><th>Win Rate</th><th>Total PNL</th></tr></thead><tbody id="tfb"></tbody></table></div>
-    <div class="ad-slot visible" style="margin-bottom:14px">
-      <div class="ad-slot-label">Advertisement</div>
-      <div class="ad-slot-inner">
-        <ins class="adsbygoogle" style="display:block;width:100%;min-height:70px" data-ad-client="ca-pub-XXXXXXXXXXXXXXXX" data-ad-slot="XXXXXXXXXX" data-ad-format="horizontal" data-full-width-responsive="true"></ins>
+      <div id="tabContent"></div>
+    `:`
+      <div class="card" style="margin-bottom:16px" id="freeEqCard">
+        <div class="sec-hdr"><div class="sec-hdr-l"><span class="sec-ico"><i class="fa-solid fa-chart-area"></i></span><span class="sec-ttl">Equity Curve</span><span class="sec-tip" data-tip="Cumulative P&amp;L plotted over time — each point is the running total after that trade. A rising line means you are growing; a falling line means drawdown.">?</span></div></div>
+        <div style="height:260px;position:relative"><canvas id="eq-free"></canvas></div>
       </div>
-    </div>
-    <div class="c2"><div class="cb"><h3><i class="fa-solid fa-face-smile"></i> Mood Distribution <span class="tooltip-icon" data-tooltip="See how your emotional state correlates with trading frequency">?</span></h3><canvas id="md"></canvas></div><div class="cb"><h3><i class="fa-solid fa-face-smile-beam"></i> Mood vs Performance <span class="tooltip-icon" data-tooltip="Identify which moods lead to better trading outcomes">?</span></h3><table class="bt"><thead><tr><th>Mood</th><th>Trades</th><th>Win Rate</th><th>Avg PNL</th></tr></thead><tbody id="mdb"></tbody></table></div></div>
-    <div class="cb"><h3><i class="fa-solid fa-fire-flame-curved"></i> Hour Heatmap <span class="tooltip-icon" data-tooltip="Find the best trading hours when you're most profitable">?</span></h3><canvas id="hh"></canvas></div>
-    <div class="c2"><div class="cb"><h3><i class="fa-solid fa-trophy"></i> Best Hours (Avg PNL) <span class="tooltip-icon" data-tooltip="See which hours generate the most profit on average">?</span></h3><canvas id="hp"></canvas></div><div class="cb"><h3><i class="fa-solid fa-table"></i> Time of Day <span class="tooltip-icon" data-tooltip="Detailed performance breakdown by hour">?</span></h3><table class="bt"><thead><tr><th>Hour</th><th>Trades</th><th>Wins</th><th>Win Rate</th><th>Avg PNL</th></tr></thead><tbody id="tb"></tbody></table></div></div>
-    <div class="c2"><div class="cb"><h3><i class="fa-solid fa-arrow-right-arrow-left"></i> Long vs Short <span class="tooltip-icon" data-tooltip="Compare profitability between long and short positions">?</span></h3><canvas id="ls"></canvas></div><div class="cb"><h3><i class="fa-solid fa-ranking-star"></i> Top Pairs by PNL <span class="tooltip-icon" data-tooltip="See which trading pairs generate the most profit">?</span></h3><div id="pb"></div></div></div>
-    <div class="cb"><h3><i class="fa-solid fa-calendar-week"></i> Trades by Day of Week <span class="tooltip-icon" data-tooltip="Find days of the week where you trade best">?</span></h3><canvas id="dow"></canvas></div>
-    <div class="cb"><h3><i class="fa-solid fa-star"></i> Confidence vs Performance <span class="tooltip-icon" data-tooltip="See if higher confidence trades correlate with better results">?</span></h3><table class="bt"><thead><tr><th>Confidence</th><th>Trades</th><th>Win Rate</th><th>Avg PNL</th><th>Avg R</th></tr></thead><tbody id="confb"></tbody></table></div>
-    <div class="cb"><h3><i class="fa-solid fa-chart-column"></i> PNL Distribution <span class="tooltip-icon" data-tooltip="Shows how your profits and losses are distributed. Healthy: many small losses with few big wins. Unhealthy: many small wins with few big losses">?</span></h3><canvas id="pnld"></canvas></div>`}`;
-
-  if(!isPro){try{(adsbygoogle=window.adsbygoogle||[]).push({});}catch(e){}}
-
-  const vld=trades.filter(t=>t.pnl!==''&&!isNaN(parseFloat(t.pnl))),wins=vld.filter(t=>parseFloat(t.pnl)>0),losses=vld.filter(t=>parseFloat(t.pnl)<0),be=vld.filter(t=>parseFloat(t.pnl)===0),total=vld.reduce((s,t)=>s+parseFloat(t.pnl),0),rv=trades.filter(t=>t.r&&!isNaN(parseFloat(t.r))).map(t=>parseFloat(t.r)),avgR=rv.length?rv.reduce((a,b)=>a+b,0)/rv.length:0,wr=vld.length?wins.length/vld.length*100:0;
-  let mxW=0,mxL=0,cW=0,cL=0;
-  vld.forEach(t=>{const p=parseFloat(t.pnl);if(p>0){cW++;cL=0;if(cW>mxW)mxW=cW;}else if(p<0){cL++;cW=0;if(cL>mxL)mxL=cL;}else{cW=0;cL=0;}});
-
-  const best=vld.length?Math.max(...vld.map(t=>parseFloat(t.pnl))):null;
-  const worst=vld.length?Math.min(...vld.map(t=>parseFloat(t.pnl))):null;
-
-  // Extra stats
-  const totalWinAmt=wins.reduce((s,t)=>s+parseFloat(t.pnl),0);
-  const totalLossAmt=Math.abs(losses.reduce((s,t)=>s+parseFloat(t.pnl),0));
-  const pf=totalLossAmt>0?(totalWinAmt/totalLossAmt):wins.length>0?Infinity:0;
-  const avgWin=wins.length?totalWinAmt/wins.length:0;
-  const avgLoss=losses.length?Math.abs(losses.reduce((s,t)=>s+parseFloat(t.pnl),0)/losses.length):0;
-  const srtVld=[...vld].sort((a,b)=>(a.date||'').localeCompare(b.date||''));
-  let peak=0,runEq=0,maxDd=0;
-  srtVld.forEach(t=>{runEq+=parseFloat(t.pnl);if(runEq>peak)peak=runEq;const dd=peak-runEq;if(dd>maxDd)maxDd=dd;});
-
-  const tooltips={
-    'Total PNL':'Your overall profit or loss across all trades',
-    'Wins':'Number of winning trades',
-    'Losses':'Number of losing trades',
-    'Trades':'Total trades executed',
-    'Avg R':'Average risk-reward ratio',
-    'Profit Factor':'Gross profit divided by gross loss (>1 is profitable)',
-    'Avg Win':'Average profit per winning trade',
-    'Avg Loss':'Average loss per losing trade',
-    'Max Drawdown':'Largest peak-to-trough decline',
-    'Best':'Best single trade P&L',
-    'Worst':'Worst single trade P&L'
-  };
-
-  const srHtml=[
-    {l:'Total PNL',v:fP(total),c:grc(total)},
-    {l:'Wins',v:wins.length,c:'green'},
-    {l:'Losses',v:losses.length,c:'red'},
-    {l:'Trades',v:trades.length,c:''},
-    {l:'Avg R',v:(avgR>=0?'+':'')+avgR.toFixed(2)+'R',c:grc(avgR)},
-    {l:'Profit Factor',v:pf===Infinity?'∞':pf.toFixed(2),c:pf>=1?'green':'red'},
-    {l:'Avg Win',v:avgWin?fP(avgWin):'—',c:'green'},
-    {l:'Avg Loss',v:avgLoss?'-$'+avgLoss.toFixed(2):'—',c:'red'},
-    {l:'Max Drawdown',v:maxDd?'-$'+maxDd.toFixed(2):'—',c:maxDd>0?'red':''},
-    {l:'Best',v:best!==null?fP(best):'—',c:'green'},
-    {l:'Worst',v:worst!==null?fP(worst):'—',c:'red'}
-  ].map(s=>`<div class="sc" data-tooltip="${tooltips[s.l]||''}"><div class="sl">${s.l}</div><div class="sv ${s.c}">${s.v}</div></div>`).join('');
-
-  const streaksHtml=`
-    <div class="sc" data-tooltip="Longest consecutive wins and losses" style="grid-column:span 2">
-      <div class="sl">Streaks</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;width:100%;font-size:9px;text-transform:uppercase;letter-spacing:.5px;margin-top:4px;margin-bottom:2px;font-weight:600">
-        <div style="text-align:center;padding:2px 6px;color:#19c37d;border-right:1px solid var(--border)">W</div>
-        <div style="text-align:center;padding:2px 6px;color:#ff5f6d">L</div>
+      <div class="ad-slot" style="margin-bottom:16px" id="adSlot1">
+        <div class="ad-slot-label">Advertisement</div>
+        <div class="ad-slot-inner"><ins class="adsbygoogle" style="display:block;width:100%;min-height:70px" data-ad-client="ca-pub-XXXXXXXXXXXXXXXX" data-ad-slot="XXXXXXXXXX" data-ad-format="horizontal" data-full-width-responsive="true"></ins></div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;width:100%;font-size:16px;font-weight:700">
-        <div style="text-align:center;padding:2px 6px;border-right:1px solid var(--border)"><span class="green">${mxW}</span></div>
-        <div style="text-align:center;padding:2px 6px"><span class="red">${mxL}</span></div>
-      </div>
-    </div>`;
-
-  document.getElementById('sr').innerHTML=srHtml+streaksHtml;
-
-  // Equity curve with range toggle + crosshair + dynamic color
-  const eqAllTrades=srtVld;
-  let eqChart=null;
-
-  window.setEqRange=function(range){
-    // only toggle range buttons (not the Dynamic button)
-    document.querySelectorAll('.eq-tog[data-range]').forEach(b=>b.classList.toggle('active',b.dataset.range===range));
-    const now=new Date();let cutoff=null;
-    if(range==='week'){cutoff=new Date(now);cutoff.setDate(cutoff.getDate()-7);}
-    else if(range==='30d'){cutoff=new Date(now);cutoff.setDate(cutoff.getDate()-30);}
-    else if(range==='90d'){cutoff=new Date(now);cutoff.setDate(cutoff.getDate()-90);}
-    const filtered=cutoff?eqAllTrades.filter(t=>new Date((t.date||'')+'T12:00:00')>=cutoff):eqAllTrades;
-    let acc=0;const labels=[],data=[];
-    filtered.forEach(t=>{acc+=parseFloat(t.pnl);labels.push(t.date);data.push(+acc.toFixed(2));});
-    if(!eqChart)return;
-    // reset to flat green first so dynamic plugin has fresh canvas state
-    if(!eqChart._dynamicColor){
-      eqChart.data.datasets[0].borderColor=G;
-      eqChart.data.datasets[0].backgroundColor=G+'18';
-    }
-    eqChart.data.labels=labels;eqChart.data.datasets[0].data=data;eqChart.update();
-  };
-
-  window.setEqColor=function(){
-    if(!eqChart)return;
-    eqChart._dynamicColor=!eqChart._dynamicColor;
-    document.getElementById('eqDynBtn').classList.toggle('active',eqChart._dynamicColor);
-    if(!eqChart._dynamicColor){
-      eqChart.data.datasets[0].borderColor=G;
-      eqChart.data.datasets[0].backgroundColor=G+'18';
-      eqChart.data.datasets[0].pointBackgroundColor=G;
-      eqChart.data.datasets[0].pointHoverBackgroundColor=G;
-    }
-    eqChart.update();
-  };
-
-  let initEq=0;const initD=eqAllTrades.map(t=>{initEq+=parseFloat(t.pnl);return+initEq.toFixed(2);});
-  eqChart=new Chart(document.getElementById('eq'),{
-    type:'line',
-    data:{
-      labels:eqAllTrades.map(t=>t.date),
-      datasets:[{
-        data:initD,
-        borderColor:G,backgroundColor:G+'18',fill:true,
-        tension:.35,borderWidth:2,
-        pointRadius:0,pointHoverRadius:7,
-        pointBackgroundColor:G,pointHoverBackgroundColor:G
-      }]
-    },
-    options:{
-      responsive:true,maintainAspectRatio:true,
-      showCrosshair:true,
-      interaction:{mode:'index',intersect:false},
-      plugins:{
-        legend:{display:false},
-        tooltip:{
-          backgroundColor:panelColor,
-          borderColor:'rgba(255,255,255,.15)',
-          borderWidth:1,
-          titleColor:tc,
-          bodyFont:{family:"'Space Grotesk', sans-serif",size:13,weight:600},
-          bodyColor:textColor,
-          padding:12,
-          displayColors:false,
-          callbacks:{
-            title:ctx=>ctx[0]?.label||'',
-            label:ctx=>{const v=ctx.raw;return(v>=0?'🟢 +':v<0?'🔴 ':'')+(v>=0?'':'')+fP(v);}
-          }
-        }
-      },
-      scales:{
-        x:{ticks:{maxTicksLimit:10}},
-        y:{ticks:{callback:v=>(v>=0?'+':'-')+'$'+Math.abs(v).toFixed(2)}}
-      }
-    }
-  });
-
-  if(!isPro){try{(adsbygoogle=window.adsbygoogle||[]).push({});}catch(e){}return;}
-
-  const wlChart=new Chart(document.getElementById('wl'),{type:'doughnut',data:{labels:['Wins','Losses','BE'],datasets:[{data:[wins.length,losses.length,be.length],backgroundColor:[G,R+'cc','#8fa39a44'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{position:'bottom',labels:{padding:14,boxWidth:10}}},cutout:'62%'}});
-  wlChart._centerText=fPct(wr);
-  wlChart._centerColor=wrColor(wr);
-
-  const sm={};trades.forEach(t=>(t.strategy||[]).forEach(s=>{if(!sm[s])sm[s]=0;sm[s]+=(parseFloat(t.pnl)||0);}));
-  const sl=Object.keys(sm);
-  if(sl.length){const sp=sl.map(s=>+sm[s].toFixed(2));new Chart(document.getElementById('st'),{type:'bar',data:{labels:sl,datasets:[{data:sp,backgroundColor:sp.map(v=>v>=0?G+'cc':R+'cc'),borderRadius:5}]},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false}},scales:{x:{},y:{}}}});}
-
-  const tm={};trades.forEach(t=>(t.timeframe||[]).forEach(tf=>{if(!tm[tf])tm[tf]={w:0,tot:0,pnl:0};tm[tf].tot++;const p=parseFloat(t.pnl)||0;if(p>0)tm[tf].w++;tm[tf].pnl+=p;}));
-  document.getElementById('tfb').innerHTML=Object.keys(tm).length?Object.keys(tm).map(tf=>{const d=tm[tf],w2=d.tot?(d.w/d.tot*100).toFixed(1):'0';return`<tr><td><strong>${tf}</strong></td><td>${d.tot}</td><td style="color:#19c37d">${d.w}</td><td style="color:${parseFloat(w2)>=50?'#19c37d':'#ff5f6d'}">${fPct(w2)}</td><td style="color:${d.pnl>=0?'#19c37d':'#ff5f6d'}">${fP(d.pnl)}</td></tr>`;}).join(''):'<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:18px">No timeframe data yet.</td></tr>';
-
-  const mm={};trades.forEach(t=>(t.mood||[]).forEach(m=>{if(!mm[m])mm[m]={tot:0,wins:0,pnl:0};mm[m].tot++;const p=parseFloat(t.pnl)||0;if(p>0)mm[m].wins++;mm[m].pnl+=p;}));
-  const mk=Object.keys(mm);const MF=['#b39ddb','#81c784','#64b5f6','#ffb74d','#e57373','#f06292','#4db6ac','#aed581'];
-  if(mk.length){
-    new Chart(document.getElementById('md'),{type:'doughnut',data:{labels:mk,datasets:[{data:mk.map(m=>mm[m].tot),backgroundColor:mk.map((m,i)=>mc[m]||(MF[i%MF.length])),borderWidth:0}]},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{position:'bottom',labels:{padding:12,boxWidth:10}}},cutout:'55%'}});
-    document.getElementById('mdb').innerHTML=mk.map(m=>{const d=mm[m],w=d.tot?(d.wins/d.tot*100).toFixed(1):'0',avg=d.tot?d.pnl/d.tot:0;return`<tr><td><strong>${m}</strong></td><td>${d.tot}</td><td style="color:${parseFloat(w)>=50?'#19c37d':'#ff5f6d'}">${fPct(w)}</td><td style="color:${avg>=0?'#19c37d':'#ff5f6d'}">${fP(avg)}</td></tr>`;}).join('');
-  }
-
-  try{(adsbygoogle=window.adsbygoogle||[]).push({});}catch(e){}
-
-  const longs=trades.filter(t=>t.position==='Long').length,shorts=trades.filter(t=>t.position==='Short').length;
-  new Chart(document.getElementById('ls'),{type:'doughnut',data:{labels:['Long','Short'],datasets:[{data:[longs,shorts],backgroundColor:[G+'cc',R+'cc'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{position:'bottom',labels:{padding:14,boxWidth:10}}},cutout:'60%'}});
-
-  // Pair PNL (sorted by total PNL, show top 8)
-  const pairMap={};
-  trades.forEach(t=>{if(!t.pair)return;if(!pairMap[t.pair])pairMap[t.pair]={pnl:0,cnt:0};pairMap[t.pair].pnl+=parseFloat(t.pnl)||0;pairMap[t.pair].cnt++;});
-  const pairList=Object.entries(pairMap).map(([p,d])=>({p,pnl:+d.pnl.toFixed(2),cnt:d.cnt})).sort((a,b)=>b.pnl-a.pnl);
-  const maxAbsPnl=pairList.length?Math.max(...pairList.map(x=>Math.abs(x.pnl)),1):1;
-  document.getElementById('pb').innerHTML=pairList.slice(0,8).map(x=>{
-    const color=x.pnl>=0?G:R;const w=(Math.abs(x.pnl)/maxAbsPnl*100).toFixed(0);
-    return `<div class="pair-bar-row"><div class="pair-bar-meta"><span style="font-weight:600">${x.p}</span><span style="color:${color};font-family:var(--font-mono,'Space Grotesk',sans-serif);font-size:12px">${fP(x.pnl)} <span style="color:var(--muted);font-weight:400">${x.cnt} trade${x.cnt>1?'s':''}</span></span></div><div class="pair-bar-track"><div class="pair-bar-fill" style="width:${w}%;background:${color}"></div></div></div>`;
-  }).join('')||'<span style="color:var(--muted);font-size:13px">No pair data yet.</span>';
-
-  const DOW_L=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],dc=[0,0,0,0,0,0,0];
-  trades.forEach(t=>{if(!t.date)return;const d=new Date(t.date+'T12:00:00');dc[d.getDay()===0?6:d.getDay()-1]++;});
-  new Chart(document.getElementById('dow'),{type:'bar',data:{labels:DOW_L,datasets:[{data:dc,backgroundColor:dc.map(v=>v>0?G+'cc':gc),borderRadius:6,barThickness:32}]},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{ticks:{stepSize:1}}}}});
-
-  // Confidence vs Performance
-  const cm={};
-  trades.forEach(t=>{
-    const stars=t.confidence;if(!stars||stars<1)return;
-    const key=stars;
-    if(!cm[key])cm[key]={tot:0,wins:0,pnl:0,rvals:[]};
-    cm[key].tot++;const p=parseFloat(t.pnl)||0;if(p>0)cm[key].wins++;cm[key].pnl+=p;
-    if(t.r&&!isNaN(parseFloat(t.r)))cm[key].rvals.push(parseFloat(t.r));
-  });
-  const confEl=document.getElementById('confb');
-  if(confEl){
-    const rows=Object.keys(cm).map(Number).sort((a,b)=>b-a);
-    confEl.innerHTML=rows.length?rows.map(stars=>{
-      const d=cm[stars],w=d.tot?(d.wins/d.tot*100).toFixed(1):'0',avg=d.tot?d.pnl/d.tot:0;
-      const ar=d.rvals.length?d.rvals.reduce((a,b)=>a+b,0)/d.rvals.length:null;
-      const starsHtml='★'.repeat(stars)+'<span style="opacity:.2">'+'★'.repeat(5-stars)+'</span>';
-      return`<tr><td><span style="color:#f5c518;letter-spacing:1px">${starsHtml}</span></td><td>${d.tot}</td><td style="color:${parseFloat(w)>=50?'#19c37d':'#ff5f6d'}">${fPct(w)}</td><td style="color:${avg>=0?'#19c37d':'#ff5f6d'}">${fP(avg)}</td><td style="color:${ar!==null?(ar>0?'#19c37d':ar<0?'#ff5f6d':'var(--muted)'):'var(--muted)'}">${ar!==null?(ar>=0?'+':'')+ar.toFixed(2)+'R':'—'}</td></tr>`;
-    }).join(''):'<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:18px">No confidence data yet. Set confidence stars on your trades.</td></tr>';
-  }
-
-  const twt=trades.filter(t=>t.time&&t.time.includes(':')),hm={};
-  twt.forEach(t=>{const h=parseInt(t.time.split(':')[0],10);if(!hm[h])hm[h]={tot:0,wins:0,pnl:0};hm[h].tot++;const p=parseFloat(t.pnl)||0;if(p>0)hm[h].wins++;hm[h].pnl+=p;});
-  function fH(h){if(h===0)return'12 AM';if(h===12)return'12 PM';return h<12?h+' AM':(h-12)+' PM';}
-  const hl=Array.from({length:24},(_,i)=>fH(i)),hc=Array.from({length:24},(_,i)=>(hm[i]||{tot:0}).tot),ha=Array.from({length:24},(_,i)=>{const d=hm[i];return(!d||!d.tot)?0:+(d.pnl/d.tot).toFixed(2);});
-  if(twt.length){
-    new Chart(document.getElementById('hh'),{type:'bar',data:{labels:hl,datasets:[{data:hc,backgroundColor:hc.map(v=>v>0?G+'cc':gc),borderRadius:4}]},options:{responsive:true,maintainAspectRatio:true,maxBarThickness:28,plugins:{legend:{display:false}},scales:{x:{ticks:{maxTicksLimit:24,font:{size:10}}},y:{ticks:{stepSize:1}}}}});
-    new Chart(document.getElementById('hp'),{type:'bar',data:{labels:hl,datasets:[{data:ha,backgroundColor:ha.map(v=>v>0?G+'cc':v<0?R+'cc':gc),borderRadius:4}]},options:{responsive:true,maintainAspectRatio:true,maxBarThickness:28,plugins:{legend:{display:false}},scales:{x:{ticks:{maxTicksLimit:24,font:{size:10}}},y:{}}}});
-    document.getElementById('tb').innerHTML=Object.keys(hm).map(Number).sort((a,b)=>a-b).map(h=>{const d=hm[h],w=d.tot?(d.wins/d.tot*100).toFixed(1):'0',avg=d.tot?d.pnl/d.tot:0;return`<tr><td><strong>${fH(h)}–${fH(h+1)}</strong></td><td>${d.tot}</td><td style="color:#19c37d">${d.wins}</td><td style="color:${parseFloat(w)>=50?'#19c37d':'#ff5f6d'}">${fPct(w)}</td><td style="color:${avg>=0?'#19c37d':'#ff5f6d'}">${fP(avg)}</td></tr>`;}).join('');
-  }
-
-  const pnldEl=document.getElementById('pnld');
-  if(pnldEl&&vld.length){
-    const pnlVals=vld.map(t=>parseFloat(t.pnl));
-    const minPnl=Math.min(...pnlVals);
-    const maxPnl=Math.max(...pnlVals);
-    const range=maxPnl-minPnl;
-    const binCount=Math.min(12,Math.max(5,Math.ceil(Math.sqrt(vld.length))));
-    const binSize=range/binCount;
-    const bins=Array(binCount).fill(0);
-    const binLabels=[];
-    for(let i=0;i<binCount;i++){
-      const start=minPnl+i*binSize;
-      const end=start+binSize;
-      binLabels.push(i===0?fP(start):fP(end));
-    }
-    pnlVals.forEach(v=>{let idx=Math.floor((v-minPnl)/binSize);if(idx>=binCount)idx=binCount-1;bins[idx]++;});
-    const binColors=binLabels.map((l,i)=>{const mid=minPnl+(i+0.5)*binSize;return mid>=0?G+'cc':R+'cc';});
-    new Chart(pnldEl,{type:'bar',data:{labels:binLabels,datasets:[{data:bins,backgroundColor:binColors,borderRadius:5}]},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false}},scales:{x:{ticks:{maxTicksLimit:12,font:{size:10}}},y:{ticks:{stepSize:1}}}}});
-  }
-
-  // ── Insights Analysis Section (Bottom) ──
-  if(isPro){
-    const insights=new TradeInsights(trades);
-    const insightsData=insights.analyze();
-    if(insightsData){
-      const perf=insightsData.performance;
-      const recsHtml=insightsData.recommendations.map(r=>{
-        let bgColor='rgba(100,150,255,.08)',borderColor='rgba(100,150,255,.2)';
-        if(r.priority==='high'){bgColor='rgba(255,95,109,.08)';borderColor='rgba(255,95,109,.2)';}
-        else if(r.priority==='positive'){bgColor='rgba(25,195,125,.08)';borderColor='rgba(25,195,125,.2)';}
-        else if(r.priority==='neutral'){bgColor='rgba(150,150,150,.08)';borderColor='rgba(150,150,150,.2)';}
-        return`<div style="background:${bgColor};border:1px solid ${borderColor};border-radius:var(--radius-md);padding:12px;margin-bottom:10px">
-          <div style="display:flex;gap:10px;align-items:flex-start">
-            <div style="font-size:18px;color:var(--muted);flex-shrink:0;margin-top:2px"><i class="fa-solid ${r.icon}"></i></div>
-            <div style="flex:1">
-              <div style="font-weight:600;font-size:13px;color:var(--text);margin-bottom:4px">${r.action}</div>
-              <div style="font-size:12px;color:var(--muted);line-height:1.5">${r.reason}</div>
-            </div>
-          </div>
-        </div>`;
-      }).join('');
-
-      document.getElementById('ai-section').innerHTML=`
-        <div style="margin-bottom:8px"><h3 style="font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;display:flex;align-items:center;gap:6px"><i class="fa-solid fa-lightbulb"></i> Insights <span class="tooltip-icon" data-tooltip="Personalized trading analysis and recommendations based on your data">?</span></h3></div>
-        <div style="display:grid;grid-template-columns:1fr 2fr;gap:14px;margin-bottom:18px">
-          <div style="background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px">
-            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px;font-weight:600">Risk Assessment</div>
-            <div style="font-size:32px;font-weight:700;color:${perf.color};margin-bottom:6px">${perf.score}<span style="font-size:18px;opacity:.7">/100</span></div>
-            <div style="font-size:13px;color:var(--text);margin-bottom:12px;font-weight:500">${perf.level}</div>
-            <div style="border-top:1px solid var(--border);padding-top:12px;font-size:12px">
-              <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="color:var(--muted)">Win Rate</span><strong>${perf.wr}%</strong></div>
-              <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="color:var(--muted)">Profit Factor</span><strong>${perf.pf}</strong></div>
-              <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="color:var(--muted)">Max Drawdown</span><strong>$${perf.dd}</strong></div>
-              <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Consistency</span><strong>${(perf.con*100).toFixed(0)}%</strong></div>
-            </div>
-          </div>
-          <div>
-            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px;font-weight:600">Recommendations</div>
-            ${recsHtml}
-          </div>
+      <div class="card" style="border-color:rgba(25,195,125,.2);background:linear-gradient(135deg,rgba(25,195,125,.03),var(--panel))">
+        <div style="text-align:center;padding:20px 16px">
+          <i class="fa-solid fa-lock" style="font-size:28px;color:var(--muted);opacity:.4;display:block;margin-bottom:12px"></i>
+          <h3 style="font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:15px;font-weight:600;margin-bottom:8px;text-transform:none;letter-spacing:0;color:var(--text)">Advanced Analytics — Pro</h3>
+          <p style="font-size:13px;color:var(--muted);line-height:1.6;max-width:420px;margin:0 auto 16px">Unlock Strategy PNL, Mood heatmaps, Hour analysis, Day-of-week breakdown, Long vs Short, and more.</p>
+          <a href="/subscription" style="display:inline-flex;align-items:center;gap:7px;background:#19c37d;color:#0b0f0c;border:none;border-radius:var(--radius-md,8px);padding:10px 20px;font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:13px;font-weight:700;text-decoration:none;transition:opacity .2s" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
+            <i class="fa-solid fa-chevron-up"></i> Upgrade to Pro — $5/mo
+          </a>
         </div>
-      `;
+      </div>
+    `}
+  `;
+
+  if(!isPro){
+    const adSlot=document.getElementById('adSlot1');
+    if(adSlot)adSlot.style.display='block';
+    try{(adsbygoogle=window.adsbygoogle||[]).push({});}catch(e){}
+  }
+
+  // ── Render helpers ─────────────────────────────────────────────────────────
+  function getFiltered(){return filterByRange(allTrades,activeRange);}
+
+  function renderTab(trades,stats){
+    _destroyCharts();
+    const el=document.getElementById('tabContent');
+    if(!el)return;
+    if(activeTab==='overview'){el.innerHTML=renderOverviewHtml(trades,stats);initOverviewCharts(trades,stats);}
+    else if(activeTab==='timing'){el.innerHTML=renderTimingHtml(trades);initTimingCharts(trades);}
+    else if(activeTab==='assets'){el.innerHTML=renderAssetsHtml(trades,mc);initAssetsCharts(trades);}
+    else if(activeTab==='insights'){el.innerHTML=renderInsightsHtml(trades,stats);}
+  }
+
+  function fullRender(){
+    const trades=getFiltered();
+    const stats=computeStats(trades);
+    renderKpiStrip(stats,document.getElementById('kpiStrip'));
+    renderInsightBar(stats,document.getElementById('insightBarWrap'),isPro);
+    if(isPro){
+      renderTab(trades,stats);
+    }else{
+      _destroyCharts();
+      window._eqChart=_makeEquityChart('eq-free',stats.sorted);
     }
   }
+
+  window._setRange=function(range){
+    activeRange=range;
+    document.querySelectorAll('.range-btn').forEach(b=>b.classList.toggle('active',b.dataset.range===range));
+    fullRender();
+  };
+
+  window._switchTab=function(tab){
+    activeTab=tab;
+    document.querySelectorAll('.tz-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
+    const trades=getFiltered();
+    renderTab(trades,computeStats(trades));
+  };
+
+  // Initial render
+  fullRender();
 })();
 </script>
 </body>
