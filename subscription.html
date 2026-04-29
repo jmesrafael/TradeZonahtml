@@ -430,12 +430,15 @@ hr.pdiv{border:none;border-top:1px solid var(--border);margin:18px 0}
 
   <!-- Days remaining bar (Pro users only) -->
   <div class="days-bar-wrap" id="daysBarWrap" style="display:none">
-    <div class="days-bar-labels">
-      <span id="daysBarLeft">Days remaining</span>
-      <span id="daysBarRight"></span>
+    <div class="days-bar-labels" style="margin-bottom:6px">
+      <span style="font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);font-weight:600">Subscription Period</span>
     </div>
-    <div class="days-bar-track">
+    <div class="days-bar-track" style="margin-bottom:8px">
       <div class="days-bar-fill" id="daysBarFill"></div>
+    </div>
+    <div class="days-bar-labels">
+      <span id="daysBarLeft" style="font-weight:600"></span>
+      <span id="daysBarRight" style="font-size:11px"></span>
     </div>
   </div>
 
@@ -818,15 +821,17 @@ function showToast(msg, icon, type) {
 
     document.getElementById('manageBtn').style.display = 'inline-flex';
 
-    if ((currentProfile?.subscription_expires_at || currentProfile?.pro_expires_at) && planType !== 'lifetime') {
-      const totalDays = planType === 'yearly' ? 365 : 30;
+    const expiresAt = currentProfile?.subscription_expires_at || currentProfile?.pro_expires_at;
+    if (expiresAt && planType !== 'lifetime') {
+      const totalDays = planType === 'yearly' ? 365 : planType === 'monthly' ? 30 : ((subStatus.daysLeft ?? 0) > 60 ? 365 : 30);
       const daysLeft  = subStatus.daysLeft ?? 0;
       const pct       = Math.max(0, Math.min(100, (daysLeft / totalDays) * 100));
       const fillColor = subStatus.expired ? 'var(--red,#ff5f6d)' : subStatus.expiring ? 'var(--amber,#f59e0b)' : 'var(--accent2)';
       document.getElementById('daysBarFill').style.width      = pct + '%';
       document.getElementById('daysBarFill').style.background = fillColor;
-      document.getElementById('daysBarLeft').textContent      = daysLeft + ' days remaining';
-      document.getElementById('daysBarRight').textContent     = totalDays + ' days cycle';
+      document.getElementById('daysBarLeft').textContent      = subStatus.expired ? 'Expired' : daysLeft + ' days remaining';
+      document.getElementById('daysBarLeft').style.color      = subStatus.expired ? 'var(--red,#ff5f6d)' : subStatus.expiring ? 'var(--amber,#f59e0b)' : '';
+      document.getElementById('daysBarRight').textContent     = subStatus.label;
       document.getElementById('daysBarWrap').style.display    = 'block';
     }
 
