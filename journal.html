@@ -412,7 +412,6 @@ iframe.ready{opacity:1}
 .bnb-result-title i{color:var(--accent2)}
 .bnb-result.has-errors .bnb-result-title i{color:#f59e0b}
 .bnb-result-body{font-size:12px;color:var(--muted);line-height:1.8;margin-bottom:12px}
-.bnb-result-body strong{color:var(--text)}
 .bnb-done-btn{background:var(--accent);color:#0b0f0c;border:none;border-radius:var(--radius-md);padding:8px 16px;font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:12px;font-weight:600;cursor:pointer;transition:opacity var(--transition-fast)}
 .bnb-done-btn:hover{opacity:.85}
 
@@ -1213,9 +1212,10 @@ let exportScope='full', importMode='replace', importPayload=null;
 let _lastRemovedTag=null, _lastRemovedKey=null, _undoTimer=null;
 
 // ─── Binance CSV Import state ────────────────────────────────────────────────
-let _bnbParsedRows = []; // all parsed REALIZED_PNL rows after merge
-let _bnbReadyRows = [];  // rows ready to import (not duplicates)
+let _bnbParsedRows = [];
+let _bnbReadyRows = [];
 let _bnbDupCount = 0;
+let _bnbLastCsvText = '';
 
 (async()=>{
   currentUser=await requireAuth();if(!currentUser)return;
@@ -1285,8 +1285,6 @@ function navigateSafely(dest){
 window.addEventListener('message',e=>{
   if(e.data?.type==='tz_flushed'&&_flushTarget){clearTimeout(_flushTimer);const d=_flushTarget;_flushTarget=null;location.href=d;}
   if(e.data?.type==='tz_analytics_state'){const sw=document.getElementById('analyticsToggleSwitch');if(sw)sw.classList.toggle('on',!!e.data.on);}
-  // Logs broadcasts this whenever a trade saves; relay to every other iframe
-  // (calendar, analytics, notes, presession) so they reflect the change live.
   if(e.data?.type==='tz_trades_changed'){bcast(e.data);}
   if(e.data?.type==='tz_presession_summary'){
     const dot=document.getElementById('psTabDot');
@@ -1323,9 +1321,6 @@ function switchTab(name){
   if(name==='settings')populateSettings();
   document.getElementById('unsavedBar').classList.remove('show');
   if(window.innerWidth <= 520) collapseSidebar();
-  // Tell every iframe which tab is now active so they can defer expensive
-  // refreshes (e.g. analytics' full-page reload) until the user is actually
-  // looking at them.
   bcast({type:'tz_tab_changed',tab:name});
 }
 
@@ -1336,8 +1331,6 @@ function frameReady(n){
   const t=localStorage.getItem('tl_theme')||'dark',ft=localStorage.getItem('tl_font')||'default';
   try{if(f?.contentWindow){f.contentWindow.postMessage({type:'tz_theme',theme:t},'*');f.contentWindow.postMessage({type:'tz_font',font:ft},'*');}}catch(e){}
   try{if(f?.contentWindow)f.contentWindow.postMessage({type:'tz_plan',isPro:userIsPro},'*');}catch(e){}
-  // Tell the freshly-loaded iframe which tab is active so it can gate
-  // expensive refreshes on whether the user is actually viewing it.
   try{if(f?.contentWindow)f.contentWindow.postMessage({type:'tz_tab_changed',tab:activeTab},'*');}catch(e){}
   if(f){f.classList.add('ready');const l=document.getElementById('loader-'+n);if(l){l.classList.add('hidden');setTimeout(()=>{if(l.classList.contains('hidden'))l.style.display='none';},350);}}
 }
@@ -1457,9 +1450,44 @@ async function refreshExpSummary(){
     <div class="es-row ok"><i class="fa-solid fa-images"></i> ${withImgs} trade${withImgs!==1?'s':''} with images (embedded in backup)</div>
   `;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FIX 1: storagePathToBase64 — now handles full HTTP/HTTPS public CDN URLs
+// in addition to Supabase Storage paths. This is the root cause of images
+// showing as [] in exports: new trades store a public URL in storage_url,
+// not just a path, so the old db.storage.download() call failed silently.
+// ─────────────────────────────────────────────────────────────────────────────
 async function storagePathToBase64(storagePath){
-  try{const{data,error}=await db.storage.from('trade-images').download(storagePath);if(error||!data)return null;return await new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>res(null);r.readAsDataURL(data);});}catch{return null;}
+  try{
+    // Case 1: full HTTP(S) URL — fetch directly (public CDN, signed URL, etc.)
+    if(storagePath&&(storagePath.startsWith('http://')||storagePath.startsWith('https://'))){
+      try{
+        const resp=await fetch(storagePath);
+        if(resp.ok){
+          const blob=await resp.blob();
+          return await new Promise(res=>{
+            const r=new FileReader();
+            r.onload=()=>res(r.result);
+            r.onerror=()=>res(null);
+            r.readAsDataURL(blob);
+          });
+        }
+      }catch(fetchErr){
+        console.warn('[export] direct URL fetch failed, falling back to storage download:',fetchErr);
+      }
+    }
+    // Case 2: Supabase Storage path (relative)
+    const{data,error}=await db.storage.from('trade-images').download(storagePath);
+    if(error||!data)return null;
+    return await new Promise(res=>{
+      const r=new FileReader();
+      r.onload=()=>res(r.result);
+      r.onerror=()=>res(null);
+      r.readAsDataURL(data);
+    });
+  }catch{return null;}
 }
+
 async function confirmExport(){
   const btn=document.getElementById('exportBtn');
   btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Preparing…';
@@ -1469,8 +1497,25 @@ async function confirmExport(){
     const tradeRows=trades.map(dbToTrade);
     btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Embedding images…';
     for(let i=0;i<tradeRows.length;i++){
-      const t=tradeRows[i];const rawImgs=await getTradeImages(t.id);
-      if(rawImgs.length>0){const b64Imgs=[];for(const img of rawImgs){if(img.storage_url&&!img.data){const b64=await storagePathToBase64(img.storage_url);if(b64)b64Imgs.push(b64);}else if(img.data){b64Imgs.push(img.data);}}tradeRows[i]={...t,images:b64Imgs};}
+      const t=tradeRows[i];
+      const rawImgs=await getTradeImages(t.id);
+      if(rawImgs.length>0){
+        const b64Imgs=[];
+        for(const img of rawImgs){
+          let b64=null;
+          // FIX 2: Priority waterfall for extracting base64 from image records
+          // Priority 1: already have inline base64 data
+          if(img.data&&img.data.startsWith('data:'))b64=img.data;
+          // Priority 2: legacy _previewUrl
+          else if(img._previewUrl&&img._previewUrl.startsWith('data:'))b64=img._previewUrl;
+          // Priority 3: storage_url (handles both Supabase path AND full public URL)
+          else if(img.storage_url)b64=await storagePathToBase64(img.storage_url);
+          // Priority 4: url field (alternative public URL field)
+          if(!b64&&img.url)b64=await storagePathToBase64(img.url);
+          if(b64)b64Imgs.push(b64);
+        }
+        tradeRows[i]={...t,images:b64Imgs};
+      }
       btn.innerHTML=`<i class="fa-solid fa-spinner fa-spin"></i> Embedding images… (${i+1}/${tradeRows.length})`;
     }
     const payload={_meta:{version:'2.1',app:'TradeZona',journalName:journalObj.name,exportedAt:new Date().toISOString(),exportScope,tradeCount:trades.length,imagesEmbedded:true},trades:tradeRows,...(isFull&&settings?{settings:{strategies:settings.strategies||[],timeframes:settings.timeframes||[],pairs:settings.pairs||[],moods:settings.moods||[],mood_colors:settings.mood_colors||{},capital:journalObj.capital,journalName:journalObj.name}}:{})};
@@ -1507,6 +1552,94 @@ async function refreshImpPreview(){
   else{document.getElementById('pvNewRow').style.display='none';document.getElementById('pvDupRow').style.display='none';document.getElementById('pvCurRow').style.display='';document.getElementById('pvCur').textContent=cur.length;}
   document.getElementById('settingsRestoreRow').classList.toggle('show',hasS);
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FIX 3: uploadImagesForTrade — handles all image formats from JSON backups:
+//   a) Plain base64 data URL string (standard: "data:image/jpeg;base64,...")
+//   b) Plain HTTP/HTTPS URL string (rare: public CDN URL as string)
+//   c) Object with .data property (legacy inline format)
+//   d) Object with ._previewUrl property (legacy preview format)
+//   e) Object with .storage_url (Supabase Storage path or public URL)
+//   f) Object with .url (alternative public URL field)
+// ─────────────────────────────────────────────────────────────────────────────
+async function uploadImagesForTrade(tradeId, tradeData) {
+  const imgs = tradeData.images;
+  if (!Array.isArray(imgs) || !imgs.length) return;
+
+  for (const img of imgs) {
+    let dataUrl = null;
+
+    if (typeof img === 'string') {
+      // Case (a): standard base64 data URL — most common from JSON backups
+      if (img.startsWith('data:')) {
+        dataUrl = img;
+      }
+      // Case (b): plain HTTP URL string — fetch and convert to base64
+      else if (img.startsWith('http://') || img.startsWith('https://')) {
+        try {
+          const resp = await fetch(img);
+          if (resp.ok) {
+            const blob = await resp.blob();
+            dataUrl = await new Promise(res => {
+              const r = new FileReader();
+              r.onload = () => res(r.result);
+              r.onerror = () => res(null);
+              r.readAsDataURL(blob);
+            });
+          }
+        } catch(e) { console.warn('[import] string URL fetch failed:', e); }
+      }
+    } else if (img && typeof img === 'object') {
+      // Case (c): object with inline .data
+      const raw = img.data || img._previewUrl || '';
+      if (raw && raw.startsWith('data:')) {
+        dataUrl = raw;
+      } else {
+        // Case (d/e/f): object with a URL we need to download
+        const url = img.storage_url || img.url || '';
+        if (url) {
+          if (!url.startsWith('http://') && !url.startsWith('https://')) {
+            // Supabase Storage path
+            try {
+              const { data, error } = await db.storage.from('trade-images').download(url);
+              if (!error && data) {
+                dataUrl = await new Promise(res => {
+                  const r = new FileReader();
+                  r.onload = () => res(r.result);
+                  r.onerror = () => res(null);
+                  r.readAsDataURL(data);
+                });
+              }
+            } catch(e) { console.warn('[import] storage path download failed:', e); }
+          } else {
+            // Full HTTP URL
+            try {
+              const resp = await fetch(url);
+              if (resp.ok) {
+                const blob = await resp.blob();
+                dataUrl = await new Promise(res => {
+                  const r = new FileReader();
+                  r.onload = () => res(r.result);
+                  r.onerror = () => res(null);
+                  r.readAsDataURL(blob);
+                });
+              }
+            } catch(e) { console.warn('[import] object URL fetch failed:', e); }
+          }
+        }
+      }
+    }
+
+    if (dataUrl && dataUrl.startsWith('data:')) {
+      try {
+        await addTradeImage(currentUser.id, tradeId, dataUrl);
+      } catch(imgErr) {
+        console.warn('[import] image upload failed for trade', tradeId, imgErr);
+      }
+    }
+  }
+}
+
 async function confirmImport(){
   if(!importPayload)return;
   const cb=document.getElementById('importConfirmBtn'),cancel=document.getElementById('importCancelBtn');
@@ -1517,15 +1650,6 @@ async function confirmImport(){
     const cur=await getTrades(journalId);
     const curIds=new Set(cur.map(t=>t.id));
     let fc=0;
-    async function uploadImagesForTrade(tradeId, tradeData) {
-      const imgs = tradeData.images;
-      if (!Array.isArray(imgs) || !imgs.length) return;
-      for (const img of imgs) {
-        const dataUrl = typeof img === 'string' ? img : (img?.data || img?._previewUrl || '');
-        if (!dataUrl || !dataUrl.startsWith('data:')) continue;
-        try { await addTradeImage(currentUser.id, tradeId, dataUrl); } catch(imgErr) { console.warn('[import] image upload failed:', imgErr); }
-      }
-    }
     if(importMode==='replace'){
       document.getElementById('impProgLabel').textContent='Deleting…';
       for(let i=0;i<cur.length;i++){await deleteTrade(cur[i].id);sp(5+Math.round((i+1)/cur.length*25),`Deleting ${i+1}/${cur.length}`);}
@@ -1620,13 +1744,14 @@ function bnbLoadFile(file){
   document.getElementById('bnbProgress').classList.remove('show');
   const r=new FileReader();
   r.onload=async(ev)=>{
-    await bnbParseAndPreview(ev.target.result);
+    _bnbLastCsvText=ev.target.result;
+    await bnbParseAndPreview(_bnbLastCsvText);
   };
   r.readAsText(file,'utf-8');
 }
 
 function bnbClearFile(){
-  _bnbParsedRows=[];_bnbReadyRows=[];_bnbDupCount=0;
+  _bnbParsedRows=[];_bnbReadyRows=[];_bnbDupCount=0;_bnbLastCsvText='';
   document.getElementById('bnbFileBadge').classList.remove('show');
   document.getElementById('bnbDropzone').style.display='';
   document.getElementById('bnbFileInput').value='';
@@ -1648,20 +1773,15 @@ function bnbShowError(msg){
 }
 function bnbHideError(){document.getElementById('bnbError').classList.remove('show');}
 
-// Parse the CSV text — no external libraries
 function bnbParseCSV(text){
-  // Normalize line endings
   const lines=text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');
   if(lines.length<2)return[];
-  // Header row (row 0): Time,Type,Amount,Asset,Symbol,Transaction ID
   const header=lines[0].split(',').map(h=>h.trim().replace(/^"|"$/g,'').trim());
   const idxTime=header.findIndex(h=>h.toLowerCase()==='time');
   const idxType=header.findIndex(h=>h.toLowerCase()==='type');
   const idxAmount=header.findIndex(h=>h.toLowerCase()==='amount');
   const idxSymbol=header.findIndex(h=>h.toLowerCase()==='symbol');
-  if(idxTime===-1||idxType===-1||idxAmount===-1||idxSymbol===-1){
-    return null; // invalid format
-  }
+  if(idxTime===-1||idxType===-1||idxAmount===-1||idxSymbol===-1){return null;}
   const rows=[];
   for(let i=1;i<lines.length;i++){
     const line=lines[i].trim();
@@ -1675,8 +1795,6 @@ function bnbParseCSV(text){
     const amountRaw=cols[idxAmount]||'';
     const amount=parseFloat(amountRaw);
     if(isNaN(amount))continue;
-    // Parse time: YY-MM-DD HH:MM:SS → date: 20YY-MM-DD, time: HH:MM
-    // Example: 26-04-10 22:15:59
     const tMatch=timeRaw.match(/^(\d{2})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})(?::\d{2})?/);
     if(!tMatch)continue;
     const year='20'+tMatch[1];
@@ -1693,7 +1811,6 @@ function bnbParseCSV(text){
 
 async function bnbParseAndPreview(csvText){
   bnbHideError();
-  // Re-check options each time (they may have changed)
   const mergePartial=document.getElementById('bnbMergePartial').checked;
   const skipDupes=document.getElementById('bnbSkipDupes').checked;
 
@@ -1708,10 +1825,8 @@ async function bnbParseAndPreview(csvText){
     return;
   }
 
-  // Merge partial fills if needed
   let finalRows;
   if(mergePartial){
-    // Group by symbol + HH:MM key
     const groups=new Map();
     rows.forEach(r=>{
       const key=`${r.symbol}||${r.date}||${r.time}`;
@@ -1723,16 +1838,12 @@ async function bnbParseAndPreview(csvText){
     finalRows=rows.map(r=>({...r,_count:1}));
   }
 
-  // Duplicate detection against existing trades
   let existingTrades=[];
   try{
     const raw=await getTrades(journalId);
     existingTrades=raw.map(dbToTrade);
-  }catch(e){
-    console.warn('[bnb] could not load existing trades for dup check',e);
-  }
+  }catch(e){console.warn('[bnb] could not load existing trades for dup check',e);}
 
-  // Build trade objects and check duplicates
   _bnbParsedRows=finalRows.map(r=>{
     const trade={
       date:r.date,
@@ -1761,12 +1872,7 @@ async function bnbParseAndPreview(csvText){
   _bnbReadyRows=_bnbParsedRows.filter(r=>!r.isDup);
   _bnbDupCount=_bnbParsedRows.length-_bnbReadyRows.length;
 
-  // Edge case: no rows at all
-  if(_bnbParsedRows.length===0){
-    bnbShowError('No valid trades found in this file.');
-    return;
-  }
-  // Edge case: all duplicates
+  if(_bnbParsedRows.length===0){bnbShowError('No valid trades found in this file.');return;}
   if(_bnbReadyRows.length===0&&_bnbDupCount>0){
     bnbShowError(`All ${_bnbDupCount} trade${_bnbDupCount!==1?'s':''} already exist in your log. Nothing to import.`);
     document.getElementById('bnbActions').style.display='none';
@@ -1774,10 +1880,7 @@ async function bnbParseAndPreview(csvText){
     return;
   }
 
-  // Render preview (up to 5 rows)
   bnbRenderPreview();
-
-  // Update import button
   document.getElementById('bnbImportBtnLabel').textContent=`Import ${_bnbReadyRows.length} Trade${_bnbReadyRows.length!==1?'s':''}`;
   document.getElementById('bnbImportBtn').disabled=_bnbReadyRows.length===0;
   document.getElementById('bnbActions').style.display='flex';
@@ -1838,7 +1941,6 @@ async function bnbRunImport(){
   progSub.textContent='';
 
   let imported=0,errors=0;
-  // Get the logs iframe to update it live
   const lf=document.getElementById('logsFrame');
 
   for(let i=0;i<total;i++){
@@ -1850,14 +1952,9 @@ async function bnbRunImport(){
       const row=await createTrade(currentUser.id,journalId,trade);
       if(row){
         imported++;
-        // Notify logs frame to refresh (lightweight)
         try{if(lf?.contentWindow)lf.contentWindow.postMessage({type:'tz_trade_added'},'*');}catch(ex){}
       }
-    }catch(e){
-      errors++;
-      console.error('[bnb import] error on row',i,e);
-    }
-    // Small delay to avoid hammering Supabase
+    }catch(e){errors++;console.error('[bnb import] error on row',i,e);}
     await new Promise(res=>setTimeout(res,50));
   }
 
@@ -1867,7 +1964,6 @@ async function bnbRunImport(){
   await new Promise(res=>setTimeout(res,400));
   progEl.classList.remove('show');
 
-  // Show result
   const resultEl=document.getElementById('bnbResult');
   const resultIcon=document.getElementById('bnbResultIcon');
   const resultTitle=document.getElementById('bnbResultTitle');
@@ -1883,12 +1979,8 @@ async function bnbRunImport(){
   resultBody.innerHTML=bodyParts.join(' · ')+'.<br><span style="font-size:11px;color:var(--muted)">Switch to the Logs tab to see your imported trades.</span>';
   resultEl.classList.add('show');
 
-  // Refresh the logs iframe
   try{
-    if(lf?.contentWindow){
-      // Give it a full reload to pick up all new trades
-      lf.src='/logs/index.html?t='+Date.now();
-    }
+    if(lf?.contentWindow){lf.src='/logs/index.html?t='+Date.now();}
   }catch(ex){}
 
   if(imported>0){
@@ -1896,45 +1988,16 @@ async function bnbRunImport(){
   }
 }
 
-// Reparse when checkboxes change (only if a file is already loaded)
 document.getElementById('bnbMergePartial').addEventListener('change',_bnbRecheckIfNeeded);
 document.getElementById('bnbSkipDupes').addEventListener('change',_bnbRecheckIfNeeded);
 function _bnbRecheckIfNeeded(){
-  // Only rerun if a file badge is shown (meaning a file was already loaded)
   if(document.getElementById('bnbFileBadge').classList.contains('show')){
-    // We can't re-read the file, but we can re-apply dupe logic to already-parsed rows
-    // So we need to re-store raw parsed rows separately
-    // Actually we already have _bnbParsedRows with trade objects but not the raw CSV
-    // The safest approach: just clear and ask user to re-upload
-    // But that's bad UX. Instead we'll re-evaluate duplicates on the existing _bnbParsedRows
-    // (which already went through the merge step once). Re-parse isn't needed for skipDupes.
-    // For mergePartial we'd need the raw CSV. We store it.
-    const hasCsvCache=!!_bnbLastCsvText;
-    if(hasCsvCache){
+    if(_bnbLastCsvText){
       bnbParseAndPreview(_bnbLastCsvText);
     }else{
-      // just re-evaluate duplicates without re-merging (merge is already done)
       _bnbReEvalDupes();
     }
   }
-}
-let _bnbLastCsvText='';
-// Override bnbLoadFile to store the text
-const _origBnbLoadFile=bnbLoadFile;
-// We'll patch via the reader:
-function bnbLoadFile(file){
-  bnbHideError();
-  document.getElementById('bnbFileName').textContent=file.name;
-  document.getElementById('bnbFileBadge').classList.add('show');
-  document.getElementById('bnbDropzone').style.display='none';
-  document.getElementById('bnbResult').classList.remove('show');
-  document.getElementById('bnbProgress').classList.remove('show');
-  const r=new FileReader();
-  r.onload=async(ev)=>{
-    _bnbLastCsvText=ev.target.result;
-    await bnbParseAndPreview(_bnbLastCsvText);
-  };
-  r.readAsText(file,'utf-8');
 }
 
 async function _bnbReEvalDupes(){
