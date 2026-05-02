@@ -830,7 +830,7 @@ function validateImg(file){if(!ALLOWED_IMG.includes(file.type)){showToast('Only 
   try{userIsPro=parent?._userIsPro||false;}catch(e){}
   const {data:{user}}=await db.auth.getUser();
   currentUser=user;
-  if(user){const p=await getProfile(user.id);if(p){userIsPro=p.plan==='pro';}}
+  if(user){const p=await getProfile(user.id);if(p){userIsPro=getSubscriptionStatus(p).isPro;}}
   if(!userIsPro){document.getElementById('notesAdSlot').classList.add('visible');try{(adsbygoogle=window.adsbygoogle||[]).push({});}catch(e){}}
 
   settings=await getJournalSettings(jid);

@@ -1225,7 +1225,7 @@ let _bnbDupCount = 0;
     getJournals(currentUser.id),
     getJournalSettings(journalId)
   ]);
-  userIsPro = profile?.plan === 'pro';
+  userIsPro = getSubscriptionStatus(profile).isPro;
   window._userIsPro = userIsPro;
   document.getElementById('hUserName').textContent = profile?.name || currentUser.email;
   const _badge = document.getElementById('hPlanBadge');

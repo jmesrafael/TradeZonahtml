@@ -713,8 +713,8 @@ function renderInsightsHtml(trades,stats){
   const{data:{user:authUser}}=await db.auth.getUser();
   let isPro=false;
   if(authUser){
-    try{isPro=parent?._userIsPro||false;if(!isPro){const p=await getProfile(authUser.id);isPro=p?.plan==='pro';}}
-    catch(e){const p=await getProfile(authUser.id);isPro=p?.plan==='pro';}
+    try{isPro=parent?._userIsPro||false;if(!isPro){const p=await getProfile(authUser.id);isPro=getSubscriptionStatus(p).isPro;}}
+    catch(e){const p=await getProfile(authUser.id);isPro=getSubscriptionStatus(p).isPro;}
   }
 
   _chartDefaults();

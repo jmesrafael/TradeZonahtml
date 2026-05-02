@@ -294,19 +294,37 @@ serve(async (req) => {
         const customerId = sub.customer as string;
         const isActive   = ["active", "trialing"].includes(sub.status);
         const planType   = detectPlanType(sub);
-        const expiresAt  = isActive && sub.current_period_end
-          ? new Date(sub.current_period_end * 1000).toISOString()
-          : null;
+
+        // calcExpiresAt has a 30-day fallback so it never returns null for active subs
+        const stripeExpiresAt = isActive ? calcExpiresAt(sub) : null;
+
+        // Don't overwrite a referral-extended expiry that reaches beyond the Stripe period.
+        // When going inactive, always clear the field regardless.
+        let finalExpiresAt = stripeExpiresAt;
+        if (isActive && stripeExpiresAt) {
+          const { data: existing } = await supabase
+            .from("profiles")
+            .select("subscription_expires_at")
+            .eq("stripe_customer_id", customerId)
+            .maybeSingle();
+
+          const stored = existing?.subscription_expires_at
+            ? new Date(existing.subscription_expires_at)
+            : null;
+          if (stored && stored > new Date(stripeExpiresAt)) {
+            finalExpiresAt = existing!.subscription_expires_at;
+          }
+        }
 
         const { error } = await supabase.from("profiles").update({
           plan:                    isActive ? "pro" : "free",
           plan_type:               isActive ? planType : "none",
-          subscription_expires_at: isActive ? expiresAt : null,
+          subscription_expires_at: finalExpiresAt,
           stripe_subscription_id:  isActive ? sub.id : null,
         }).eq("stripe_customer_id", customerId);
 
         if (error) console.error(`[webhook] subscription.updated failed:`, error);
-        else console.log(`[webhook] Updated ${customerId} → ${isActive ? "pro/" + planType : "free"}`);
+        else console.log(`[webhook] Updated ${customerId} → ${isActive ? "pro/" + planType : "free"}, expires: ${finalExpiresAt}`);
         break;
       }
 

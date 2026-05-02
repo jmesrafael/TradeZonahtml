@@ -149,8 +149,8 @@ serve(async (req) => {
       // Don't fail — referred_by is already set
     }
 
-    // ── 8. Increment referrer's referral_count ─────────────
-    await supabase.rpc("increment_referral_count", { user_id: referrer.id });
+    // referral_count is incremented by grant-referral-reward when the reward
+    // is actually paid out — do NOT increment here or it double-counts.
 
     console.log(`[apply-referral] ✅ Referral recorded: referrer=${referrer.id}, referred=${user.id}`);
 

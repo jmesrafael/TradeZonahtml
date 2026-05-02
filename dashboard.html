@@ -672,7 +672,7 @@ function renderSubBanner(s){const banner=document.getElementById('subBanner'),te
   currentUser=await requireAuth();if(!currentUser)return;
   currentProfile=await getProfile(currentUser.id);
   applyProfileTheme(currentProfile);
-  isPro=currentProfile?.plan==='pro';
+  isPro=getSubscriptionStatus(currentProfile).isPro;
   window._userIsPro=isPro;
 
   // Avatar initials

@@ -227,12 +227,21 @@ function getSubscriptionStatus(profile) {
 
   const planType = profile?.plan_type || 'none';
 
-  const expiresAt = profile?.subscription_expires_at || profile?.pro_expires_at;
-
-  if (planType === 'lifetime' || !expiresAt) {
+  // Only grant lifetime when explicitly set — never infer it from a missing expiry
+  if (planType === 'lifetime') {
     return {
       isPro: true, expired: false, expiring: false,
       daysLeft: null, label: 'Lifetime', planType: 'lifetime'
+    };
+  }
+
+  const expiresAt = profile?.subscription_expires_at || profile?.pro_expires_at;
+
+  // plan=pro with no expiry date is an invalid/unsynced state — treat as expired
+  if (!expiresAt) {
+    return {
+      isPro: false, expired: true, expiring: false,
+      daysLeft: null, label: 'Expired', planType
     };
   }
 
@@ -252,7 +261,8 @@ function getSubscriptionStatus(profile) {
     label = `Renews ${expires.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
   }
 
-  return { isPro: true, expired, expiring, daysLeft, label, planType };
+  // isPro is false when expired — feature gates check isPro, not the expired flag
+  return { isPro: !expired, expired, expiring, daysLeft, label, planType };
 }
 
 

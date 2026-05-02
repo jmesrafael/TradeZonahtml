@@ -21,6 +21,15 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
+  // Only callable internally with the service role key
+  const authHeader = req.headers.get("Authorization");
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  if (authHeader !== `Bearer ${serviceKey}`) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   try {
     const { referred_user_id } = await req.json();
 
@@ -32,10 +41,32 @@ serve(async (req) => {
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      serviceKey
     );
 
     console.log(`[grant-reward] Processing reward for referred_user_id: ${referred_user_id}`);
+
+    // ── 0. Verify referred user has a genuine Stripe-paid subscription ──
+    // Prevents: free users triggering rewards, referral-pro chains, abuse.
+    const { data: referredProfile, error: referredErr } = await supabase
+      .from("profiles")
+      .select("plan, stripe_subscription_id, subscription_expires_at")
+      .eq("id", referred_user_id)
+      .single();
+
+    if (referredErr || !referredProfile) {
+      console.error(`[grant-reward] Could not fetch referred user profile:`, referredErr);
+      return new Response(JSON.stringify({ error: "Referred user not found" }), {
+        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (referredProfile.plan !== "pro" || !referredProfile.stripe_subscription_id) {
+      console.log(`[grant-reward] Referred user ${referred_user_id} is not a paid Stripe subscriber — skipping`);
+      return new Response(JSON.stringify({ skipped: true, reason: "referred_user_not_paid" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // ── 1. Find pending referral row ─────────────────────
     const { data: referral, error: refErr } = await supabase
@@ -80,12 +111,20 @@ serve(async (req) => {
     }
 
     // ── 3. Calculate new expiry ───────────────────────────
+    // Base is the later of: now OR the referrer's current expiry (so rewards stack).
+    // Cap: base must not be more than REWARD_DAYS ahead of now already — prevents
+    // a referrer with a far-future expiry from accumulating unbounded time.
     const now      = new Date();
+    const maxBase  = new Date(now.getTime() + REWARD_DAYS * 24 * 60 * 60 * 1000);
     let   baseDate = now;
 
     if (referrerProfile.subscription_expires_at) {
       const existing = new Date(referrerProfile.subscription_expires_at);
-      if (existing > now) baseDate = existing; // Extend from future expiry
+      if (existing > now) {
+        // Clamp so the base can never be more than REWARD_DAYS from now,
+        // ensuring each referral gives at most REWARD_DAYS of additional time.
+        baseDate = existing < maxBase ? existing : maxBase;
+      }
     }
 
     const newExpiry = new Date(baseDate);

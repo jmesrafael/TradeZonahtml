@@ -272,7 +272,7 @@ function isMonthLocked(y,m){if(userIsPro)return false;const lastDay=new Date(y,m
   buildDowHeader('skelDow');buildDowHeader('calDow');buildSkelGrid();
   if(!jid)return;
   try{userIsPro=parent&&parent._userIsPro||false;}catch(e){}
-  if(!userIsPro){const res=await db.auth.getUser();if(res.data&&res.data.user){const p=await getProfile(res.data.user.id);userIsPro=(p&&p.plan==='pro')||false;}}
+  if(!userIsPro){const res=await db.auth.getUser();if(res.data&&res.data.user){const p=await getProfile(res.data.user.id);userIsPro=getSubscriptionStatus(p).isPro;}}
   if(!userIsPro)document.getElementById('freeBanner').style.display='flex';
   const raw=await getTrades(jid);
   allTrades=raw.map(dbToTrade);

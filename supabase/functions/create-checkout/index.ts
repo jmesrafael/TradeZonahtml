@@ -67,13 +67,23 @@ Deno.serve(async (req) => {
 
     // ── Profile ───────────────────────────────────────────────
     const profRes = await fetch(
-      `${supabaseUrl}/rest/v1/profiles?id=eq.${userId}&select=plan,stripe_customer_id`,
+      `${supabaseUrl}/rest/v1/profiles?id=eq.${userId}&select=plan,stripe_customer_id,subscription_expires_at,plan_type`,
       { headers: { "Authorization": `Bearer ${serviceKey}`, "apikey": serviceKey } }
     );
     const profRows = await profRes.json();
     const profile  = Array.isArray(profRows) ? profRows[0] : null;
 
-    if (profile?.plan === "pro") return fail("Already on Pro", 400);
+    if (profile?.plan === "pro") {
+      // Only block if the subscription is currently active (not expired and not null-expiry)
+      const planType  = profile.plan_type || "none";
+      const expiresAt = profile.subscription_expires_at;
+      const isLifetime = planType === "lifetime";
+      const isActive   = expiresAt && new Date(expiresAt) > new Date();
+      if (isLifetime || isActive) {
+        return fail("Already on an active Pro plan", 400);
+      }
+      // Expired pro — fall through and let them re-subscribe
+    }
 
     let customerId = profile?.stripe_customer_id || null;
 
