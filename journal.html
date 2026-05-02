@@ -609,26 +609,24 @@ iframe.ready{opacity:1}
     transition:transform var(--sidebar-transition), width var(--sidebar-transition), min-width var(--sidebar-transition);
   }
   .sidebar.collapsed{
-    transform:translateX(calc(-1 * var(--sidebar-collapsed-w)));
-  }
-  .sidebar-mobile-open{
-    transform:translateX(0)!important;
-  }
-  .sidebar-backdrop{
-    display:block!important;
+    transform:translateX(calc(-1 * var(--sidebar-w)));
   }
 }
 @media(max-width:400px){
   .crg{grid-template-columns:1fr}
 }
 
-/* Mobile backdrop */
+/* Mobile backdrop — always in DOM, toggled via JS */
 .sidebar-backdrop{
   display:none;
   position:fixed;
   inset:0;
   background:rgba(0,0,0,.55);
   z-index:190;
+  /* Must be below sidebar (z-index:200) but above content */
+}
+.sidebar-backdrop.visible{
+  display:block;
 }
 </style>
 </head>
@@ -651,8 +649,8 @@ iframe.ready{opacity:1}
   </div>
 </header>
 
-<!-- Mobile backdrop -->
-<div class="sidebar-backdrop" id="sidebarBackdrop" onclick="collapseSidebar()"></div>
+<!-- Mobile backdrop — clicking this closes the sidebar -->
+<div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeMobileSidebar()"></div>
 
 <div class="app-body">
 
@@ -1178,30 +1176,51 @@ iframe.ready{opacity:1}
 const SIDEBAR_KEY = 'tz_sidebar_collapsed';
 let _sidebarCollapsed = localStorage.getItem(SIDEBAR_KEY) === 'true';
 
-function _applySidebarState(animate){
-  const sidebar = document.getElementById('sidebar');
-  if(!animate) sidebar.style.transition = 'none';
-  sidebar.classList.toggle('collapsed', _sidebarCollapsed);
-  document.getElementById('sidebarToggleIcon').className =
-    _sidebarCollapsed ? 'fa-solid fa-bars' : 'fa-solid fa-bars';
-  if(!animate) requestAnimationFrame(()=>{ sidebar.style.transition=''; });
+function _isMobile() {
+  return window.innerWidth <= 520;
 }
 
-function toggleSidebar(){
+function _setBackdrop(visible) {
+  const backdrop = document.getElementById('sidebarBackdrop');
+  if (visible) {
+    backdrop.classList.add('visible');
+  } else {
+    backdrop.classList.remove('visible');
+  }
+}
+
+function _applySidebarState(animate) {
+  const sidebar = document.getElementById('sidebar');
+  if (!animate) sidebar.style.transition = 'none';
+  sidebar.classList.toggle('collapsed', _sidebarCollapsed);
+  // On mobile: show backdrop when sidebar is open (not collapsed)
+  if (_isMobile()) {
+    _setBackdrop(!_sidebarCollapsed);
+  } else {
+    _setBackdrop(false);
+  }
+  if (!animate) requestAnimationFrame(() => { sidebar.style.transition = ''; });
+}
+
+function toggleSidebar() {
   _sidebarCollapsed = !_sidebarCollapsed;
   localStorage.setItem(SIDEBAR_KEY, _sidebarCollapsed);
   _applySidebarState(true);
 }
 
-function collapseSidebar(){
+// Called when tapping the backdrop on mobile — closes the sidebar
+function closeMobileSidebar() {
+  if (!_isMobile()) return;
   _sidebarCollapsed = true;
   localStorage.setItem(SIDEBAR_KEY, _sidebarCollapsed);
   _applySidebarState(true);
-  document.getElementById('sidebarBackdrop').style.display = 'none';
 }
 
 // Apply on load without animation
 _applySidebarState(false);
+
+// Re-evaluate backdrop on resize (e.g. rotating device)
+window.addEventListener('resize', () => { _applySidebarState(false); });
 
 // ─── Tabs ───────────────────────────────────────────────────────────────────
 const TABS=['logs','presession','calendar','notes','analytics','settings'];
@@ -1320,7 +1339,12 @@ function switchTab(name){
   if(fm[name]){const{id,src}=fm[name];const f=document.getElementById(id);if(f){if(!f.src||f.src==='about:blank'){showTabLoader(name);f.classList.remove('ready');f.src=src+'?t='+Date.now();}else if(!f.classList.contains('ready'))showTabLoader(name);}}
   if(name==='settings')populateSettings();
   document.getElementById('unsavedBar').classList.remove('show');
-  if(window.innerWidth <= 520) collapseSidebar();
+  // On mobile: close sidebar after selecting a tab
+  if(_isMobile()){
+    _sidebarCollapsed = true;
+    localStorage.setItem(SIDEBAR_KEY, _sidebarCollapsed);
+    _applySidebarState(true);
+  }
   bcast({type:'tz_tab_changed',tab:name});
 }
 
@@ -1451,15 +1475,8 @@ async function refreshExpSummary(){
   `;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// FIX 1: storagePathToBase64 — now handles full HTTP/HTTPS public CDN URLs
-// in addition to Supabase Storage paths. This is the root cause of images
-// showing as [] in exports: new trades store a public URL in storage_url,
-// not just a path, so the old db.storage.download() call failed silently.
-// ─────────────────────────────────────────────────────────────────────────────
 async function storagePathToBase64(storagePath){
   try{
-    // Case 1: full HTTP(S) URL — fetch directly (public CDN, signed URL, etc.)
     if(storagePath&&(storagePath.startsWith('http://')||storagePath.startsWith('https://'))){
       try{
         const resp=await fetch(storagePath);
@@ -1476,7 +1493,6 @@ async function storagePathToBase64(storagePath){
         console.warn('[export] direct URL fetch failed, falling back to storage download:',fetchErr);
       }
     }
-    // Case 2: Supabase Storage path (relative)
     const{data,error}=await db.storage.from('trade-images').download(storagePath);
     if(error||!data)return null;
     return await new Promise(res=>{
@@ -1503,14 +1519,9 @@ async function confirmExport(){
         const b64Imgs=[];
         for(const img of rawImgs){
           let b64=null;
-          // FIX 2: Priority waterfall for extracting base64 from image records
-          // Priority 1: already have inline base64 data
           if(img.data&&img.data.startsWith('data:'))b64=img.data;
-          // Priority 2: legacy _previewUrl
           else if(img._previewUrl&&img._previewUrl.startsWith('data:'))b64=img._previewUrl;
-          // Priority 3: storage_url (handles both Supabase path AND full public URL)
           else if(img.storage_url)b64=await storagePathToBase64(img.storage_url);
-          // Priority 4: url field (alternative public URL field)
           if(!b64&&img.url)b64=await storagePathToBase64(img.url);
           if(b64)b64Imgs.push(b64);
         }
@@ -1553,15 +1564,6 @@ async function refreshImpPreview(){
   document.getElementById('settingsRestoreRow').classList.toggle('show',hasS);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// FIX 3: uploadImagesForTrade — handles all image formats from JSON backups:
-//   a) Plain base64 data URL string (standard: "data:image/jpeg;base64,...")
-//   b) Plain HTTP/HTTPS URL string (rare: public CDN URL as string)
-//   c) Object with .data property (legacy inline format)
-//   d) Object with ._previewUrl property (legacy preview format)
-//   e) Object with .storage_url (Supabase Storage path or public URL)
-//   f) Object with .url (alternative public URL field)
-// ─────────────────────────────────────────────────────────────────────────────
 async function uploadImagesForTrade(tradeId, tradeData) {
   const imgs = tradeData.images;
   if (!Array.isArray(imgs) || !imgs.length) return;
@@ -1570,12 +1572,9 @@ async function uploadImagesForTrade(tradeId, tradeData) {
     let dataUrl = null;
 
     if (typeof img === 'string') {
-      // Case (a): standard base64 data URL — most common from JSON backups
       if (img.startsWith('data:')) {
         dataUrl = img;
-      }
-      // Case (b): plain HTTP URL string — fetch and convert to base64
-      else if (img.startsWith('http://') || img.startsWith('https://')) {
+      } else if (img.startsWith('http://') || img.startsWith('https://')) {
         try {
           const resp = await fetch(img);
           if (resp.ok) {
@@ -1590,16 +1589,13 @@ async function uploadImagesForTrade(tradeId, tradeData) {
         } catch(e) { console.warn('[import] string URL fetch failed:', e); }
       }
     } else if (img && typeof img === 'object') {
-      // Case (c): object with inline .data
       const raw = img.data || img._previewUrl || '';
       if (raw && raw.startsWith('data:')) {
         dataUrl = raw;
       } else {
-        // Case (d/e/f): object with a URL we need to download
         const url = img.storage_url || img.url || '';
         if (url) {
           if (!url.startsWith('http://') && !url.startsWith('https://')) {
-            // Supabase Storage path
             try {
               const { data, error } = await db.storage.from('trade-images').download(url);
               if (!error && data) {
@@ -1612,7 +1608,6 @@ async function uploadImagesForTrade(tradeId, tradeData) {
               }
             } catch(e) { console.warn('[import] storage path download failed:', e); }
           } else {
-            // Full HTTP URL
             try {
               const resp = await fetch(url);
               if (resp.ok) {

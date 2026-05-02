@@ -67,7 +67,6 @@ body{visibility:hidden;background:var(--bg);color:var(--text);font-family:var(--
 .sec-tip::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:#0e1a0f;border:1px solid var(--border2,#253127);border-radius:6px;padding:8px 12px;font-size:11px;color:var(--text);white-space:normal;width:max-content;max-width:240px;z-index:1000;box-shadow:0 4px 16px rgba(0,0,0,.5);line-height:1.5;text-transform:none;letter-spacing:normal;font-weight:400;pointer-events:none;opacity:0;transition:opacity .15s}
 .sec-tip:hover::after{opacity:1}
 
-
 /* Grids */
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .g-eq{display:grid;grid-template-columns:1fr 280px;gap:16px}
@@ -106,12 +105,34 @@ body{visibility:hidden;background:var(--bg);color:var(--text);font-family:var(--
 .c-g{color:#19c37d!important}
 .c-r{color:#f05165!important}
 
+/* ─── Tablet & mobile responsive (≤1023px = non-desktop) ──────────────────── */
+/* Overview: equity curve becomes full-width (g-eq → 1 col),
+   Win/Loss + Timeframe stay side-by-side via g2-keep-pair.
+   Strategy PNL, Rolling WR, Avg Win/Loss already full-width (not in a grid).
+   Timing & Assets: all g2 grids collapse to 1 col (full width). */
+@media(max-width:1023px){
+  /* Overview — break the equity+WL two-column layout into stacked full-width */
+  .g-eq{grid-template-columns:1fr}
+
+  /* Timing & Assets — all two-column grids go full width */
+  .g2{grid-template-columns:1fr}
+
+  /* But keep Win/Loss + Timeframe Breakdown side-by-side on tablet */
+  .g2-keep-pair{grid-template-columns:1fr 1fr}
+}
+
+/* Smaller tablets / large phones */
 @media(max-width:720px){
   .kpi-strip{grid-template-columns:repeat(2,1fr)}
-  .g2,.g-eq{grid-template-columns:1fr}
   .tab-bar{flex-wrap:wrap;gap:4px}
   .tz-tab{font-size:11px;padding:5px 12px}
 }
+
+/* Small phones: even the Win/Loss + Timeframe pair stacks */
+@media(max-width:540px){
+  .g2-keep-pair{grid-template-columns:1fr}
+}
+
 @media(max-width:420px){
   .kpi-strip{grid-template-columns:1fr 1fr}
   .kpi-value{font-size:20px}
@@ -260,8 +281,8 @@ function _tc(){return getComputedStyle(document.documentElement).getPropertyValu
 function _textColor(){return getComputedStyle(document.documentElement).getPropertyValue('--text').trim()||'#dff0e4';}
 function _gc(){return getComputedStyle(document.documentElement).getPropertyValue('--border').trim()||'#1e2e1f';}
 
-// ── Equity chart factory (shared by pro overview + free tier) ─────────────────
-function _makeEquityChart(canvasId, sorted){
+// ── Equity chart factory ──────────────────────────────────────────────────────
+function _makeEquityChart(canvasId,sorted){
   let acc=0;
   const labels=sorted.map(t=>t.date);
   const data=sorted.map(t=>{acc+=t.pnl;return+acc.toFixed(2);});
@@ -319,10 +340,14 @@ function renderInsightBar(stats,container,isPro){
 }
 
 // ── Overview Tab ──────────────────────────────────────────────────────────────
+// Layout changes vs original:
+//  • Equity Curve: pulled OUT of g-eq into its own full-width card
+//  • Win/Loss + Timeframe: wrapped in g2 g2-keep-pair (side-by-side on tablet, stack on small phone)
+//  • Strategy PNL: own full-width card
+//  • Rolling WR & Avg Win/Loss: already full-width
 function renderOverviewHtml(trades,stats){
   const{wins,losses,be,wr,avgWin,avgLoss,best,worst}=stats;
 
-  // Timeframe
   const tm={};
   trades.forEach(t=>{
     const tfs=Array.isArray(t.timeframe)?t.timeframe:(t.timeframe?[t.timeframe]:[]);
@@ -334,11 +359,15 @@ function renderOverviewHtml(trades,stats){
   }).join('')||`<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:18px">No timeframe data yet.</td></tr>`;
 
   return`<div style="display:flex;flex-direction:column;gap:16px">
-    <div class="g-eq">
-      <div class="card">
-        ${secHdr('fa-chart-area','Equity Curve','Cumulative P&amp;L plotted over time — each point is the running total after that trade. A rising line means you are growing; a falling line means drawdown.')}
-        <div style="height:260px;position:relative"><canvas id="eq"></canvas></div>
-      </div>
+
+    <!-- Equity Curve: always full-width -->
+    <div class="card">
+      ${secHdr('fa-chart-area','Equity Curve','Cumulative P&amp;L plotted over time — each point is the running total after that trade. A rising line means you are growing; a falling line means drawdown.')}
+      <div style="height:260px;position:relative"><canvas id="eq"></canvas></div>
+    </div>
+
+    <!-- Win/Loss + Timeframe: side-by-side on tablet, stacks on small phone -->
+    <div class="g2 g2-keep-pair">
       <div class="card">
         ${secHdr('fa-trophy','Win / Loss','Count of winning, losing, and break-even trades. The number in the centre is your overall win rate — aim for above 50% or compensate with a high reward-to-risk ratio.')}
         <div style="height:200px;position:relative"><canvas id="wl"></canvas></div>
@@ -349,36 +378,39 @@ function renderOverviewHtml(trades,stats){
           <div><div class="ms-lbl">Worst</div><div class="ms-val c-r">-$${Math.abs(worst).toFixed(2)}</div></div>
         </div>
       </div>
-    </div>
-    <div class="g2">
-      <div class="card">
-        ${secHdr('fa-chess','Strategy PNL','Net profit or loss grouped by strategy tag. Green bars are profitable strategies; red bars are losing ones. Focus on growing the green ones.')}
-        <div style="height:200px;position:relative"><canvas id="st"></canvas></div>
-      </div>
       <div class="card">
         ${secHdr('fa-table','Timeframe Breakdown','Win rate and net P&amp;L split by chart timeframe (M5, H1, D1, etc.) — tells you which timeframe suits your edge best.')}
         <table class="bt"><thead><tr><th>Timeframe</th><th>Trades</th><th>Win Rate</th><th>PNL</th></tr></thead><tbody>${tfRows}</tbody></table>
       </div>
     </div>
+
+    <!-- Strategy PNL: always full-width -->
+    <div class="card">
+      ${secHdr('fa-chess','Strategy PNL','Net profit or loss grouped by strategy tag. Green bars are profitable strategies; red bars are losing ones. Focus on growing the green ones.')}
+      <div style="height:200px;position:relative"><canvas id="st"></canvas></div>
+    </div>
+
+    <!-- Rolling Win Rate: always full-width -->
     <div class="card">
       ${secHdr('fa-chart-line','Rolling Win Rate (20 trades)','Your win rate recalculated after every trade using the last 20 trades. Rising line = good form. Falling = a losing streak forming. Dashed line = 50% breakeven.')}
       <p style="font-size:12px;color:var(--muted);margin:-6px 0 14px;line-height:1.5">Are you getting better over time, or is your edge slipping?</p>
       <div style="height:200px;position:relative"><canvas id="rwr"></canvas></div>
     </div>
+
+    <!-- Avg Win vs Avg Loss: always full-width -->
     <div class="card">
       ${secHdr('fa-scale-balanced','Avg Win vs Avg Loss','Compares the average size of your winning trades to your losing trades. If your avg win is bigger than your avg loss, you can be profitable even with a win rate below 50%.')}
       <div id="awl"></div>
     </div>
+
   </div>`;
 }
 
 function initOverviewCharts(trades,stats){
   const{wins,losses,be,wr,sorted,vld}=stats;
 
-  // Equity
   _makeEquityChart('eq',sorted);
 
-  // Win/Loss donut
   const wl=_mkChart(document.getElementById('wl'),{
     type:'doughnut',
     data:{labels:['Wins','Losses','BE'],datasets:[{data:[wins.length,losses.length,be.length],backgroundColor:[G+'dd',R+'bb','#6b8f7244'],borderWidth:0}]},
@@ -386,7 +418,6 @@ function initOverviewCharts(trades,stats){
   });
   if(wl){wl._centerText=fPct(wr);wl._centerColor=wrColor(wr);}
 
-  // Strategy PNL
   const sm={};
   trades.forEach(t=>{
     const ss=Array.isArray(t.strategy)?t.strategy:(t.strategy?[t.strategy]:[]);
@@ -403,7 +434,6 @@ function initOverviewCharts(trades,stats){
     });
   }
 
-  // Rolling Win Rate (20-trade window)
   const RWR_WIN=20;
   const rwrData=sorted.map((_,i)=>{
     const slice=sorted.slice(Math.max(0,i-RWR_WIN+1),i+1);
@@ -439,7 +469,6 @@ function initOverviewCharts(trades,stats){
     });
   }
 
-  // Avg Win vs Avg Loss
   const awlEl=document.getElementById('awl');
   if(awlEl){
     const{avgWin,avgLoss}=stats;
@@ -480,6 +509,9 @@ function initOverviewCharts(trades,stats){
 }
 
 // ── Timing Tab ────────────────────────────────────────────────────────────────
+// All three sections are now independent full-width cards (no g2 wrapper).
+// On desktop they were already mostly stacked; the Day-of-Week chart was
+// side-by-side with Hour Breakdown. Both now go full width on tablet/mobile.
 function renderTimingHtml(trades){
   const hm={};
   trades.filter(t=>t.time&&t.time.includes(':')).forEach(t=>{
@@ -493,20 +525,25 @@ function renderTimingHtml(trades){
   }).join('')||`<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:18px">No time data yet.</td></tr>`;
 
   return`<div style="display:flex;flex-direction:column;gap:16px">
+
+    <!-- Trade Volume by Hour: full-width -->
     <div class="card">
       ${secHdr('fa-fire-flame-curved','Trade Volume by Hour','Number of trades taken at each hour of the day. Taller bars = your busiest windows. Use this to spot when you overtrade or when you are most active.')}
       <div style="height:220px;position:relative"><canvas id="hh"></canvas></div>
     </div>
-    <div class="g2">
-      <div class="card">
-        ${secHdr('fa-calendar-week','Day of Week','Number of trades placed on each day of the week — reveals your most active trading days.')}
-        <div style="height:220px;position:relative"><canvas id="dow"></canvas></div>
-      </div>
-      <div class="card">
-        ${secHdr('fa-table','Hour Breakdown','Win rate and average P&amp;L per hour. Sorted by time — scan the Avg PNL column to find your golden hours and dead zones.')}
-        <div class="scroll-tbl"><table class="bt"><thead><tr><th>Hour</th><th>Trades</th><th>Win Rate</th><th>Avg PNL</th></tr></thead><tbody>${timeRows}</tbody></table></div>
-      </div>
+
+    <!-- Day of Week: full-width -->
+    <div class="card">
+      ${secHdr('fa-calendar-week','Day of Week','Number of trades placed on each day of the week — reveals your most active trading days.')}
+      <div style="height:220px;position:relative"><canvas id="dow"></canvas></div>
     </div>
+
+    <!-- Hour Breakdown table: full-width -->
+    <div class="card">
+      ${secHdr('fa-table','Hour Breakdown','Win rate and average P&amp;L per hour. Sorted by time — scan the Avg PNL column to find your golden hours and dead zones.')}
+      <div class="scroll-tbl"><table class="bt"><thead><tr><th>Hour</th><th>Trades</th><th>Win Rate</th><th>Avg PNL</th></tr></thead><tbody>${timeRows}</tbody></table></div>
+    </div>
+
   </div>`;
 }
 
@@ -560,8 +597,8 @@ function initTimingCharts(trades){
 }
 
 // ── Assets & Behavior Tab ─────────────────────────────────────────────────────
+// All four sections are now individual full-width cards (no g2 wrappers).
 function renderAssetsHtml(trades,mc){
-  // Mood
   const mm={};
   trades.forEach(t=>{
     const ms=Array.isArray(t.mood)?t.mood:(t.mood?[t.mood]:[]);
@@ -572,7 +609,6 @@ function renderAssetsHtml(trades,mc){
     return`<tr><td><strong>${m}</strong></td><td>${d.tot}</td><td style="min-width:130px">${wrBarHtml(wrp)}</td><td style="font-family:var(--font-mono,'Space Mono',monospace);font-size:12px;color:${grc(avg)}">${fP(avg)}</td></tr>`;
   }).join('')||`<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:18px">No mood data yet.</td></tr>`;
 
-  // Confidence
   const cm={};
   trades.forEach(t=>{const k=t.confidence;if(!k||k<1)return;if(!cm[k])cm[k]={tot:0,wins:0,pnl:0};cm[k].tot++;const p=parseFloat(t.pnl)||0;if(p>0)cm[k].wins++;cm[k].pnl+=p;});
   const confRows=Object.keys(cm).map(Number).sort((a,b)=>b-a).map(stars=>{
@@ -580,7 +616,6 @@ function renderAssetsHtml(trades,mc){
     return`<tr><td><span style="color:#f5c518;letter-spacing:1px">${'★'.repeat(stars)}<span style="opacity:.2">${'★'.repeat(5-stars)}</span></span></td><td>${d.tot}</td><td style="min-width:130px">${wrBarHtml(wrp)}</td><td style="font-family:var(--font-mono,'Space Mono',monospace);font-size:12px;color:${grc(avg)}">${fP(avg)}</td></tr>`;
   }).join('')||`<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:18px">No confidence data yet.</td></tr>`;
 
-  // Pair bars
   const pairMap={};
   trades.forEach(t=>{if(!t.pair)return;if(!pairMap[t.pair])pairMap[t.pair]={pnl:0,cnt:0};pairMap[t.pair].pnl+=parseFloat(t.pnl)||0;pairMap[t.pair].cnt++;});
   const pairList=Object.entries(pairMap).map(([p,d])=>({p,pnl:+d.pnl.toFixed(2),cnt:d.cnt})).sort((a,b)=>b.pnl-a.pnl);
@@ -591,26 +626,31 @@ function renderAssetsHtml(trades,mc){
   }).join('')||`<span style="color:var(--muted);font-size:13px">No pair data yet.</span>`;
 
   return`<div style="display:flex;flex-direction:column;gap:16px">
-    <div class="g2">
-      <div class="card">
-        ${secHdr('fa-ranking-star','Top Pairs by PNL','Cumulative net profit or loss per instrument, sorted best to worst. Bar width shows relative size. Tells you which markets you trade well and which drain your account.')}
-        ${pairHtml}
-      </div>
-      <div class="card">
-        ${secHdr('fa-arrow-right-arrow-left','Long vs Short','Split between buy-side (Long) and sell-side (Short) positions. A heavy skew in one direction could mean you have a directional bias — useful to know if the market is trending against you.')}
-        <div style="height:200px;position:relative"><canvas id="ls"></canvas></div>
-      </div>
+
+    <!-- Top Pairs: full-width -->
+    <div class="card">
+      ${secHdr('fa-ranking-star','Top Pairs by PNL','Cumulative net profit or loss per instrument, sorted best to worst. Bar width shows relative size. Tells you which markets you trade well and which drain your account.')}
+      ${pairHtml}
     </div>
-    <div class="g2">
-      <div class="card">
-        ${secHdr('fa-face-smile','Mood vs Performance','Win rate and average P&amp;L per mood tag. If Anxious or Tired moods have lower win rates, that is a signal to step back when you feel that way.')}
-        <table class="bt"><thead><tr><th>Mood</th><th>Trades</th><th>Win Rate</th><th>Avg PNL</th></tr></thead><tbody>${moodRows}</tbody></table>
-      </div>
-      <div class="card">
-        ${secHdr('fa-star','Confidence vs Performance','Win rate and average P&amp;L grouped by the star rating you gave each trade before entry. Ideally your 5-star trades outperform your 1-star trades — if not, your pre-trade confidence is not well-calibrated.')}
-        <table class="bt"><thead><tr><th>Confidence</th><th>Trades</th><th>Win Rate</th><th>Avg PNL</th></tr></thead><tbody>${confRows}</tbody></table>
-      </div>
+
+    <!-- Long vs Short: full-width -->
+    <div class="card">
+      ${secHdr('fa-arrow-right-arrow-left','Long vs Short','Split between buy-side (Long) and sell-side (Short) positions. A heavy skew in one direction could mean you have a directional bias — useful to know if the market is trending against you.')}
+      <div style="height:200px;position:relative"><canvas id="ls"></canvas></div>
     </div>
+
+    <!-- Mood vs Performance: full-width -->
+    <div class="card">
+      ${secHdr('fa-face-smile','Mood vs Performance','Win rate and average P&amp;L per mood tag. If Anxious or Tired moods have lower win rates, that is a signal to step back when you feel that way.')}
+      <table class="bt"><thead><tr><th>Mood</th><th>Trades</th><th>Win Rate</th><th>Avg PNL</th></tr></thead><tbody>${moodRows}</tbody></table>
+    </div>
+
+    <!-- Confidence vs Performance: full-width -->
+    <div class="card">
+      ${secHdr('fa-star','Confidence vs Performance','Win rate and average P&amp;L grouped by the star rating you gave each trade before entry. Ideally your 5-star trades outperform your 1-star trades — if not, your pre-trade confidence is not well-calibrated.')}
+      <table class="bt"><thead><tr><th>Confidence</th><th>Trades</th><th>Win Rate</th><th>Avg PNL</th></tr></thead><tbody>${confRows}</tbody></table>
+    </div>
+
   </div>`;
 }
 
@@ -727,7 +767,6 @@ function renderInsightsHtml(trades,stats){
   let activeRange='all';
   let activeTab='overview';
 
-  // ── Static shell ───────────────────────────────────────────────────────────
   const root=document.getElementById('root');
   root.innerHTML=`
     <div class="page-hdr">
@@ -780,7 +819,6 @@ function renderInsightsHtml(trades,stats){
     try{(adsbygoogle=window.adsbygoogle||[]).push({});}catch(e){}
   }
 
-  // ── Render helpers ─────────────────────────────────────────────────────────
   function getFiltered(){return filterByRange(allTrades,activeRange);}
 
   function renderTab(trades,stats){
@@ -819,7 +857,6 @@ function renderInsightsHtml(trades,stats){
     renderTab(trades,computeStats(trades));
   };
 
-  // Initial render
   fullRender();
 })();
 </script>

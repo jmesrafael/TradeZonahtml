@@ -514,7 +514,6 @@ input.plain.no-icon{padding-left:13px}
         <i class="fa-solid fa-circle-check"></i>
         Awesome, Thanks!
       </button>
-      <span class="reward-dismiss" onclick="closeRewardModal()">Dismiss</span>
     </div>
   </div>
 </div>
@@ -951,6 +950,23 @@ function _openRewardModal() {
   _spawnRewardParticles();
 }
 
+// ── Floating ✨ particles ─────────────────────────────────
+function _spawnRewardParticles() {
+  const container = document.getElementById('rewardParticles');
+  container.innerHTML = '';
+  for (let i = 0; i < 14; i++) {
+    const el = document.createElement('span');
+    el.className = 'reward-particle';
+    el.textContent = '✨';
+    el.style.left              = (4 + Math.random() * 92) + '%';
+    el.style.bottom            = (4 + Math.random() * 45) + '%';
+    el.style.animationDelay    = (i * 0.15) + 's';
+    el.style.fontSize          = (13 + Math.random() * 16) + 'px';
+    el.style.animationDuration = (1.5 + Math.random() * .9) + 's';
+    container.appendChild(el);
+  }
+}
+
 function closeRewardModal() {
   const overlay = document.getElementById('rewardOverlay');
   overlay.style.opacity = '0';
@@ -1023,24 +1039,6 @@ function _launchRewardConfetti() {
     else ctx.clearRect(0, 0, W, H);
   }
   draw();
-}
-
-// ── Floating emoji particles ──────────────────────────────
-function _spawnRewardParticles() {
-  const container = document.getElementById('rewardParticles');
-  container.innerHTML = '';
-  const emojis = ['🎉', '⭐', '🎊', '✨', '🏆', '💎', '🥳', '🎁', '🚀', '💫'];
-  for (let i = 0; i < 14; i++) {
-    const el = document.createElement('span');
-    el.className = 'reward-particle';
-    el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
-    el.style.left            = (4 + Math.random() * 92) + '%';
-    el.style.bottom          = (4 + Math.random() * 45) + '%';
-    el.style.animationDelay  = (i * 0.15) + 's';
-    el.style.fontSize        = (13 + Math.random() * 16) + 'px';
-    el.style.animationDuration = (1.5 + Math.random() * .9) + 's';
-    container.appendChild(el);
-  }
 }
 </script>
 </body>
