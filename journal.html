@@ -22,6 +22,8 @@ html{height:100%}
 @keyframes slideDown{from{opacity:0;transform:translateX(-50%) translateY(-20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 @keyframes calcPop{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
 @keyframes sidebarReveal{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
+@keyframes mobSidebarIn{from{transform:translateX(-100%)}to{transform:translateX(0)}}
+@keyframes mobSidebarOut{from{transform:translateX(0)}to{transform:translateX(-100%)}}
 body{background:var(--bg);color:var(--text);font-family:var(--font-body,'Inter',sans-serif);height:100%;overflow:hidden;display:flex;flex-direction:column}
 
 /* ── Page loader ── */
@@ -36,6 +38,27 @@ header{display:flex;align-items:center;justify-content:space-between;padding:11p
 .hleft{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
 .back-btn{background:none;border:1px solid var(--border);color:var(--muted);border-radius:var(--radius-md);padding:7px 11px;font-size:13px;cursor:pointer;transition:all var(--transition-base);display:flex;align-items:center;gap:5px;font-family:var(--font-body,'Inter',sans-serif);flex-shrink:0;white-space:nowrap}
 .back-btn:hover{border-color:var(--accent2);color:var(--text)}
+
+/* Mobile hamburger button in header — hidden on desktop */
+.mob-hdr-menu-btn{
+  display:none;
+  background:none;
+  border:1px solid var(--border);
+  color:var(--muted);
+  border-radius:var(--radius-md);
+  padding:7px 11px;
+  font-size:13px;
+  cursor:pointer;
+  transition:all var(--transition-base);
+  align-items:center;
+  gap:5px;
+  font-family:var(--font-body,'Inter',sans-serif);
+  flex-shrink:0;
+  white-space:nowrap;
+}
+.mob-hdr-menu-btn:hover{border-color:var(--accent2);color:var(--text)}
+.mob-hdr-menu-btn.open{border-color:var(--accent2);color:var(--accent2);background:rgba(var(--accent-rgb,0,255,136),.08)}
+
 .jname{font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:15px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
 .hright{display:flex;align-items:center;gap:8px;flex-shrink:0}
 .huser-info{display:flex;align-items:center;gap:7px;padding:5px 10px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:var(--radius-md);cursor:pointer;transition:border-color var(--transition-base)}
@@ -267,6 +290,156 @@ iframe.ready{opacity:1}
 .tab-loader.hidden{opacity:0;pointer-events:none}
 .tab-loader-spin{width:32px;height:32px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
 .tab-loader-label{font-size:13px;color:var(--muted)}
+
+/* ══════════════════════════════════════════
+   MOBILE SLIDE-IN SIDEBAR
+═══════════════════════════════════════════ */
+
+/* Backdrop */
+.mob-sidebar-backdrop{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.6);
+  z-index:8780;
+  backdrop-filter:blur(2px);
+  -webkit-backdrop-filter:blur(2px);
+}
+.mob-sidebar-backdrop.visible{display:block}
+
+/* Slide-in sidebar panel */
+.mob-sidebar-panel{
+  display:none;
+  position:fixed;
+  top:0;
+  left:0;
+  bottom:0;
+  width:240px;
+  max-width:80vw;
+  background:var(--panel);
+  border-right:1px solid var(--border);
+  z-index:8790;
+  flex-direction:column;
+  box-shadow:4px 0 32px rgba(0,0,0,.5);
+  overflow:hidden;
+}
+.mob-sidebar-panel.open{
+  display:flex;
+  animation:mobSidebarIn .22s cubic-bezier(0.4,0,0.2,1) forwards;
+}
+.mob-sidebar-panel.closing{
+  display:flex;
+  animation:mobSidebarOut .18s ease forwards;
+}
+
+/* Panel header */
+.mob-sidebar-hdr{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:14px 14px 12px;
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+.mob-sidebar-logo{
+  font-family:var(--font-heading,'Space Grotesk',sans-serif);
+  font-size:15px;
+  font-weight:700;
+  color:var(--text);
+  letter-spacing:-.01em;
+}
+.mob-sidebar-logo span{color:var(--accent)}
+.mob-sidebar-close{
+  background:none;
+  border:1px solid var(--border);
+  color:var(--muted);
+  border-radius:var(--radius-md);
+  width:30px;height:30px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+  font-size:13px;
+  transition:all .15s;
+}
+.mob-sidebar-close:hover{border-color:var(--accent2);color:var(--text)}
+
+/* Panel nav */
+.mob-sidebar-nav{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  padding:8px 8px;
+  gap:2px;
+  overflow-y:auto;
+  overflow-x:hidden;
+  scrollbar-width:none;
+}
+.mob-sidebar-nav::-webkit-scrollbar{display:none}
+
+.mob-sidebar-item{
+  display:flex;
+  align-items:center;
+  gap:11px;
+  padding:10px 12px;
+  border-radius:var(--radius-md);
+  background:none;
+  border:none;
+  color:var(--muted);
+  font-size:13px;
+  font-family:var(--font-body,'Inter',sans-serif);
+  cursor:pointer;
+  transition:all .15s;
+  width:100%;
+  text-align:left;
+  position:relative;
+}
+.mob-sidebar-item:hover{color:var(--text);background:rgba(255,255,255,.04)}
+.mob-sidebar-item.active{
+  color:var(--accent);
+  background:rgba(var(--accent-rgb,0,255,136),.08);
+}
+.mob-sidebar-item.active::before{
+  content:'';
+  position:absolute;
+  left:0;top:20%;bottom:20%;
+  width:2px;
+  background:var(--accent);
+  border-radius:0 2px 2px 0;
+}
+.mob-sidebar-item .msi-icon{
+  font-size:14px;
+  width:16px;
+  text-align:center;
+  flex-shrink:0;
+}
+.mob-sidebar-item .msi-label{font-size:13px;font-weight:500;flex:1}
+.mob-sidebar-item .msi-dot{
+  width:7px;height:7px;border-radius:50%;
+  flex-shrink:0;
+}
+
+/* Panel back button row */
+.mob-sidebar-footer{
+  border-top:1px solid var(--border);
+  padding:6px 8px 10px;
+  flex-shrink:0;
+}
+.mob-sidebar-back{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 12px;
+  border-radius:var(--radius-md);
+  background:none;
+  border:none;
+  color:var(--muted);
+  font-size:13px;
+  font-family:var(--font-body,'Inter',sans-serif);
+  cursor:pointer;
+  transition:all .15s;
+  width:100%;
+  text-align:left;
+}
+.mob-sidebar-back:hover{color:var(--text);background:rgba(255,255,255,.04)}
 
 /* ── Settings ── */
 .settings-panel{flex:1;min-height:0;overflow-y:auto;padding:24px 20px 120px}
@@ -593,41 +766,25 @@ iframe.ready{opacity:1}
   .calc-cols{grid-template-columns:1fr}
   #calcModal{width:96vw;max-height:88vh}
   .io-grid{grid-template-columns:1fr 1fr}
-  :root{
-    --sidebar-w: 180px;
-  }
+  :root{--sidebar-w:180px;}
 }
+
+/* ── Mobile: hide desktop sidebar, show header hamburger ── */
 @media(max-width:520px){
+  .sidebar{display:none !important}
+  /* Hide back button, show hamburger */
+  .back-btn{display:none !important}
+  .mob-hdr-menu-btn{display:flex}
   .huser-name{display:none}
   .mbox{max-width:100%}
-  .sidebar{
-    position:fixed;
-    top:0;bottom:0;left:0;
-    height:100%;
-    z-index:200;
-    transform:translateX(0);
-    transition:transform var(--sidebar-transition), width var(--sidebar-transition), min-width var(--sidebar-transition);
-  }
-  .sidebar.collapsed{
-    transform:translateX(calc(-1 * var(--sidebar-w)));
-  }
 }
 @media(max-width:400px){
   .crg{grid-template-columns:1fr}
 }
 
-/* Mobile backdrop — always in DOM, toggled via JS */
-.sidebar-backdrop{
-  display:none;
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.55);
-  z-index:190;
-  /* Must be below sidebar (z-index:200) but above content */
-}
-.sidebar-backdrop.visible{
-  display:block;
-}
+/* Old sidebar backdrop — keep for compat */
+.sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:190;}
+.sidebar-backdrop.visible{display:block;}
 </style>
 </head>
 <body>
@@ -638,7 +795,12 @@ iframe.ready{opacity:1}
 
 <header>
   <div class="hleft">
+    <!-- Desktop: back to dashboard -->
     <button class="back-btn" onclick="goBack()"><i class="fa-solid fa-chevron-left"></i></button>
+    <!-- Mobile: hamburger to open slide-in sidebar -->
+    <button class="mob-hdr-menu-btn" id="mobHdrMenuBtn" onclick="openMobSidebar()" aria-label="Open menu">
+      <i class="fa-solid fa-bars" id="mobHdrMenuIcon"></i>
+    </button>
     <span class="jname" id="jnameHdr">Journal</span>
   </div>
   <div class="hright">
@@ -649,15 +811,64 @@ iframe.ready{opacity:1}
   </div>
 </header>
 
-<!-- Mobile backdrop — clicking this closes the sidebar -->
-<div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeMobileSidebar()"></div>
+<!-- ══════════ MOBILE SLIDE-IN SIDEBAR ══════════ -->
+<!-- Backdrop -->
+<div class="mob-sidebar-backdrop" id="mobSidebarBackdrop" onclick="closeMobSidebar()"></div>
+
+<!-- Slide-in panel -->
+<div class="mob-sidebar-panel" id="mobSidebarPanel">
+  <div class="mob-sidebar-hdr">
+    <span class="mob-sidebar-logo">Trade<span>Zona</span></span>
+    <button class="mob-sidebar-close" onclick="closeMobSidebar()" aria-label="Close menu">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+  </div>
+
+  <div class="mob-sidebar-nav">
+    <button class="mob-sidebar-item active" data-tab="logs" onclick="mobSwitchTab('logs')">
+      <i class="fa-solid fa-table-list msi-icon"></i>
+      <span class="msi-label">Logs</span>
+    </button>
+    <button class="mob-sidebar-item" data-tab="presession" onclick="mobSwitchTab('presession')">
+      <i class="fa-solid fa-clipboard-list msi-icon"></i>
+      <span class="msi-label">Pre-Session</span>
+      <span class="msi-dot" id="mobPsDot" style="display:none"></span>
+    </button>
+    <button class="mob-sidebar-item" data-tab="calendar" onclick="mobSwitchTab('calendar')">
+      <i class="fa-solid fa-calendar-days msi-icon"></i>
+      <span class="msi-label">Calendar</span>
+    </button>
+    <button class="mob-sidebar-item" data-tab="notes" onclick="mobSwitchTab('notes')">
+      <i class="fa-solid fa-note-sticky msi-icon"></i>
+      <span class="msi-label">Notes</span>
+    </button>
+    <button class="mob-sidebar-item" data-tab="analytics" onclick="mobSwitchTab('analytics')">
+      <i class="fa-solid fa-chart-line msi-icon"></i>
+      <span class="msi-label">Analytics</span>
+    </button>
+    <button class="mob-sidebar-item" data-tab="settings" onclick="mobSwitchTab('settings')">
+      <i class="fa-solid fa-gear msi-icon"></i>
+      <span class="msi-label">Settings</span>
+    </button>
+  </div>
+
+  <!-- Back to dashboard at bottom -->
+  <div class="mob-sidebar-footer">
+    <button class="mob-sidebar-back" onclick="closeMobSidebar(); goBack();">
+      <i class="fa-solid fa-chevron-left" style="font-size:12px;width:16px;text-align:center"></i>
+      <span>Back to Dashboard</span>
+    </button>
+  </div>
+</div>
+
+<!-- Desktop sidebar backdrop (unused on mobile now) -->
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 
 <div class="app-body">
 
-  <!-- ══════════ SIDEBAR ══════════ -->
+  <!-- ══════════ SIDEBAR (desktop only) ══════════ -->
   <aside class="sidebar" id="sidebar">
 
-    <!-- Sidebar header with toggle -->
     <div class="sidebar-header">
       <button class="sidebar-toggle" id="sidebarToggleBtn" onclick="toggleSidebar()" title="Toggle sidebar">
         <i class="fa-solid fa-bars" id="sidebarToggleIcon"></i>
@@ -665,7 +876,6 @@ iframe.ready{opacity:1}
       <span class="sidebar-header-label">TradeZona</span>
     </div>
 
-    <!-- Main nav items -->
     <nav class="sidebar-nav" id="sidebarNav">
       <button class="nav-item active" data-tab="logs" onclick="switchTab('logs')" data-tip="Logs">
         <i class="fa-solid fa-table-list nav-item-icon"></i>
@@ -696,7 +906,6 @@ iframe.ready{opacity:1}
       </button>
     </nav>
 
-    <!-- Sidebar footer: Settings -->
     <div class="sidebar-footer">
       <button class="nav-item" data-tab="settings" onclick="switchTab('settings')" data-tip="Settings" style="width:100%">
         <i class="fa-solid fa-gear nav-item-icon"></i>
@@ -784,7 +993,6 @@ iframe.ready{opacity:1}
             <div class="bnb-import-wrap">
               <p class="bnb-subtitle">Import your closed positions from Binance Futures. Only <strong style="color:var(--text)">Realized PNL</strong> rows are used. Commission and funding fees are ignored.</p>
 
-              <!-- Drop zone -->
               <div class="bnb-dropzone" id="bnbDropzone"
                 ondragover="bnbDzOver(event)"
                 ondragleave="bnbDzLeave()"
@@ -795,13 +1003,11 @@ iframe.ready{opacity:1}
                 <input type="file" id="bnbFileInput" accept=".csv" onchange="bnbOnFileSelect(event)">
               </div>
 
-              <!-- File badge -->
               <div class="bnb-file-badge" id="bnbFileBadge">
                 <div class="fn"><i class="fa-solid fa-file-csv"></i><span id="bnbFileName">—</span></div>
                 <button class="clr" onclick="bnbClearFile()" title="Clear file"><i class="fa-solid fa-xmark"></i></button>
               </div>
 
-              <!-- Options -->
               <div class="bnb-options">
                 <div>
                   <label class="bnb-chk-row">
@@ -819,13 +1025,11 @@ iframe.ready{opacity:1}
                 </div>
               </div>
 
-              <!-- Error -->
               <div class="bnb-error" id="bnbError">
                 <i class="fa-solid fa-triangle-exclamation"></i>
                 <span id="bnbErrorMsg"></span>
               </div>
 
-              <!-- Preview -->
               <div class="bnb-preview" id="bnbPreview">
                 <div class="bnb-preview-title">Preview <span id="bnbPreviewCount" style="color:var(--accent2)"></span></div>
                 <div class="bnb-preview-table-wrap">
@@ -840,7 +1044,6 @@ iframe.ready{opacity:1}
                 <div class="bnb-summary" id="bnbSummary"></div>
               </div>
 
-              <!-- Actions -->
               <div class="bnb-actions" id="bnbActions" style="display:none">
                 <button class="bnb-import-btn" id="bnbImportBtn" onclick="bnbRunImport()" disabled>
                   <i class="fa-solid fa-file-import"></i> <span id="bnbImportBtnLabel">Import</span>
@@ -850,14 +1053,12 @@ iframe.ready{opacity:1}
                 </button>
               </div>
 
-              <!-- Progress -->
               <div class="bnb-progress" id="bnbProgress">
                 <div class="bnb-prog-label" id="bnbProgLabel">Importing…</div>
                 <div class="bnb-prog-track"><div class="bnb-prog-bar" id="bnbProgBar"></div></div>
                 <div class="bnb-prog-sub" id="bnbProgSub"></div>
               </div>
 
-              <!-- Result -->
               <div class="bnb-result" id="bnbResult">
                 <div class="bnb-result-title"><i class="fa-solid fa-circle-check" id="bnbResultIcon"></i><span id="bnbResultTitle">Import Complete</span></div>
                 <div class="bnb-result-body" id="bnbResultBody"></div>
@@ -865,7 +1066,6 @@ iframe.ready{opacity:1}
               </div>
             </div>
           </div>
-          <!-- ══════════ END BINANCE IMPORT ══════════ -->
 
           <div class="ssec full"><div class="ssec-title"><i class="fa-solid fa-database"></i>Export &amp; Import</div><div id="exportImportContent"></div></div>
 
@@ -914,7 +1114,6 @@ iframe.ready{opacity:1}
       <div class="ccol">
         <div class="ccol-title"><i class="fa-solid fa-sliders"></i> Inputs</div>
 
-        <!-- Asset toggle -->
         <div class="ctoggle">
           <button class="ctbtn active" id="cBtnCrypto" onclick="cSetAsset('crypto')">
             <span class="ico-btc" style="margin-right:3px">₿</span>Crypto
@@ -924,7 +1123,6 @@ iframe.ready{opacity:1}
           </button>
         </div>
 
-        <!-- ══ CRYPTO INPUTS ══ -->
         <div id="cryptoInputs">
           <div class="cfield">
             <div class="cflbl"><div class="cflbl-left">Account Capital<span class="ctip" data-tip="Your total trading account balance in USD.">?</span></div></div>
@@ -989,7 +1187,6 @@ iframe.ready{opacity:1}
           </div>
         </div>
 
-        <!-- ══ FOREX INPUTS ══ -->
         <div id="forexInputs" style="display:none">
           <div class="cfield">
             <div class="cflbl"><div class="cflbl-left">Currency Pair <span class="ctip" data-tip="Select the forex pair you want to trade.">?</span></div></div>
@@ -1172,33 +1369,67 @@ iframe.ready{opacity:1}
 <div id="toast"><i id="toastIcon" class="fa-solid fa-circle-check"></i><span id="toastMsg"></span></div>
 
 <script>
+// ─── Mobile slide-in sidebar ─────────────────────────────────────────────────
+let _mobSidebarOpen = false;
+
+function openMobSidebar() {
+  if (_mobSidebarOpen) return;
+  _mobSidebarOpen = true;
+  const panel = document.getElementById('mobSidebarPanel');
+  const backdrop = document.getElementById('mobSidebarBackdrop');
+  const btn = document.getElementById('mobHdrMenuBtn');
+  const icon = document.getElementById('mobHdrMenuIcon');
+  backdrop.classList.add('visible');
+  panel.classList.remove('closing');
+  panel.classList.add('open');
+  btn.classList.add('open');
+  icon.className = 'fa-solid fa-xmark';
+}
+
+function closeMobSidebar() {
+  if (!_mobSidebarOpen) return;
+  _mobSidebarOpen = false;
+  const panel = document.getElementById('mobSidebarPanel');
+  const backdrop = document.getElementById('mobSidebarBackdrop');
+  const btn = document.getElementById('mobHdrMenuBtn');
+  const icon = document.getElementById('mobHdrMenuIcon');
+  backdrop.classList.remove('visible');
+  btn.classList.remove('open');
+  icon.className = 'fa-solid fa-bars';
+  panel.classList.remove('open');
+  panel.classList.add('closing');
+  setTimeout(() => panel.classList.remove('closing'), 200);
+}
+
+function mobSwitchTab(name) {
+  closeMobSidebar();
+  switchTab(name);
+  // Sync active state on mobile sidebar items
+  document.querySelectorAll('.mob-sidebar-item[data-tab]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tab === name);
+  });
+}
+
+// Close mobile sidebar on Escape
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && _mobSidebarOpen) closeMobSidebar();
+});
+
+// ─── Sync mobile sidebar active state when tab changes ───────────────────────
+function _syncMobMenu(tab) {
+  document.querySelectorAll('.mob-sidebar-item[data-tab]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tab === tab);
+  });
+}
+
 // ─── Sidebar state ──────────────────────────────────────────────────────────
 const SIDEBAR_KEY = 'tz_sidebar_collapsed';
 let _sidebarCollapsed = localStorage.getItem(SIDEBAR_KEY) === 'true';
-
-function _isMobile() {
-  return window.innerWidth <= 520;
-}
-
-function _setBackdrop(visible) {
-  const backdrop = document.getElementById('sidebarBackdrop');
-  if (visible) {
-    backdrop.classList.add('visible');
-  } else {
-    backdrop.classList.remove('visible');
-  }
-}
 
 function _applySidebarState(animate) {
   const sidebar = document.getElementById('sidebar');
   if (!animate) sidebar.style.transition = 'none';
   sidebar.classList.toggle('collapsed', _sidebarCollapsed);
-  // On mobile: show backdrop when sidebar is open (not collapsed)
-  if (_isMobile()) {
-    _setBackdrop(!_sidebarCollapsed);
-  } else {
-    _setBackdrop(false);
-  }
   if (!animate) requestAnimationFrame(() => { sidebar.style.transition = ''; });
 }
 
@@ -1208,19 +1439,7 @@ function toggleSidebar() {
   _applySidebarState(true);
 }
 
-// Called when tapping the backdrop on mobile — closes the sidebar
-function closeMobileSidebar() {
-  if (!_isMobile()) return;
-  _sidebarCollapsed = true;
-  localStorage.setItem(SIDEBAR_KEY, _sidebarCollapsed);
-  _applySidebarState(true);
-}
-
-// Apply on load without animation
 _applySidebarState(false);
-
-// Re-evaluate backdrop on resize (e.g. rotating device)
-window.addEventListener('resize', () => { _applySidebarState(false); });
 
 // ─── Tabs ───────────────────────────────────────────────────────────────────
 const TABS=['logs','presession','calendar','notes','analytics','settings'];
@@ -1307,17 +1526,19 @@ window.addEventListener('message',e=>{
   if(e.data?.type==='tz_trades_changed'){bcast(e.data);}
   if(e.data?.type==='tz_presession_summary'){
     const dot=document.getElementById('psTabDot');
-    if(dot){
-      if(!e.data.set_id||!e.data.total){dot.style.display='none';}
-      else{
-        const score=e.data.score||0;
-        dot.style.background=score>=85?'#22c55e':score>=70?'#f59e0b':score>0?'#ff5f6d':'#555';
-        dot.style.display='inline-block';
-      }
+    const mobDot=document.getElementById('mobPsDot');
+    if(!e.data.set_id||!e.data.total){
+      if(dot)dot.style.display='none';
+      if(mobDot)mobDot.style.display='none';
+    }else{
+      const score=e.data.score||0;
+      const col=score>=85?'#22c55e':score>=70?'#f59e0b':score>0?'#ff5f6d':'#555';
+      if(dot){dot.style.background=col;dot.style.display='inline-block';}
+      if(mobDot){mobDot.style.background=col;mobDot.style.display='inline-block';}
     }
     ['logsFrame'].forEach(fid=>{try{const f=document.getElementById(fid);if(f?.contentWindow)f.contentWindow.postMessage(e.data,'*');}catch(ex){}});
   }
-  if(e.data?.type==='tz_open_tab'&&e.data.tab){try{switchTab(e.data.tab);}catch(ex){}}
+  if(e.data?.type==='tz_open_tab'&&e.data.tab){try{switchTab(e.data.tab);_syncMobMenu(e.data.tab);}catch(ex){}}
 });
 
 function goBack(){if(activeTab==='settings'&&isDirty){showToast('Save or discard settings first.','fa-solid fa-triangle-exclamation','red');return;}navigateSafely('/dashboard');}
@@ -1326,10 +1547,12 @@ function switchTab(name){
   if(activeTab==='settings'&&isDirty&&name!=='settings'){showToast('Save or discard changes first.','fa-solid fa-triangle-exclamation','red');return;}
   TABS.forEach(t=>{
     document.getElementById('tab-'+t).classList.toggle('active',t===name);
-    const btn = document.querySelector(`[data-tab="${t}"]`);
+    // Sync desktop sidebar buttons
+    const btn = document.querySelector(`.sidebar [data-tab="${t}"]`);
     if(btn) btn.classList.toggle('active', t===name);
   });
   activeTab=name;
+  _syncMobMenu(name);
   const fm={
     presession:{id:'presessionFrame',src:'/presession/presession.html'},
     calendar:{id:'calFrame',src:'calendar.html'},
@@ -1339,12 +1562,6 @@ function switchTab(name){
   if(fm[name]){const{id,src}=fm[name];const f=document.getElementById(id);if(f){if(!f.src||f.src==='about:blank'){showTabLoader(name);f.classList.remove('ready');f.src=src+'?t='+Date.now();}else if(!f.classList.contains('ready'))showTabLoader(name);}}
   if(name==='settings')populateSettings();
   document.getElementById('unsavedBar').classList.remove('show');
-  // On mobile: close sidebar after selecting a tab
-  if(_isMobile()){
-    _sidebarCollapsed = true;
-    localStorage.setItem(SIDEBAR_KEY, _sidebarCollapsed);
-    _applySidebarState(true);
-  }
   bcast({type:'tz_tab_changed',tab:name});
 }
 
@@ -1567,70 +1784,29 @@ async function refreshImpPreview(){
 async function uploadImagesForTrade(tradeId, tradeData) {
   const imgs = tradeData.images;
   if (!Array.isArray(imgs) || !imgs.length) return;
-
   for (const img of imgs) {
     let dataUrl = null;
-
     if (typeof img === 'string') {
-      if (img.startsWith('data:')) {
-        dataUrl = img;
-      } else if (img.startsWith('http://') || img.startsWith('https://')) {
-        try {
-          const resp = await fetch(img);
-          if (resp.ok) {
-            const blob = await resp.blob();
-            dataUrl = await new Promise(res => {
-              const r = new FileReader();
-              r.onload = () => res(r.result);
-              r.onerror = () => res(null);
-              r.readAsDataURL(blob);
-            });
-          }
-        } catch(e) { console.warn('[import] string URL fetch failed:', e); }
+      if (img.startsWith('data:')) { dataUrl = img; }
+      else if (img.startsWith('http://') || img.startsWith('https://')) {
+        try { const resp=await fetch(img);if(resp.ok){const blob=await resp.blob();dataUrl=await new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>res(null);r.readAsDataURL(blob);});} } catch(e) { console.warn('[import] string URL fetch failed:',e); }
       }
     } else if (img && typeof img === 'object') {
       const raw = img.data || img._previewUrl || '';
-      if (raw && raw.startsWith('data:')) {
-        dataUrl = raw;
-      } else {
+      if (raw && raw.startsWith('data:')) { dataUrl = raw; }
+      else {
         const url = img.storage_url || img.url || '';
         if (url) {
           if (!url.startsWith('http://') && !url.startsWith('https://')) {
-            try {
-              const { data, error } = await db.storage.from('trade-images').download(url);
-              if (!error && data) {
-                dataUrl = await new Promise(res => {
-                  const r = new FileReader();
-                  r.onload = () => res(r.result);
-                  r.onerror = () => res(null);
-                  r.readAsDataURL(data);
-                });
-              }
-            } catch(e) { console.warn('[import] storage path download failed:', e); }
+            try { const{data,error}=await db.storage.from('trade-images').download(url);if(!error&&data){dataUrl=await new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>res(null);r.readAsDataURL(data);});} } catch(e) { console.warn('[import] storage path download failed:',e); }
           } else {
-            try {
-              const resp = await fetch(url);
-              if (resp.ok) {
-                const blob = await resp.blob();
-                dataUrl = await new Promise(res => {
-                  const r = new FileReader();
-                  r.onload = () => res(r.result);
-                  r.onerror = () => res(null);
-                  r.readAsDataURL(blob);
-                });
-              }
-            } catch(e) { console.warn('[import] object URL fetch failed:', e); }
+            try { const resp=await fetch(url);if(resp.ok){const blob=await resp.blob();dataUrl=await new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>res(null);r.readAsDataURL(blob);});} } catch(e) { console.warn('[import] object URL fetch failed:',e); }
           }
         }
       }
     }
-
     if (dataUrl && dataUrl.startsWith('data:')) {
-      try {
-        await addTradeImage(currentUser.id, tradeId, dataUrl);
-      } catch(imgErr) {
-        console.warn('[import] image upload failed for trade', tradeId, imgErr);
-      }
+      try { await addTradeImage(currentUser.id, tradeId, dataUrl); } catch(imgErr) { console.warn('[import] image upload failed for trade', tradeId, imgErr); }
     }
   }
 }
@@ -1841,23 +2017,13 @@ async function bnbParseAndPreview(csvText){
 
   _bnbParsedRows=finalRows.map(r=>{
     const trade={
-      date:r.date,
-      time:r.time,
-      pair:r.symbol,
-      pnl:r.amount,
-      position:'Long',
-      strategy:[],
-      timeframe:[],
-      mood:[],
-      confidence:0,
-      r:'',
-      notes:'Binance Import'
+      date:r.date,time:r.time,pair:r.symbol,pnl:r.amount,position:'Long',
+      strategy:[],timeframe:[],mood:[],confidence:0,r:'',notes:'Binance Import'
     };
     let isDup=false;
     if(skipDupes){
       isDup=existingTrades.some(t=>
-        t.date===trade.date &&
-        t.time===trade.time &&
+        t.date===trade.date&&t.time===trade.time&&
         (t.pair||'').toUpperCase()===(trade.pair||'').toUpperCase()
       );
     }
@@ -1974,10 +2140,7 @@ async function bnbRunImport(){
   resultBody.innerHTML=bodyParts.join(' · ')+'.<br><span style="font-size:11px;color:var(--muted)">Switch to the Logs tab to see your imported trades.</span>';
   resultEl.classList.add('show');
 
-  try{
-    if(lf?.contentWindow){lf.src='/logs/index.html?t='+Date.now();}
-  }catch(ex){}
-
+  try{if(lf?.contentWindow){lf.src='/logs/index.html?t='+Date.now();}}catch(ex){}
   if(imported>0){
     showToast(`${imported} trade${imported!==1?'s':''} imported from Binance CSV!`,'fa-solid fa-circle-check','green');
   }
@@ -1987,27 +2150,19 @@ document.getElementById('bnbMergePartial').addEventListener('change',_bnbRecheck
 document.getElementById('bnbSkipDupes').addEventListener('change',_bnbRecheckIfNeeded);
 function _bnbRecheckIfNeeded(){
   if(document.getElementById('bnbFileBadge').classList.contains('show')){
-    if(_bnbLastCsvText){
-      bnbParseAndPreview(_bnbLastCsvText);
-    }else{
-      _bnbReEvalDupes();
-    }
+    if(_bnbLastCsvText){bnbParseAndPreview(_bnbLastCsvText);}
+    else{_bnbReEvalDupes();}
   }
 }
 
 async function _bnbReEvalDupes(){
-  if(!_bnbParsedRows||_bnbParsedRows.length===0)return;
+  if(!_bnbParsedRows||!_bnbParsedRows.length)return;
   const skipDupes=document.getElementById('bnbSkipDupes').checked;
   let existingTrades=[];
   try{const raw=await getTrades(journalId);existingTrades=raw.map(dbToTrade);}catch(e){}
   _bnbParsedRows=_bnbParsedRows.map(({trade})=>{
     let isDup=false;
-    if(skipDupes){
-      isDup=existingTrades.some(t=>
-        t.date===trade.date&&t.time===trade.time&&
-        (t.pair||'').toUpperCase()===(trade.pair||'').toUpperCase()
-      );
-    }
+    if(skipDupes){isDup=existingTrades.some(t=>t.date===trade.date&&t.time===trade.time&&(t.pair||'').toUpperCase()===(trade.pair||'').toUpperCase());}
     return{trade,isDup};
   });
   _bnbReadyRows=_bnbParsedRows.filter(r=>!r.isDup);
