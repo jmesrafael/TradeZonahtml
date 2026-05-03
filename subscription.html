@@ -319,29 +319,56 @@ hr.pdiv{border:none;border-top:1px solid var(--border);margin:18px 0}
 .footer-note a:hover{color:var(--text)}
 .footer-sep{opacity:.3}
 
-/* ── Celebration modal ── */
-.cel-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;align-items:center;justify-content:center;padding:20px}
-.cel-overlay.show{display:flex}
-.cel-box{
-  background:var(--panel);
-  border:1px solid rgba(var(--accent-rgb,0,255,136),.3);
-  border-radius:var(--radius-xl,20px);padding:44px 36px;text-align:center;
-  max-width:460px;width:100%;
-  animation:popIn .4s cubic-bezier(.34,1.56,.64,1) both;
-  position:relative;overflow:hidden;
-}
-.cel-box::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% -10%,rgba(var(--accent-rgb,0,255,136),.14),transparent 65%);pointer-events:none}
-.cel-emoji{font-size:56px;margin-bottom:16px;display:block;animation:floatY 2s ease-in-out infinite}
-.cel-box h2{font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:28px;font-weight:800;margin-bottom:10px}
-.cel-box h2 em{color:var(--accent);font-style:normal}
-.cel-box p{font-size:14px;color:var(--muted);line-height:1.7;margin-bottom:24px}
-.cel-perks{display:flex;flex-direction:column;gap:8px;margin-bottom:28px;text-align:left}
-.cel-perk{display:flex;align-items:center;gap:10px;font-size:13px;padding:9px 14px;background:rgba(var(--accent-rgb,0,255,136),.06);border-radius:var(--radius-md,10px)}
-.cel-perk i{color:var(--accent2);flex-shrink:0}
-.btn-cel{background:var(--accent);color:var(--bg);border:none;border-radius:var(--radius-lg,14px);padding:14px 32px;font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:15px;font-weight:700;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:8px}
-.btn-cel:hover{opacity:.88;transform:translateY(-1px);box-shadow:0 8px 28px rgba(var(--accent-rgb,0,255,136),.35)}
+/* ══════════════════════════════════════════
+   PRO SUBSCRIPTION CELEBRATION MODAL
+   (Ported exactly from profile.html reward modal)
+═══════════════════════════════════════════ */
+@keyframes rewardOverlayIn{from{opacity:0}to{opacity:1}}
+@keyframes rewardCardIn{0%{opacity:0;transform:scale(.82) translateY(24px)}65%{transform:scale(1.03) translateY(-4px)}100%{opacity:1;transform:scale(1) translateY(0)}}
+@keyframes rewardBadgePop{0%{transform:scale(0) rotate(-18deg)}60%{transform:scale(1.18) rotate(4deg)}80%{transform:scale(.94) rotate(-2deg)}100%{transform:scale(1) rotate(0deg)}}
+@keyframes rewardPulseGlow{0%,100%{box-shadow:0 0 0 0 rgba(var(--accent-rgb,0,255,136),.35),0 24px 64px rgba(0,0,0,.7)}50%{box-shadow:0 0 0 18px rgba(var(--accent-rgb,0,255,136),0),0 24px 64px rgba(0,0,0,.7)}}
+@keyframes rewardStarSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes rewardFloatUp{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-90px) scale(.4)}}
+@keyframes rewardShimmerBar{0%{background-position:-400px 0}100%{background-position:400px 0}}
+@keyframes goldShimmer{0%{background-position:200% center}100%{background-position:-200% center}}
+@keyframes goldGlare{0%{left:-80%;opacity:0}10%{opacity:1}50%{left:110%;opacity:1}51%{opacity:0}100%{left:110%;opacity:0}}
 
-/* ── Confetti canvas ── */
+#rewardOverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:10000;align-items:center;justify-content:center;padding:20px;animation:rewardOverlayIn .3s ease;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+#rewardOverlay.open{display:flex}
+
+#rewardCard{background:var(--panel);border:1px solid rgba(var(--accent-rgb,0,255,136),.28);border-radius:24px;width:100%;max-width:420px;padding:0;overflow:hidden;animation:rewardCardIn .55s cubic-bezier(.34,1.56,.64,1) both,rewardPulseGlow 2.4s ease 1s infinite;position:relative}
+
+#rewardConfettiCanvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;border-radius:24px;z-index:0}
+
+.reward-hdr{background:linear-gradient(135deg,rgba(var(--accent-rgb,0,255,136),.15) 0%,rgba(var(--accent-rgb,0,255,136),.04) 100%);border-bottom:1px solid rgba(var(--accent-rgb,0,255,136),.18);padding:32px 28px 24px;text-align:center;position:relative;z-index:1}
+
+.reward-icon-wrap{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,rgba(var(--accent-rgb,0,255,136),.22),rgba(var(--accent-rgb,0,255,136),.06));border:2px solid rgba(var(--accent-rgb,0,255,136),.4);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:34px;animation:rewardBadgePop .6s cubic-bezier(.34,1.56,.64,1) .25s both;position:relative}
+.reward-icon-wrap::after{content:'';position:absolute;inset:-6px;border-radius:50%;border:1.5px dashed rgba(var(--accent-rgb,0,255,136),.3);animation:rewardStarSpin 8s linear infinite}
+
+.reward-days-badge{display:inline-flex;align-items:center;gap:6px;background:linear-gradient(105deg,#7a5a00 0%,#c9973a 18%,#f5c842 35%,#ffe17a 50%,#f5c842 65%,#c9973a 82%,#7a5a00 100%);background-size:200% auto;color:#3a2800;border:1px solid #c9973a;text-shadow:0 1px 0 rgba(255,230,100,.5);box-shadow:0 2px 8px rgba(0,0,0,.4),0 0 0 1px rgba(255,220,80,.2) inset;animation:rewardShimmerBar 3s linear infinite;border-radius:999px;padding:6px 16px;font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:13px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;margin-bottom:14px}
+
+.reward-title{font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:22px;font-weight:800;color:var(--text);margin-bottom:6px;line-height:1.2}
+.reward-subtitle{font-size:13px;color:var(--muted);line-height:1.6}
+.reward-subtitle strong{color:var(--accent2)}
+
+.reward-body{padding:22px 28px 26px;position:relative;z-index:1}
+
+.reward-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+.reward-info-cell{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:13px 14px;text-align:center}
+.reward-info-cell .ric-val{font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:20px;font-weight:800;color:var(--accent2);margin-bottom:2px;line-height:1}
+.reward-info-cell .ric-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+
+.reward-particles{position:absolute;top:0;left:0;right:0;pointer-events:none;overflow:hidden;height:100%;border-radius:24px;z-index:0}
+.reward-particle{position:absolute;font-size:18px;animation:rewardFloatUp 2s ease forwards;opacity:0}
+
+.reward-cta{width:100%;background:var(--accent);color:#0b0f0c;border:none;border-radius:12px;padding:13px 20px;font-family:var(--font-heading,'Space Grotesk',sans-serif);font-size:14px;font-weight:800;cursor:pointer;transition:opacity .2s,transform .15s;display:flex;align-items:center;justify-content:center;gap:8px;letter-spacing:.2px}
+.reward-cta:hover{opacity:.88;transform:translateY(-1px)}
+.reward-cta:active{transform:translateY(0)}
+
+.reward-dismiss{display:block;text-align:center;margin-top:14px;font-size:12px;color:var(--muted);cursor:pointer;transition:color .15s}
+.reward-dismiss:hover{color:var(--text)}
+
+/* ── Confetti canvas (page-level, for the old showCel path) ── */
 #confettiCanvas{position:fixed;inset:0;pointer-events:none;z-index:99998}
 
 /* ── Toast ── */
@@ -349,6 +376,10 @@ hr.pdiv{border:none;border-top:1px solid var(--border);margin:18px 0}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 #toast.g{border-color:rgba(var(--accent-rgb,0,255,136),.4);background:rgba(var(--accent-rgb,0,255,136),.08)}
 #toast.r{border-color:rgba(255,95,109,.4);background:rgba(255,95,109,.08)}
+
+/* ── Test toggle button ── */
+.test-toggle-btn{display:inline-flex;align-items:center;gap:6px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.35);color:#fbbf24;border-radius:8px;padding:6px 12px;font-family:var(--font-body,'Inter',sans-serif);font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;position:fixed;bottom:20px;right:20px;z-index:9990}
+.test-toggle-btn:hover{background:rgba(245,158,11,.18)}
 
 @media(max-width:600px){
   header{padding:12px 16px}
@@ -372,21 +403,40 @@ hr.pdiv{border:none;border-top:1px solid var(--border);margin:18px 0}
   </div>
 </div>
 
-<!-- Pro Celebration -->
-<div class="cel-overlay" id="celOverlay">
-  <div class="cel-box">
-    <span class="cel-emoji">🚀</span>
-    <h2>You're now <em>Pro!</em></h2>
-    <p>Your account is upgraded. All Pro features are now active and ready to go.</p>
-    <div class="cel-perks">
-      <div class="cel-perk"><i class="fa-solid fa-circle-check"></i>Unlimited journals unlocked</div>
-      <div class="cel-perk"><i class="fa-solid fa-circle-check"></i>Full analytics suite enabled</div>
-      <div class="cel-perk"><i class="fa-solid fa-circle-check"></i>Themes, fonts &amp; export active</div>
-      <div class="cel-perk"><i class="fa-solid fa-circle-check"></i>No ads — ever</div>
+<!-- ══════════════════════════════════════════
+     PRO SUBSCRIPTION CELEBRATION MODAL
+     (Ported exactly from profile.html reward modal)
+═══════════════════════════════════════════ -->
+<div id="rewardOverlay">
+  <div id="rewardParticles" class="reward-particles"></div>
+  <div id="rewardCard">
+    <canvas id="rewardConfettiCanvas"></canvas>
+    <div class="reward-hdr">
+      <div class="reward-icon-wrap">🚀</div>
+      <div class="reward-days-badge">
+        <i class="fa-solid fa-star"></i>
+        Pro — Successfully Activated!
+      </div>
+      <div class="reward-title">You're now <span style="color:var(--accent)">Pro!</span> 🎉</div>
+      <div class="reward-subtitle">
+        Your subscription is live and all Pro features are<br>
+        <strong>active on your account right now.</strong>
+      </div>
     </div>
-    <button class="btn-cel" onclick="closeCel()"><i class="fa-solid fa-rocket"></i> Start Trading</button>
+    <div class="reward-body">
+      <button class="reward-cta" onclick="closeRewardModal()">
+        <i class="fa-solid fa-book-open"></i>
+        Start Journalling
+      </button>
+    </div>
   </div>
 </div>
+
+<!-- ▼ REMOVE THIS BUTTON WHEN DONE TESTING ▼ -->
+<button class="test-toggle-btn" onclick="_testRewardModal()">
+  <i class="fa-solid fa-flask"></i> Test Pro Modal
+</button>
+<!-- ▲ REMOVE THIS BUTTON WHEN DONE TESTING ▲ -->
 
 <header>
   <a href="/dashboard" class="logo">Trade<span>Zona</span></a>
@@ -689,7 +739,6 @@ async function openBillingPortal() {
     const { data: { session } } = await db.auth.getSession();
     if (!session) throw new Error('Not authenticated');
 
-    // Call the billing portal edge function
     const res = await fetch(SUPABASE_URL + '/functions/v1/billing-portal', {
       method: 'POST',
       headers: {
@@ -710,11 +759,9 @@ async function openBillingPortal() {
 
     const data = await res.json();
 
-    // Handle referral Pro users (no Stripe customer)
     if (data.message) {
       showToast(data.message, 'fa-solid fa-gift', 'green');
       if (data.url && data.url.includes('#')) {
-        // Redirect to dashboard section
         setTimeout(() => { window.location.href = data.url; }, 1500);
       }
       return;
@@ -724,7 +771,6 @@ async function openBillingPortal() {
       throw new Error(data.error || 'No billing portal URL returned');
     }
 
-    // Redirect to Stripe billing portal
     window.location.href = data.url;
   } catch (err) {
     console.error('Billing portal error:', err);
@@ -735,44 +781,116 @@ async function openBillingPortal() {
   }
 }
 
-// ── Confetti ──────────────────────────────────────────────
-function launchConfetti() {
-  const canvas = document.getElementById('confettiCanvas');
-  canvas.style.display = 'block';
+// ══════════════════════════════════════════════════════════════
+//  PRO SUBSCRIPTION CELEBRATION MODAL
+//  Ported exactly from profile.html reward modal.
+//  Fires automatically when ?upgraded=1 is in the URL.
+// ══════════════════════════════════════════════════════════════
+
+// ── REMOVE THIS ENTIRE FUNCTION WHEN DONE TESTING ──────────
+function _testRewardModal() {
+  // Bypasses the normal trigger so the modal always fires on click.
+  _openRewardModal();
+}
+// ── END REMOVE ──────────────────────────────────────────────
+
+function _openRewardModal() {
+  document.getElementById('rewardOverlay').classList.add('open');
+  _launchRewardConfetti();
+  _spawnRewardParticles();
+}
+
+function closeRewardModal() {
+  const overlay = document.getElementById('rewardOverlay');
+  overlay.style.opacity = '0';
+  overlay.style.transition = 'opacity .25s';
+  setTimeout(() => {
+    overlay.classList.remove('open');
+    overlay.style.opacity = '';
+    overlay.style.transition = '';
+    // Clean the URL so refreshing doesn't retrigger
+    window.history.replaceState({}, '', window.location.pathname);
+  }, 260);
+}
+
+// Close on backdrop click
+document.getElementById('rewardOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeRewardModal();
+});
+
+// ── Floating ✨ particles (exact copy from profile.html) ──
+function _spawnRewardParticles() {
+  const container = document.getElementById('rewardParticles');
+  container.innerHTML = '';
+  for (let i = 0; i < 14; i++) {
+    const el = document.createElement('span');
+    el.className = 'reward-particle';
+    el.textContent = '✨';
+    el.style.left              = (4 + Math.random() * 92) + '%';
+    el.style.bottom            = (4 + Math.random() * 45) + '%';
+    el.style.animationDelay    = (i * 0.15) + 's';
+    el.style.fontSize          = (13 + Math.random() * 16) + 'px';
+    el.style.animationDuration = (1.5 + Math.random() * .9) + 's';
+    container.appendChild(el);
+  }
+}
+
+// ── Canvas confetti burst (exact copy from profile.html) ──
+function _launchRewardConfetti() {
+  const canvas = document.getElementById('rewardConfettiCanvas');
   const ctx = canvas.getContext('2d');
-  canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-  const s = getComputedStyle(document.documentElement);
-  const accent = s.getPropertyValue('--accent').trim() || '#00ff88';
-  const accent2 = s.getPropertyValue('--accent2').trim() || '#19c37d';
-  const colors = [accent, accent2, '#ffffff', '#f59e0b', '#a78bfa', '#38bdf8'];
-  const pieces = Array.from({ length: 200 }, () => ({
-    x: Math.random() * canvas.width, y: Math.random() * canvas.height - canvas.height,
-    r: Math.random() * 6 + 2, d: Math.random() * 10 + 4,
-    color: colors[Math.floor(Math.random() * colors.length)],
-    tiltAngle: Math.random() * Math.PI * 2, tiltInc: Math.random() * .08 + .04,
-    shape: Math.random() > .5 ? 'circle' : 'rect',
+  const card = document.getElementById('rewardCard');
+  const W = card.offsetWidth || 420;
+  const H = card.offsetHeight || 520;
+  canvas.width = W;
+  canvas.height = H;
+
+  const FALLBACK_COLORS = ['#00ff88', '#f5c842', '#ff5f6d', '#a5b4fc', '#fbbf24', '#34d399', '#60a5fa', '#fb923c'];
+
+  const particles = Array.from({ length: 90 }, (_, i) => ({
+    x: Math.random() * W,
+    y: -12 - Math.random() * 50,
+    size: 5 + Math.random() * 7,
+    color: FALLBACK_COLORS[i % FALLBACK_COLORS.length],
+    vx: (Math.random() - .5) * 3.5,
+    vy: 1.8 + Math.random() * 3.5,
+    rot: Math.random() * 360,
+    vrot: (Math.random() - .5) * 9,
+    shape: Math.random() > .45 ? 'rect' : 'circle',
+    alpha: 1,
   }));
-  let angle = 0, frame = 0;
+
+  let frame = 0;
   function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    angle += .01;
-    pieces.forEach(p => {
-      p.tiltAngle += p.tiltInc;
-      p.y += (Math.cos(angle + p.d) + p.d / 4) / 2.2;
-      p.x += Math.sin(angle) * 1.8;
-      ctx.fillStyle = p.color; ctx.beginPath();
-      if (p.shape === 'circle') { ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill(); }
-      else { ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.tiltAngle); ctx.fillRect(-p.r/2,-p.r/2,p.r,p.r*2); ctx.restore(); }
+    ctx.clearRect(0, 0, W, H);
+    let alive = 0;
+    particles.forEach(p => {
+      if (p.y > H + 20 || p.alpha <= 0) return;
+      alive++;
+      p.x += p.vx;
+      p.y += p.vy + frame * .01;
+      p.rot += p.vrot;
+      if (p.y > H * .55) p.alpha = Math.max(0, p.alpha - .02);
+      ctx.save();
+      ctx.globalAlpha = p.alpha;
+      ctx.fillStyle = p.color;
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot * Math.PI / 180);
+      if (p.shape === 'circle') {
+        ctx.beginPath();
+        ctx.arc(0, 0, p.size / 2, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
+      }
+      ctx.restore();
     });
     frame++;
-    if (frame < 280) requestAnimationFrame(draw);
-    else { ctx.clearRect(0,0,canvas.width,canvas.height); canvas.style.display='none'; }
+    if (alive > 0 && frame < 240) requestAnimationFrame(draw);
+    else ctx.clearRect(0, 0, W, H);
   }
   draw();
 }
-
-function showCel() { launchConfetti(); document.getElementById('celOverlay').classList.add('show'); }
-function closeCel() { document.getElementById('celOverlay').classList.remove('show'); window.history.replaceState({}, '', window.location.pathname); }
 
 // ── Toast ─────────────────────────────────────────────────
 let _tt;
@@ -856,9 +974,14 @@ function showToast(msg, icon, type) {
   loader.classList.add('gone');
   setTimeout(() => { if (loader) loader.style.display = 'none'; }, 450);
 
+  // ── Fire the Pro celebration modal on successful upgrade ──
   const sp = new URLSearchParams(window.location.search);
-  if (sp.get('upgraded') === '1')  setTimeout(showCel, 700);
-  if (sp.get('cancelled') === '1') setTimeout(() => showToast('Checkout cancelled — still on Free plan.', 'fa-solid fa-circle-info', ''), 600);
+  if (sp.get('upgraded') === '1') {
+    setTimeout(() => _openRewardModal(), 700);
+  }
+  if (sp.get('cancelled') === '1') {
+    setTimeout(() => showToast('Checkout cancelled — still on Free plan.', 'fa-solid fa-circle-info', ''), 600);
+  }
 })();
 </script>
 </body>
