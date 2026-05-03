@@ -1222,7 +1222,7 @@ async function exportFilteredToPdf(){
       }
     }
     const filterDiv=filterSummary?`<div class="filter-summary"><strong>Active filters:</strong> ${esc(filterSummary)}</div>`:'';
-    page.innerHTML=`<h1>TradeZona — Notes Export</h1><div class="export-meta">Generated ${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})} · ${items.length} note${items.length!==1?'s':''} · ${activeTab==='logs'?'Logs Notes':'Custom Notes'}</div>${filterDiv}${bodyHtml}`;
+    page.innerHTML=`<h1>TradingGrove — Notes Export</h1><div class="export-meta">Generated ${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})} · ${items.length} note${items.length!==1?'s':''} · ${activeTab==='logs'?'Logs Notes':'Custom Notes'}</div>${filterDiv}${bodyHtml}`;
     // Wait for images to settle before enabling download
     const imgs=[...page.querySelectorAll('img')];
     await Promise.all(imgs.map(img=>{
@@ -1255,7 +1255,7 @@ async function downloadPdfFromPreview(){
   btn.disabled=true;
   btn.innerHTML='<i class="fa-solid fa-spinner" style="animation:spin 1s linear infinite"></i> Downloading…';
   try{
-    const filename=`tradezona-notes-${new Date().toISOString().split('T')[0]}.pdf`;
+    const filename=`tradinggrove-notes-${new Date().toISOString().split('T')[0]}.pdf`;
     // jsPDF.html() with autoPaging:'text' paginates content respecting
     // element boundaries — html2canvas+slice approach was cropping cards.
     const jsPDFCtor=(window.jspdf&&window.jspdf.jsPDF)||(window.jsPDF);
@@ -1305,7 +1305,7 @@ function printPdfPreview(){
   const w=window.open('','_blank','width=900,height=1000');
   if(!w){showToast('Pop-up blocked.','fa-solid fa-triangle-exclamation','r');return;}
   // Copy the rendered preview into a printable window
-  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>TradeZona Notes</title><style>
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>TradingGrove Notes</title><style>
     body{font-family:'Inter',Arial,sans-serif;background:#fff;color:#111;padding:24px;font-size:13px;margin:0}
     *{box-sizing:border-box}
     h1{font-size:22px;font-weight:700;margin:0 0 4px}
@@ -1439,7 +1439,7 @@ async function downloadZipFromPreview(){
     const zipBlob=await zip.generateAsync({type:'blob',compression:'DEFLATE'});
     const a=document.createElement('a');
     a.href=URL.createObjectURL(zipBlob);
-    a.download=`tradezona-${_imgPrevTab}-images-${new Date().toISOString().split('T')[0]}.zip`;
+    a.download=`tradinggrove-${_imgPrevTab}-images-${new Date().toISOString().split('T')[0]}.zip`;
     document.body.appendChild(a);a.click();document.body.removeChild(a);
     URL.revokeObjectURL(a.href);
     showToast(`Packaged ${successCount} image${successCount!==1?'s':''} into ZIP.`,'fa-solid fa-circle-check','g');

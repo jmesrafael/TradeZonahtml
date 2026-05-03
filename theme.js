@@ -1,5 +1,5 @@
 /**
- * theme.js — TradeZona Design System v3.1
+ * theme.js — TradingGrove Design System v3.1
  * ─────────────────────────────────────────────────────────────
  * v3.1 changes:
  *   - TZ.setTheme / TZ.setFont now sync to Supabase in background
@@ -322,7 +322,7 @@ TZ.applyFont();
 TZ.buildLoader = function() {
   const el = document.getElementById('pageLoader');
   if (!el || el.children.length) return;
-  el.innerHTML = `<div class="tz-pl-logo">Trade<span>Zona</span></div><div class="tz-pl-spin"></div>`;
+  el.innerHTML = `<div class="tz-pl-logo">Trading<span>Grove</span></div><div class="tz-pl-spin"></div>`;
 };
 
 TZ.hideLoader = function() {

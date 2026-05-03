@@ -4,7 +4,7 @@
 
 WEBSITE PURPOSE & MISSION
 ================================================================================
-TradeZona is a professional trading platform designed to help traders master risk
+TradingGrove is a professional trading platform designed to help traders master risk
 management and maintain consistent trading discipline. The platform combines free
 calculators with a comprehensive trading journal, enabling traders to calculate
 position sizes precisely before each trade and log results to discover patterns
@@ -18,7 +18,7 @@ Target Users:
 Core Philosophy:
 Position sizing and risk management are the foundation of sustainable trading.
 Most traders fail because they don't calculate risk before trading, leading to
-over-leverage and blown accounts. TradeZona eliminates guesswork and emotions
+over-leverage and blown accounts. TradingGrove eliminates guesswork and emotions
 by providing exact calculations instantly.
 
 
@@ -292,7 +292,7 @@ COMPETITIVE ADVANTAGES
 KEY METRICS & IMPACT
 ================================================================================
 
-What TradeZona Measures:
+What TradingGrove Measures:
 - Position size accuracy
 - Risk per trade (% of account)
 - Risk/Reward ratios achieved
@@ -304,7 +304,7 @@ What TradeZona Measures:
 
 Impact on Trader Success:
 - 87% of traders fail due to poor risk management
-- TradeZona users who follow discipline: consistent profitability
+- TradingGrove users who follow discipline: consistent profitability
 - Journal users vs. non-journal: 3x higher win rate
 - Traders using calculators: 10x fewer blown accounts
 
@@ -357,7 +357,7 @@ For Trading Educators:
 - See student success rates increase
 
 For Brokers:
-- Partner with TradeZona
+- Partner with TradingGrove
 - Provide to clients as value-add
 - Reduce client account blow-ups
 - Improve client retention
@@ -366,7 +366,7 @@ For Brokers:
 CONCLUSION
 ================================================================================
 
-TradeZona is the bridge between knowing you should calculate position sizes
+TradingGrove is the bridge between knowing you should calculate position sizes
 and actually doing it before every trade. It removes friction from the most
 important pre-trade decision: how much to risk.
 
@@ -374,7 +374,7 @@ The platform serves one purpose with relentless focus:
 Help traders survive, profit consistently, and build generational wealth through
 disciplined, calculated, emotion-free trading.
 
-Most traders fail because they break their own rules. TradeZona doesn't break
+Most traders fail because they break their own rules. TradingGrove doesn't break
 rules for you. It calculates, records, and reveals what actually works.
 
 That's how you win.

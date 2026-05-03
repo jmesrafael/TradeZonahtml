@@ -77,7 +77,7 @@ const server = http.createServer((req, res) => {
 server.listen(PORT, () => {
   console.log('\n');
   console.log('╔════════════════════════════════════════════════════════╗');
-  console.log('║        TradeZona Dev Server Running                    ║');
+  console.log('║        TradingGrove Dev Server Running                    ║');
   console.log('╠════════════════════════════════════════════════════════╣');
   console.log(`║  🚀 URL: http://localhost:${PORT}                             ║`);
   console.log('║  ✅ Smart routing enabled (/auth → auth.html)          ║');

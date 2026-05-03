@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TradeZona | Journal</title>
+<title>TradingGrove | Journal</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="theme.js"></script>
@@ -790,7 +790,7 @@ iframe.ready{opacity:1}
 <body>
 
 <div class="page-loader" id="pageLoader">
-  <div><div class="pl-logo">Trade<span>Zona</span></div><div class="pl-spin"></div></div>
+  <div><div class="pl-logo">Trading<span>Grove</span></div><div class="pl-spin"></div></div>
 </div>
 
 <header>
@@ -818,7 +818,7 @@ iframe.ready{opacity:1}
 <!-- Slide-in panel -->
 <div class="mob-sidebar-panel" id="mobSidebarPanel">
   <div class="mob-sidebar-hdr">
-    <span class="mob-sidebar-logo">Trade<span>Zona</span></span>
+    <span class="mob-sidebar-logo">Trading<span>Grove</span></span>
     <button class="mob-sidebar-close" onclick="closeMobSidebar()" aria-label="Close menu">
       <i class="fa-solid fa-xmark"></i>
     </button>
@@ -873,7 +873,7 @@ iframe.ready{opacity:1}
       <button class="sidebar-toggle" id="sidebarToggleBtn" onclick="toggleSidebar()" title="Toggle sidebar">
         <i class="fa-solid fa-bars" id="sidebarToggleIcon"></i>
       </button>
-      <span class="sidebar-header-label">TradeZona</span>
+      <span class="sidebar-header-label">TradingGrove</span>
     </div>
 
     <nav class="sidebar-nav" id="sidebarNav">
@@ -1350,7 +1350,7 @@ iframe.ready{opacity:1}
 <div class="overlay" id="importOverlay">
   <div class="mbox">
     <div class="mhdr"><h3><i class="fa-solid fa-file-arrow-up" style="color:var(--accent2)"></i>Import Journal</h3><button class="mclose" onclick="closeImport()"><i class="fa-solid fa-xmark"></i></button></div>
-    <div class="mbody"><p class="sub">Restore from a TradeZona <code style="background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-size:11px">.json</code> file. Images embedded in the backup will be restored automatically.</p><div class="dropzone" id="importDZ" ondragover="dzOver(event)" ondragleave="dzLeave()" ondrop="dzDrop(event)"><span class="dz-icon"><i class="fa-solid fa-folder-open"></i></span><div class="dz-label">Drop file here or <strong>click to browse</strong></div><input type="file" id="importFile" accept=".json" onchange="onFileSelect(event)"></div><div class="file-badge" id="fileBadge"><div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0"><i class="fa-solid fa-file-code" style="color:var(--accent2);flex-shrink:0"></i><span class="fn" id="fileNameLabel">—</span></div><button class="clr" onclick="clearFile()"><i class="fa-solid fa-xmark"></i></button></div><div class="mode-lbl">Import Mode</div><div class="mode-grid"><div class="mode-opt active" id="modeReplace" onclick="setImpMode('replace')"><div class="mt">Replace</div><div class="md">Delete existing, import all</div></div><div class="mode-opt" id="modeMerge" onclick="setImpMode('merge')"><div class="mt">Merge</div><div class="md">Add new trades only</div></div></div><div class="preview-box" id="previewBox"><div class="pv-row"><span class="pv-lbl">Trades in file</span><span class="pv-val pv-ok" id="pvTotal">0</span></div><div class="pv-row" id="pvNewRow" style="display:none"><span class="pv-lbl">New trades</span><span class="pv-val pv-ok" id="pvNew">0</span></div><div class="pv-row" id="pvDupRow" style="display:none"><span class="pv-lbl">Duplicates (skip)</span><span class="pv-val pv-warn" id="pvDup">0</span></div><div class="pv-row" id="pvCurRow"><span class="pv-lbl">Current trades (replaced)</span><span class="pv-val pv-warn" id="pvCur">0</span></div><div class="pv-row"><span class="pv-lbl">Contains settings</span><span class="pv-val pv-info" id="pvHasSettings">No</span></div><div class="pv-row"><span class="pv-lbl">Contains images</span><span class="pv-val pv-info" id="pvHasImages">No</span></div><div class="pv-row"><span class="pv-lbl">Journal name in file</span><span class="pv-val pv-info" id="pvJournal">—</span></div></div><div class="restore-row" id="settingsRestoreRow"><label class="restore-lbl"><input type="checkbox" id="restoreSettingsChk" checked>Restore settings too <span>(tags, moods, capital)</span></label></div><div class="imp-prog" id="importProgress"><div style="font-size:13px;font-weight:500;margin-bottom:4px" id="impProgLabel">Importing…</div><div class="prog-wrap"><div class="prog-bar" id="impProgBar"></div></div><div class="prog-lbl" id="impProgSub">Please wait</div></div></div>
+    <div class="mbody"><p class="sub">Restore from a TradingGrove <code style="background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-size:11px">.json</code> file. Images embedded in the backup will be restored automatically.</p><div class="dropzone" id="importDZ" ondragover="dzOver(event)" ondragleave="dzLeave()" ondrop="dzDrop(event)"><span class="dz-icon"><i class="fa-solid fa-folder-open"></i></span><div class="dz-label">Drop file here or <strong>click to browse</strong></div><input type="file" id="importFile" accept=".json" onchange="onFileSelect(event)"></div><div class="file-badge" id="fileBadge"><div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0"><i class="fa-solid fa-file-code" style="color:var(--accent2);flex-shrink:0"></i><span class="fn" id="fileNameLabel">—</span></div><button class="clr" onclick="clearFile()"><i class="fa-solid fa-xmark"></i></button></div><div class="mode-lbl">Import Mode</div><div class="mode-grid"><div class="mode-opt active" id="modeReplace" onclick="setImpMode('replace')"><div class="mt">Replace</div><div class="md">Delete existing, import all</div></div><div class="mode-opt" id="modeMerge" onclick="setImpMode('merge')"><div class="mt">Merge</div><div class="md">Add new trades only</div></div></div><div class="preview-box" id="previewBox"><div class="pv-row"><span class="pv-lbl">Trades in file</span><span class="pv-val pv-ok" id="pvTotal">0</span></div><div class="pv-row" id="pvNewRow" style="display:none"><span class="pv-lbl">New trades</span><span class="pv-val pv-ok" id="pvNew">0</span></div><div class="pv-row" id="pvDupRow" style="display:none"><span class="pv-lbl">Duplicates (skip)</span><span class="pv-val pv-warn" id="pvDup">0</span></div><div class="pv-row" id="pvCurRow"><span class="pv-lbl">Current trades (replaced)</span><span class="pv-val pv-warn" id="pvCur">0</span></div><div class="pv-row"><span class="pv-lbl">Contains settings</span><span class="pv-val pv-info" id="pvHasSettings">No</span></div><div class="pv-row"><span class="pv-lbl">Contains images</span><span class="pv-val pv-info" id="pvHasImages">No</span></div><div class="pv-row"><span class="pv-lbl">Journal name in file</span><span class="pv-val pv-info" id="pvJournal">—</span></div></div><div class="restore-row" id="settingsRestoreRow"><label class="restore-lbl"><input type="checkbox" id="restoreSettingsChk" checked>Restore settings too <span>(tags, moods, capital)</span></label></div><div class="imp-prog" id="importProgress"><div style="font-size:13px;font-weight:500;margin-bottom:4px" id="impProgLabel">Importing…</div><div class="prog-wrap"><div class="prog-bar" id="impProgBar"></div></div><div class="prog-lbl" id="impProgSub">Please wait</div></div></div>
     <div class="mftr"><button class="btn-ghost" onclick="closeImport()" id="importCancelBtn">Cancel</button><button class="btn-ok" id="importConfirmBtn" onclick="confirmImport()" disabled><i class="fa-solid fa-file-import"></i>Import</button></div>
   </div>
 </div>
@@ -1494,7 +1494,7 @@ let _bnbLastCsvText = '';
   }
   if(journalObj.name) {
     document.getElementById('jnameHdr').textContent = journalObj.name;
-    document.title = 'TradeZona | ' + journalObj.name;
+    document.title = 'TradingGrove | ' + journalObj.name;
   }
   document.getElementById('pageLoader').classList.add('gone');
   setTimeout(()=>{const pl=document.getElementById('pageLoader');if(pl)pl.style.display='none';},400);
@@ -1618,7 +1618,7 @@ async function saveJournalSettings(){
   }
   try{
     await updateJournal(journalId,upd);Object.assign(journalObj,upd);
-    if(name){document.getElementById('jnameHdr').textContent=name;document.title='TradeZona | '+name;}
+    if(name){document.getElementById('jnameHdr').textContent=name;document.title='TradingGrove | '+name;}
     renderPinSection();clearDirty();showToast('Settings saved!','fa-solid fa-circle-check','green');
   }
   catch(e){showToast('Save failed: '+e.message,'fa-solid fa-circle-exclamation','red');}
@@ -1746,7 +1746,7 @@ async function confirmExport(){
       }
       btn.innerHTML=`<i class="fa-solid fa-spinner fa-spin"></i> Embedding images… (${i+1}/${tradeRows.length})`;
     }
-    const payload={_meta:{version:'2.1',app:'TradeZona',journalName:journalObj.name,exportedAt:new Date().toISOString(),exportScope,tradeCount:trades.length,imagesEmbedded:true},trades:tradeRows,...(isFull&&settings?{settings:{strategies:settings.strategies||[],timeframes:settings.timeframes||[],pairs:settings.pairs||[],moods:settings.moods||[],mood_colors:settings.mood_colors||{},capital:journalObj.capital,journalName:journalObj.name}}:{})};
+    const payload={_meta:{version:'2.1',app:'TradingGrove',journalName:journalObj.name,exportedAt:new Date().toISOString(),exportScope,tradeCount:trades.length,imagesEmbedded:true},trades:tradeRows,...(isFull&&settings?{settings:{strategies:settings.strategies||[],timeframes:settings.timeframes||[],pairs:settings.pairs||[],moods:settings.moods||[],mood_colors:settings.mood_colors||{},capital:journalObj.capital,journalName:journalObj.name}}:{})};
     const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
     const url=URL.createObjectURL(blob);
     const fname=`${journalObj.name.replace(/[^a-z0-9]/gi,'_')}_${exportScope}_${new Date().toISOString().slice(0,10)}.json`;
@@ -1850,7 +1850,7 @@ async function confirmImport(){
       if(s.pairs)su.pairs=s.pairs;if(s.moods)su.moods=s.moods;if(s.mood_colors)su.mood_colors=s.mood_colors;
       await updateJournalSettings(journalId,su);settings={...settings,...su};
       const ju={};if(s.capital)ju.capital=s.capital;if(s.journalName)ju.name=s.journalName;
-      if(Object.keys(ju).length){await updateJournal(journalId,ju);Object.assign(journalObj,ju);if(s.journalName){document.getElementById('jnameHdr').textContent=s.journalName;document.title='TradeZona | '+s.journalName;}}
+      if(Object.keys(ju).length){await updateJournal(journalId,ju);Object.assign(journalObj,ju);if(s.journalName){document.getElementById('jnameHdr').textContent=s.journalName;document.title='TradingGrove | '+s.journalName;}}
     }
     sp(100,'Done!');await new Promise(r=>setTimeout(r,600));
     closeImport();document.getElementById('logsFrame').src='/logs/index.html?t='+Date.now();

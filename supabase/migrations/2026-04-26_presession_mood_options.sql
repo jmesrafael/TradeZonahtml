@@ -1,5 +1,5 @@
 -- =========================================================================
--- TradeZona — Pre-Session: per-set mood_options
+-- TradingGrove — Pre-Session: per-set mood_options
 -- Adds a configurable list of mood chips to each checklist set so each
 -- session can define its own mood defaults (the resettable
 -- session_mood lives on presession_checklist_set_state and is unchanged).

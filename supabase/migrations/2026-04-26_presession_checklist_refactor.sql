@@ -1,5 +1,5 @@
 -- =========================================================================
--- TradeZona — Pre-Session checklist refactor
+-- TradingGrove — Pre-Session checklist refactor
 -- Removes legacy date-bound presession structures and introduces a
 -- normalized, decoupled checklist system: sets (config) + items (definitions)
 -- + state (resettable runtime).

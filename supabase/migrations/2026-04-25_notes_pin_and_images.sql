@@ -1,5 +1,5 @@
 -- =========================================================================
--- TradeZona — Notes pinning + custom note images
+-- TradingGrove — Notes pinning + custom note images
 -- Run in Supabase SQL editor (or via `supabase db push`).
 -- Idempotent: safe to re-run.
 -- =========================================================================

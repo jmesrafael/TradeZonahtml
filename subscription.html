@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<title>TradeZona | Pro</title>
+<title>TradingGrove | Pro</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="theme.js"></script>
 <script src="supabase.js"></script>
@@ -398,7 +398,7 @@ hr.pdiv{border:none;border-top:1px solid var(--border);margin:18px 0}
 
 <div class="page-loader" id="pageLoader">
   <div class="pl-inner">
-    <div class="pl-logo">Trade<span>Zona</span></div>
+    <div class="pl-logo">Trading<span>Grove</span></div>
     <div class="pl-spin"></div>
   </div>
 </div>
@@ -439,7 +439,7 @@ hr.pdiv{border:none;border-top:1px solid var(--border);margin:18px 0}
 <!-- ▲ REMOVE THIS BUTTON WHEN DONE TESTING ▲ -->
 
 <header>
-  <a href="/dashboard" class="logo">Trade<span>Zona</span></a>
+  <a href="/dashboard" class="logo">Trading<span>Grove</span></a>
   <div style="display:flex;align-items:center;gap:8px">
     <button class="btn-ghost" onclick="location.href='/dashboard'"><i class="fa-solid fa-chevron-left"></i> Dashboard</button>
   </div>
@@ -707,7 +707,7 @@ async function upgradeToPro() {
     const { data: { session } } = await db.auth.getSession();
     if (!session) { location.href = '/auth'; return; }
 
-    const lookupKey = selectedPlan === 'annual' ? 'tradezona_pro_annual' : 'tradezona_pro_monthly';
+    const lookupKey = selectedPlan === 'annual' ? 'tradinggrove_pro_annual' : 'tradinggrove_pro_monthly';
 
     const res = await fetch(SUPABASE_URL + '/functions/v1/create-checkout', {
       method:  'POST',

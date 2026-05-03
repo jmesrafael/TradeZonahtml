@@ -9,8 +9,8 @@ const CORS = {
 
 // Price lookup keys → Price IDs
 const PRICE_MAP: Record<string, string> = {
-  tradezona_pro_monthly: "price_1THxzd2M4x5JbTTvTRiX7Yys",
-  tradezona_pro_annual:  "price_1TI1CV2M4x5JbTTvnBjbMF51",
+  tradinggrove_pro_monthly: "price_1THxzd2M4x5JbTTvTRiX7Yys",
+  tradinggrove_pro_annual:  "price_1TI1CV2M4x5JbTTvnBjbMF51",
 };
 
 function ok(data: unknown) {
@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceKey  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const stripeKey   = Deno.env.get("STRIPE_SECRET_KEY");
-    const appUrl      = Deno.env.get("APP_URL") || "https://tradezona.vercel.app";
+    const appUrl      = Deno.env.get("APP_URL") || "https://tradinggrove.vercel.app";
 
     if (!supabaseUrl) return fail("SUPABASE_URL not set");
     if (!serviceKey)  return fail("SUPABASE_SERVICE_ROLE_KEY not set");
@@ -51,18 +51,18 @@ Deno.serve(async (req) => {
     console.log("User:", userId, userEmail);
 
     // ── Parse body: get lookup_key or plan ───────────────────
-    let lookupKey = "tradezona_pro_monthly";
+    let lookupKey = "tradinggrove_pro_monthly";
     try {
       const body = await req.json();
       if (body.lookup_key && PRICE_MAP[body.lookup_key]) {
         lookupKey = body.lookup_key;
       } else if (body.plan === "annual" || body.plan === "yearly") {
-        lookupKey = "tradezona_pro_annual";
+        lookupKey = "tradinggrove_pro_annual";
       }
     } catch (_) { /* default to monthly */ }
 
     const priceId  = PRICE_MAP[lookupKey];
-    const planType = lookupKey === "tradezona_pro_annual" ? "yearly" : "monthly";
+    const planType = lookupKey === "tradinggrove_pro_annual" ? "yearly" : "monthly";
     console.log("Plan:", planType, "Price:", priceId);
 
     // ── Profile ───────────────────────────────────────────────

@@ -40,7 +40,7 @@ Configure in Supabase → Project Settings → Edge Functions Secrets:
 R2_ACCOUNT_ID          Your Cloudflare account ID
 R2_ACCESS_KEY_ID       R2 API token access key
 R2_SECRET_ACCESS_KEY   R2 API token secret key
-R2_BUCKET_NAME         S3 bucket name (e.g., tradezona-images)
+R2_BUCKET_NAME         S3 bucket name (e.g., tradinggrove-images)
 R2_ENDPOINT            R2 endpoint (e.g., https://{account_id}.r2.cloudflarestorage.com)
 
 SUPABASE_URL           Automatically provided by Supabase
